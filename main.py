@@ -25,12 +25,9 @@ RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 def health():
     return jsonify({"status": "ok"}), 200
 
-@app.route('/api/auth/request', methods=['POST', 'OPTIONS'])
+@app.route('/api/auth/request', methods=['POST'])
 def auth_request():
     """Request magic link for sign-in"""
-    if request.method == 'OPTIONS':
-        return '', 200
-    
     try:
         data = request.json or {}
         email = data.get('email', '').lower().strip()
@@ -70,12 +67,9 @@ def auth_request():
         logger.error(f"[auth_request] Error: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route('/api/reactor/token', methods=['POST', 'OPTIONS'])
+@app.route('/api/reactor/token', methods=['POST'])
 def get_reactor_token():
     """Get Reactor JWT for cinematic generation"""
-    if request.method == 'OPTIONS':
-        return '', 200
-    
     try:
         if not REACTOR_API_KEY:
             logger.error("[get_reactor_token] REACTOR_API_KEY not set")

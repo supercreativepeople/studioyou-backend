@@ -1,5 +1,6 @@
 # StudiYou Backend - v1.2.0 - Branded Email Template (April 24, 2026)
 import os
+import json
 import logging
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify
@@ -71,24 +72,23 @@ def send_magic_link(email: str, first_name: str = None, studio_name: str = None,
                 
                 # Extract first name
                 if not first_name:
-                    # Try multiple field name variations
-                    first_name_candidates = [
-                        formation_data.get("firstName"),
-                        formation_data.get("first_name"),
-                        formation_data.get("creatorName"),
-                        formation_data.get("creator_name"),
-                        formation_data.get("name")
-                    ]
-                    
-                    for candidate in first_name_candidates:
-                        if candidate:
-                            # Extract first name if full name provided
-                            first_name = str(candidate).split()[0] if " " in str(candidate) else str(candidate)
-                            break
-                    
-                    if not first_name:
+                    try:
+                        # Parse JSON data field
+                        if isinstance(formation_data.get("data"), str):
+                            data_json = json.loads(formation_data.get("data", "{}"))
+                        else:
+                            data_json = formation_data.get("data", {})
+                        
+                        # Try creatorName from JSON data first
+                        creator_name = data_json.get("creatorName")
+                        if creator_name:
+                            first_name = str(creator_name).split()[0]
+                        else:
+                            first_name = "Creator"
+                            logger.info(f"No creatorName in JSON data for {email}")
+                    except Exception as e:
                         first_name = "Creator"
-                        logger.warning(f"No firstName found in formation for {email}. Available keys: {list(formation_data.keys())}. Full data: {formation_data}")
+                        logger.warning(f"Error parsing formation data for {email}: {str(e)}")
                 
                 # Extract studio name
                 if not studio_name:

@@ -18,33 +18,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
         with:
+          service: ${{ env.SERVICE_NAME }}
+          project_id: ${{ env.PROJECT_ID }}
+          region: ${{ env.REGION }}
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Build and deploy to Cloud Run
-        run: |
-          gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --source . \
-            --region ${{ env.REGION }} \
-            --allow-unauthenticated \
-            --project ${{ env.PROJECT_ID }} \
-            --platform managed \
-            --set-env-vars \
-              SUPABASE_URL=${{ secrets.SUPABASE_URL }},\
-              SUPABASE_KEY=${{ secrets.SUPABASE_KEY }},\
-              RESEND_API_KEY=${{ secrets.RESEND_API_KEY }},\
-              SECRET_KEY=${{ secrets.SECRET_KEY }},\
-              REACTOR_API_KEY=${{ secrets.REACTOR_API_KEY }},\
-              RESEND_FROM_EMAIL=${{ secrets.RESEND_FROM_EMAIL }},\
-              ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
-
-      - name: Check deployment status
-        run: |
-          gcloud run services describe ${{ env.SERVICE_NAME }} \
-            --region ${{ env.REGION }} \
-            --project ${{ env.PROJECT_ID }}
+          source: .
+          flags: |
+            --allow-unauthenticated
+            --set-env-vars=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+            --set-env-vars=SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
+            --set-env-vars=RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
+            --set-env-vars=SECRET_KEY=${{ secrets.SECRET_KEY }}
+            --set-env-vars=REACTOR_API_KEY=${{ secrets.REACTOR_API_KEY }}
+            --set-env-vars=RESEND_FROM_EMAIL=${{ secrets.RESEND_FROM_EMAIL }}
+            --set-env-vars=ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}

@@ -1,0 +1,35 @@
+steps:
+  # Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/studioyou-api:$SHORT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/studioyou-api:latest'
+      - '.'
+
+  # Push to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/studioyou-api'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/cloud-builders/run'
+    args:
+      - 'deploy'
+      - 'studioyou-api'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/studioyou-api:$SHORT_SHA'
+      - '--region'
+      - 'us-east1'
+      - '--allow-unauthenticated'
+      - '--platform'
+      - 'managed'
+      - '--project'
+      - '$PROJECT_ID'
+
+images:
+  - 'gcr.io/$PROJECT_ID/studioyou-api:$SHORT_SHA'
+  - 'gcr.io/$PROJECT_ID/studioyou-api:latest'

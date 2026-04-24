@@ -13,13 +13,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app, origins="*"
-    "https://studioyou.app",
-    "https://studioyou.studio",
-    "https://69eae34af757b60008e2c5f2--studioyou-app.netlify.app",
-    "http://localhost:3000",
-    "null",
-], supports_credentials=True)
+CORS(app, origins="*", supports_credentials=True, allow_headers="*", methods="*")
 
 REACTOR_API_KEY = os.environ.get("REACTOR_API_KEY", "")
 
@@ -27,8 +21,11 @@ REACTOR_API_KEY = os.environ.get("REACTOR_API_KEY", "")
 def health():
     return jsonify({"status": "ok"}), 200
 
-@app.route('/api/reactor/token', methods=['POST'
+@app.route('/api/reactor/token', methods=['POST', 'OPTIONS'])
 def get_reactor_token():
+    if request.method == 'OPTIONS':
+        return '', 200
+    
     try:
         if not REACTOR_API_KEY:
             logger.error("[get_reactor_token] REACTOR_API_KEY not set")

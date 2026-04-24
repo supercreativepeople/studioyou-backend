@@ -1,6 +1,33 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/studioyou-api:latest', '.']
-
+    args:
+      - 'build'
+      - '-t'
+      - 'us-east1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/studioyou-api:$SHORT_SHA'
+      - '-t'
+      - 'us-east1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/studioyou-api:latest'
+      - '.'
+  
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/studioyou-api:latest']
+    args:
+      - 'push'
+      - 'us-east1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/studioyou-api'
+  
+  - name: 'gcr.io/cloud-builders/gke-deploy'
+    args:
+      - 'run'
+      - '--filename=.'
+      - '--image=us-east1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/studioyou-api:$SHORT_SHA'
+      - '--location=us-east1'
+      - '--cluster=studioyou-api'
+
+substitutions:
+  _SUPABASE_URL: 'https://rubwhfjwqonqhfbkhren.supabase.co'
+  _SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1YndoZmp3cW9ucWhmYmtocmVuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTc0OTIzNCwiZXhwIjoyMDkxMzI1MjM0fQ.kldxS_NEQYEHae_TKHT_4WNhk9fvS0v1APp7kxAl7Kg'
+  _RESEND_API_KEY: 're_Tc6UnajJ_8xpWm4ukxQgNvfK22Z3qPS8F'
+  _SECRET_KEY: 'mq9j_TBX6yFySZlzMmoL2zioChLF0p5eHnSGs14kuFU'
+  _REACTOR_API_KEY: 'rk_ab9c2a72b28b9ed165ded63526b7322d170bb384eab049ff3f115b305779c40b'
+  _RESEND_FROM_EMAIL: 'studio@studioyou.app'
+
+options:
+  machineType: 'N1_HIGHCPU_8'

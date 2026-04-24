@@ -26,11 +26,13 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Test gcloud auth
+        run: gcloud auth list
+
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --source . \
             --region ${{ env.REGION }} \
             --allow-unauthenticated \
-            --project ${{ env.PROJECT_ID }} \
-            --set-env-vars=SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_KEY=${{ secrets.SUPABASE_KEY }},RESEND_API_KEY=${{ secrets.RESEND_API_KEY }},SECRET_KEY=${{ secrets.SECRET_KEY }},REACTOR_API_KEY=${{ secrets.REACTOR_API_KEY }},RESEND_FROM_EMAIL=${{ secrets.RESEND_FROM_EMAIL }},ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+            --project ${{ env.PROJECT_ID }}

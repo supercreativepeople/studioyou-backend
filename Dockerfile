@@ -2,10 +2,13 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Build timestamp - force rebuild (Apr 24, 2026 12:01 PM)
+RUN echo "Build time: $(date)"
+
 # Copy requirements first (before code) so changes to code don't invalidate pip cache
 COPY requirements.txt .
 
-# Install dependencies - invalidate cache with timestamp
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code

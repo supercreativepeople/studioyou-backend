@@ -18,21 +18,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to Cloud Run
-        uses: google-github-actions/deploy-cloudrun@v2
+      - name: Decode service account key
+        run: |
+          echo "${{ secrets.GCP_SA_KEY }}" | base64 -d > /tmp/gcp-key.json
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
         with:
-          service: ${{ env.SERVICE_NAME }}
+          service_account_key_base64: ${{ secrets.GCP_SA_KEY }}
           project_id: ${{ env.PROJECT_ID }}
-          region: ${{ env.REGION }}
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-          source: .
-          env_vars: |
-            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-            SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
-            RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
-            SECRET_KEY=${{ secrets.SECRET_KEY }}
-            REACTOR_API_KEY=${{ secrets.REACTOR_API_KEY }}
-            RESEND_FROM_EMAIL=${{ secrets.RESEND_FROM_EMAIL }}
-            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
-          flags: |
-            --allow-unauthenticated
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --source . \
+            --region ${{ env.REGION }} \
+            --allow-unauthenticated \
+            --project ${{ env.PROJECT_ID }} \
+            --set-env-vars=SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_KEY=${{ secrets.SUPABASE_KEY }},RESEND_API_KEY=${{ secrets.RESEND_API_KEY }},SECRET_KEY=${{ secrets.SECRET_KEY }},REACTOR_API_KEY=${{ secrets.REACTOR_API_KEY }},RESEND_FROM_EMAIL=${{ secrets.RESEND_FROM_EMAIL }},ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}

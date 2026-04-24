@@ -1,3 +1,4 @@
+# StudiYou Backend - v1.2.0 - Branded Email Template (April 24, 2026)
 import os
 import logging
 from datetime import datetime, timedelta

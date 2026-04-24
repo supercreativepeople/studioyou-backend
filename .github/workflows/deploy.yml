@@ -26,12 +26,13 @@ jobs:
           region: ${{ env.REGION }}
           credentials_json: ${{ secrets.GCP_SA_KEY }}
           source: .
+          env_vars: |
+            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+            SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
+            RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            REACTOR_API_KEY=${{ secrets.REACTOR_API_KEY }}
+            RESEND_FROM_EMAIL=${{ secrets.RESEND_FROM_EMAIL }}
+            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           flags: |
             --allow-unauthenticated
-            --set-env-vars=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-            --set-env-vars=SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
-            --set-env-vars=RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
-            --set-env-vars=SECRET_KEY=${{ secrets.SECRET_KEY }}
-            --set-env-vars=REACTOR_API_KEY=${{ secrets.REACTOR_API_KEY }}
-            --set-env-vars=RESEND_FROM_EMAIL=${{ secrets.RESEND_FROM_EMAIL }}
-            --set-env-vars=ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}

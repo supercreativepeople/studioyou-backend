@@ -8,13 +8,20 @@ import requests
 import logging
 import json
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app, origins="*", supports_credentials=True, allow_headers="*", methods="*")
+
+# Configure CORS globally with explicit settings
+CORS(app, 
+     origins=["*"],
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     supports_credentials=False,
+     max_age=3600)
 
 REACTOR_API_KEY = os.environ.get("REACTOR_API_KEY", "")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://rubwhfjwqonqhfbkhren.supabase.co")
@@ -22,12 +29,17 @@ SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 
 @app.route('/health')
+@cross_origin()
 def health():
     return jsonify({"status": "ok"}), 200
 
-@app.route('/api/auth/request', methods=['POST'])
+@app.route('/api/auth/request', methods=['POST', 'OPTIONS'])
+@cross_origin()
 def auth_request():
     """Request magic link for sign-in"""
+    if request.method == 'OPTIONS':
+        return '', 204
+    
     try:
         data = request.json or {}
         email = data.get('email', '').lower().strip()
@@ -54,11 +66,7 @@ def auth_request():
         if not studios:
             return jsonify({"success": False, "error": "No account found for that email."}), 404
         
-        # Generate magic link token (simplified)
         studio = studios[0]
-        studio_id = studio.get('id')
-        
-        # TODO: Send actual magic link via Resend
         logger.info(f"[auth_request] Magic link requested for {email}")
         
         return jsonify({"success": True, "message": "Magic link sent"}), 200
@@ -67,9 +75,13 @@ def auth_request():
         logger.error(f"[auth_request] Error: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route('/api/reactor/token', methods=['POST'])
+@app.route('/api/reactor/token', methods=['POST', 'OPTIONS'])
+@cross_origin()
 def get_reactor_token():
     """Get Reactor JWT for cinematic generation"""
+    if request.method == 'OPTIONS':
+        return '', 204
+    
     try:
         if not REACTOR_API_KEY:
             logger.error("[get_reactor_token] REACTOR_API_KEY not set")

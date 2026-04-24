@@ -118,11 +118,11 @@ def send_magic_link(email: str, first_name: str = None, studio_name: str = None,
                         <tr>
                             <td style="padding: 40px 32px; text-align: center;">
                                 
-                                <!-- YOUR STUDIO label and Formation Arc badge -->
-                                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
+                                <!-- StudioYou Logo and Formation Arc badge -->
+                                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
                                     <tr>
-                                        <td align="left">
-                                            <p style="margin: 0; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: rgba(240, 242, 255, 0.5); font-weight: 500;">Your Studio</p>
+                                        <td align="left" style="padding-bottom: 8px;">
+                                            <img src="https://studioyou.app/assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" width="32" height="32" style="display: inline-block; object-fit: contain;">
                                         </td>
                                         <td align="right">
                                             <span style="display: inline-block; background-color: #00c8ff; color: #06091a; font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600; padding: 4px 8px; border-radius: 3px;">Formation Arc</span>

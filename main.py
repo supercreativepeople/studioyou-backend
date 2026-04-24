@@ -71,12 +71,24 @@ def send_magic_link(email: str, first_name: str = None, studio_name: str = None,
                 
                 # Extract first name
                 if not first_name:
-                    if "firstName" in formation_data and formation_data["firstName"]:
-                        first_name = formation_data["firstName"]
-                    elif "creatorName" in formation_data and formation_data["creatorName"]:
-                        first_name = formation_data["creatorName"].split()[0]
-                    else:
+                    # Try multiple field name variations
+                    first_name_candidates = [
+                        formation_data.get("firstName"),
+                        formation_data.get("first_name"),
+                        formation_data.get("creatorName"),
+                        formation_data.get("creator_name"),
+                        formation_data.get("name")
+                    ]
+                    
+                    for candidate in first_name_candidates:
+                        if candidate:
+                            # Extract first name if full name provided
+                            first_name = str(candidate).split()[0] if " " in str(candidate) else str(candidate)
+                            break
+                    
+                    if not first_name:
                         first_name = "Creator"
+                        logger.warning(f"No firstName found in formation for {email}. Available keys: {list(formation_data.keys())}")
                 
                 # Extract studio name
                 if not studio_name:
@@ -122,7 +134,7 @@ def send_magic_link(email: str, first_name: str = None, studio_name: str = None,
                                 <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
                                     <tr>
                                         <td align="left" style="padding-bottom: 8px;">
-                                            <img src="https://studioyou.app/assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" width="32" height="32" style="display: inline-block; object-fit: contain;">
+                                            <img src="https://studioyou.app/assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" width="24" height="24" style="display: inline-block; object-fit: contain;">
                                         </td>
                                         <td align="right">
                                             <span style="display: inline-block; background-color: #00c8ff; color: #06091a; font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600; padding: 4px 8px; border-radius: 3px;">Formation Arc</span>
@@ -133,9 +145,9 @@ def send_magic_link(email: str, first_name: str = None, studio_name: str = None,
                                 <!-- Studio Name -->
                                 <h2 style="margin: 0 0 24px 0; font-size: 28px; font-weight: 300; color: #f0f2ff; letter-spacing: -0.5px;">{studio_name}</h2>
                                 
-                                <!-- StudioYou Logo -->
+                                <!-- StudioYou Shutter Logo -->
                                 <div style="margin: 32px 0; text-align: center;">
-                                    <img src="https://studioyou.app/assets/SY_OFFICIAL_SHUTTER_KEY.png" alt="StudioYou" width="48" height="48" style="display: inline-block; object-fit: contain;">
+                                    <img src="https://studioyou.app/assets/SY_OFFICIAL_SHUTTER_KEY.png" alt="StudioYou" width="64" height="64" style="display: inline-block; object-fit: contain;">
                                 </div>
                                 
                                 <!-- Welcome message -->

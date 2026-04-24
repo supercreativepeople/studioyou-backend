@@ -1,0 +1,55 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: neat-tangent-474222-m9
+  SERVICE_NAME: studioyou-api
+  REGION: us-east1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/198959034459/locations/global/workloadIdentityProviders/github-provider
+          service_account: studioyou-deploy@neat-tangent-474222-m9.iam.gserviceaccount.com
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --source . \
+            --region ${{ env.REGION }} \
+            --allow-unauthenticated \
+            --project ${{ env.PROJECT_ID }} \
+            --platform managed \
+            --set-env-vars \
+              SUPABASE_URL=${{ secrets.SUPABASE_URL }},\
+              SUPABASE_KEY=${{ secrets.SUPABASE_KEY }},\
+              RESEND_API_KEY=${{ secrets.RESEND_API_KEY }},\
+              SECRET_KEY=${{ secrets.SECRET_KEY }},\
+              REACTOR_API_KEY=${{ secrets.REACTOR_API_KEY }},\
+              RESEND_FROM_EMAIL=${{ secrets.RESEND_FROM_EMAIL }},\
+              ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Check deployment
+        run: |
+          gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }}

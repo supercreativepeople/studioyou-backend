@@ -88,7 +88,7 @@ def send_magic_link(email: str, first_name: str = None, studio_name: str = None,
                     
                     if not first_name:
                         first_name = "Creator"
-                        logger.warning(f"No firstName found in formation for {email}. Available keys: {list(formation_data.keys())}")
+                        logger.warning(f"No firstName found in formation for {email}. Available keys: {list(formation_data.keys())}. Full data: {formation_data}")
                 
                 # Extract studio name
                 if not studio_name:
@@ -198,7 +198,7 @@ def send_magic_link(email: str, first_name: str = None, studio_name: str = None,
                 "Content-Type": "application/json"
             },
             json={
-                "from": RESEND_FROM_EMAIL,
+                "from": f"StudioYou <{RESEND_FROM_EMAIL}>",
                 "to": email,
                 "subject": "Welcome back to your studio.",
                 "html": email_html

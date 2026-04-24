@@ -23,6 +23,7 @@ CORS(app, origins=[
     "https://studioyou.app",
     "https://studioyou.studio",
     "http://localhost:3000",
+    "https://*.netlify.app",
     "null",
 ])
 

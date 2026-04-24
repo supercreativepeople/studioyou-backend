@@ -79,13 +79,13 @@ def send_magic_link(email: str, first_name: str = None, studio_name: str = None,
                         else:
                             data_json = formation_data.get("data", {})
                         
-                        # Try creatorName from JSON data first
-                        creator_name = data_json.get("creatorName")
+                        # Try firstName first (what's actually saved), then creatorName
+                        creator_name = data_json.get("firstName") or data_json.get("creatorName")
                         if creator_name:
                             first_name = str(creator_name).split()[0]
                         else:
                             first_name = "Creator"
-                            logger.info(f"No creatorName in JSON data for {email}")
+                            logger.info(f"No firstName or creatorName in JSON data for {email}")
                     except Exception as e:
                         first_name = "Creator"
                         logger.warning(f"Error parsing formation data for {email}: {str(e)}")

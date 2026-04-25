@@ -411,3 +411,156 @@ def test_request():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=True)
+
+# ============================================================================
+# ADMIN ENDPOINTS
+# ============================================================================
+
+ADMIN_SECRET = os.getenv("ADMIN_SECRET", "studioyou-admin-2026")
+
+@app.route("/admin", methods=["GET"])
+def admin_panel():
+    """Simple admin panel for user management."""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>StudioYou Admin</title>
+        <style>
+            body { font-family: system-ui; max-width: 800px; margin: 50px auto; padding: 20px; background: #1a1a1a; color: #fff; }
+            h1 { color: #00d9ff; }
+            .section { background: #2a2a2a; padding: 20px; margin: 20px 0; border-radius: 8px; }
+            input, button { padding: 10px; margin: 5px 0; font-size: 14px; }
+            input { width: 100%; max-width: 400px; background: #1a1a1a; border: 1px solid #444; color: #fff; }
+            button { background: #00d9ff; border: none; color: #000; cursor: pointer; font-weight: bold; }
+            button:hover { background: #00b8dd; }
+            .result { margin-top: 10px; padding: 10px; background: #1a1a1a; border-radius: 4px; }
+            .error { color: #ff4444; }
+            .success { color: #00ff88; }
+        </style>
+    </head>
+    <body>
+        <h1>🛠️ StudioYou Admin Panel</h1>
+        
+        <div class="section">
+            <h2>Delete User Formation</h2>
+            <input type="password" id="secret" placeholder="Admin Secret" />
+            <input type="email" id="email" placeholder="User Email" />
+            <button onclick="deleteUser()">Delete User</button>
+            <div id="result" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>View User Formation</h2>
+            <input type="password" id="viewSecret" placeholder="Admin Secret" />
+            <input type="email" id="viewEmail" placeholder="User Email" />
+            <button onclick="viewUser()">View User</button>
+            <pre id="viewResult" class="result"></pre>
+        </div>
+
+        <script>
+            async function deleteUser() {
+                const secret = document.getElementById('secret').value;
+                const email = document.getElementById('email').value;
+                const result = document.getElementById('result');
+                
+                try {
+                    const response = await fetch('/admin/delete-user', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ secret, email })
+                    });
+                    const data = await response.json();
+                    result.className = data.success ? 'result success' : 'result error';
+                    result.textContent = data.message || data.error;
+                } catch (err) {
+                    result.className = 'result error';
+                    result.textContent = 'Error: ' + err.message;
+                }
+            }
+
+            async function viewUser() {
+                const secret = document.getElementById('viewSecret').value;
+                const email = document.getElementById('viewEmail').value;
+                const result = document.getElementById('viewResult');
+                
+                try {
+                    const response = await fetch('/admin/view-user', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ secret, email })
+                    });
+                    const data = await response.json();
+                    result.className = data.success ? 'result success' : 'result error';
+                    result.textContent = JSON.stringify(data.data || data, null, 2);
+                } catch (err) {
+                    result.className = 'result error';
+                    result.textContent = 'Error: ' + err.message;
+                }
+            }
+        </script>
+    </body>
+    </html>
+    """
+
+@app.route("/admin/delete-user", methods=["POST"])
+def admin_delete_user():
+    """Delete a user's formation data."""
+    try:
+        data = request.json
+        secret = data.get("secret")
+        email = data.get("email")
+        
+        if secret != ADMIN_SECRET:
+            return jsonify({"success": False, "error": "Invalid admin secret"}), 403
+        
+        if not email:
+            return jsonify({"success": False, "error": "Email required"}), 400
+        
+        # Delete from formations table
+        result = db.table("formations").delete().eq("email", email).execute()
+        
+        logger.info(f"Admin deleted formation for {email}")
+        
+        return jsonify({
+            "success": True,
+            "message": f"Deleted formation for {email}",
+            "count": len(result.data) if result.data else 0
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Admin delete error: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/admin/view-user", methods=["POST"])
+def admin_view_user():
+    """View a user's formation data."""
+    try:
+        data = request.json
+        secret = data.get("secret")
+        email = data.get("email")
+        
+        if secret != ADMIN_SECRET:
+            return jsonify({"success": False, "error": "Invalid admin secret"}), 403
+        
+        if not email:
+            return jsonify({"success": False, "error": "Email required"}), 400
+        
+        # Get formation
+        result = db.table("formations").select("*").eq("email", email).execute()
+        
+        if result.data:
+            return jsonify({
+                "success": True,
+                "data": result.data[0]
+            }), 200
+        else:
+            return jsonify({
+                "success": False,
+                "message": "No formation found for this email"
+            }), 404
+        
+    except Exception as e:
+        logger.error(f"Admin view error: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+

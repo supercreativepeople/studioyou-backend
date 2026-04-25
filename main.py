@@ -300,7 +300,7 @@ def auth_request():
         if result.data:
             logger.info(f"Found existing formation for {email}")
             formation_data = result.data[0]
-            first_name = formation_data.get("firstName") or formation_data.get("creatorName", "Creator").split()[0]
+            first_name = formation_data.get("first_name") or formation_data.get("creatorName", "Creator").split()[0]
             studio_name = formation_data.get("studio_name", "Your Studio")
             
             # Send magic link

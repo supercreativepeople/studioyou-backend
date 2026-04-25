@@ -447,37 +447,85 @@ def admin_panel():
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #444; }
         th { color: #00d9ff; font-weight: bold; }
         tr:hover { background: #333; }
+        #loginSection { text-align: center; padding: 100px 20px; }
+        #adminContent { display: none; }
+        .locked { display: block; }
+        .unlocked { display: none; }
     </style>
 </head>
 <body>
-    <h1>StudioYou Admin Panel</h1>
-    
-    <div class="section">
-        <h2>User Inventory</h2>
-        <input type="password" id="invSecret" placeholder="Admin Secret" />
-        <button onclick="loadUsers()">Load All Users</button>
-        <div id="invResult"></div>
+    <div id="loginSection" class="locked">
+        <h1>StudioYou Admin Panel</h1>
+        <div style="max-width: 400px; margin: 40px auto;">
+            <input type="password" id="masterPassword" placeholder="Admin Secret" onkeypress="if(event.key==='Enter')unlock()" />
+            <button onclick="unlock()" style="width: 100%%; max-width: 400px; margin-top: 10px;">Unlock Panel</button>
+            <div id="loginError" class="result error" style="display: none;"></div>
+        </div>
     </div>
 
-    <div class="section">
-        <h2>Delete User</h2>
-        <input type="password" id="delSecret" placeholder="Admin Secret" />
-        <input type="email" id="delEmail" placeholder="User Email" />
-        <button onclick="deleteUser()">Delete</button>
-        <div id="delResult" class="result"></div>
-    </div>
+    <div id="adminContent">
+        <h1>StudioYou Admin Panel</h1>
+        <button onclick="logout()" style="float: right; background: #ff4444;">Logout</button>
+        <div style="clear: both;"></div>
+        
+        <div class="section">
+            <h2>User Inventory</h2>
+            <button onclick="loadUsers()">Load All Users</button>
+            <div id="invResult"></div>
+        </div>
 
-    <div class="section">
-        <h2>View User</h2>
-        <input type="password" id="viewSecret" placeholder="Admin Secret" />
-        <input type="email" id="viewEmail" placeholder="User Email" />
-        <button onclick="viewUser()">View</button>
-        <pre id="viewResult" class="result"></pre>
+        <div class="section">
+            <h2>Delete User</h2>
+            <input type="email" id="delEmail" placeholder="User Email" />
+            <button onclick="deleteUser()">Delete</button>
+            <div id="delResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>View User</h2>
+            <input type="email" id="viewEmail" placeholder="User Email" />
+            <button onclick="viewUser()">View</button>
+            <pre id="viewResult" class="result"></pre>
+        </div>
     </div>
 
     <script>
+        let adminSecret = null;
+
+        function unlock() {
+            const password = document.getElementById('masterPassword').value;
+            adminSecret = password;
+            
+            // Test the password by trying to load users
+            fetch('/admin/list-users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ secret: adminSecret })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('loginSection').style.display = 'none';
+                    document.getElementById('adminContent').style.display = 'block';
+                } else {
+                    document.getElementById('loginError').style.display = 'block';
+                    document.getElementById('loginError').textContent = 'Invalid password';
+                }
+            })
+            .catch(err => {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginError').textContent = 'Error: ' + err.message;
+            });
+        }
+
+        function logout() {
+            adminSecret = null;
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('adminContent').style.display = 'none';
+            document.getElementById('masterPassword').value = '';
+        }
+
         async function loadUsers() {
-            const secret = document.getElementById('invSecret').value;
             const result = document.getElementById('invResult');
             result.innerHTML = '<p>Loading...</p>';
             
@@ -485,7 +533,7 @@ def admin_panel():
                 const res = await fetch('/admin/list-users', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ secret })
+                    body: JSON.stringify({ secret: adminSecret })
                 });
                 const data = await res.json();
                 
@@ -512,7 +560,6 @@ def admin_panel():
         }
 
         async function deleteUser() {
-            const secret = document.getElementById('delSecret').value;
             const email = document.getElementById('delEmail').value;
             const result = document.getElementById('delResult');
             
@@ -520,7 +567,7 @@ def admin_panel():
                 const res = await fetch('/admin/delete-user', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ secret, email })
+                    body: JSON.stringify({ secret: adminSecret, email })
                 });
                 const data = await res.json();
                 result.className = data.success ? 'result success' : 'result error';
@@ -532,7 +579,6 @@ def admin_panel():
         }
 
         async function viewUser() {
-            const secret = document.getElementById('viewSecret').value;
             const email = document.getElementById('viewEmail').value;
             const result = document.getElementById('viewResult');
             
@@ -540,7 +586,7 @@ def admin_panel():
                 const res = await fetch('/admin/view-user', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ secret, email })
+                    body: JSON.stringify({ secret: adminSecret, email })
                 });
                 const data = await res.json();
                 result.className = data.success ? 'result success' : 'result error';

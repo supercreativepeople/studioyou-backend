@@ -560,14 +560,14 @@ def admin_list_users():
         if data.get("secret") != ADMIN_SECRET:
             return jsonify({"success": False, "error": "Invalid secret"}), 403
         
-        result = db.table("formations").select("email, first_name, data, studio_name, created_at").order("created_at", desc=True).execute()
+        result = db.table("formations").select("email, data, studio_name, created_at").order("created_at", desc=True).execute()
         
         users = []
         for row in result.data:
             data_json = row.get("data", {})
             users.append({
                 "email": row.get("email"),
-                "first_name": row.get("first_name", ""),
+                "first_name": data_json.get("firstName", "") if isinstance(data_json, dict) else "",
                 "last_name": data_json.get("lastName", "") if isinstance(data_json, dict) else "",
                 "studio_name": row.get("studio_name", ""),
                 "created_at": row.get("created_at", "")

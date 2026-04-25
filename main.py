@@ -418,330 +418,197 @@ if __name__ == "__main__":
 
 ADMIN_SECRET = os.getenv("ADMIN_SECRET", "studioyou-admin-2026")
 
+# Admin panel endpoints
+
+ADMIN_SECRET = os.getenv("ADMIN_SECRET", "studioyou-admin-2026")
+
 @app.route("/admin", methods=["GET"])
 def admin_panel():
-    """Simple admin panel for user management."""
-    return """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>StudioYou Admin</title>
-        <style>
-            body { font-family: system-ui; max-width: 1200px; margin: 50px auto; padding: 20px; background: #1a1a1a; color: #fff; }
-            h1 { color: #00d9ff; }
-            .section { background: #2a2a2a; padding: 20px; margin: 20px 0; border-radius: 8px; }
-            input, button { padding: 10px; margin: 5px 0; font-size: 14px; }
-            input { width: 100%; max-width: 400px; background: #1a1a1a; border: 1px solid #444; color: #fff; }
-            button { background: #00d9ff; border: none; color: #000; cursor: pointer; font-weight: bold; }
-            button:hover { background: #00b8dd; }
-            .result { margin-top: 10px; padding: 10px; background: #1a1a1a; border-radius: 4px; }
-            .error { color: #ff4444; }
-            .success { color: #00ff88; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th, td { text-align: left; padding: 12px; border-bottom: 1px solid #444; }
-            th { color: #00d9ff; font-weight: bold; }
-            tr:hover { background: #333; }
-            .loading { color: #888; font-style: italic; }
-        </style>
-    </head>
-    <body>
-        <h1>🛠️ StudioYou Admin Panel</h1>
-        
-        <div class="section">
-            <h2>User Inventory</h2>
-            <input type="password" id="inventorySecret" placeholder="Admin Secret" />
-            <button onclick="loadInventory()">Load All Users</button>
-            <div id="inventoryResult"></div>
-        </div>
+    """Admin panel HTML."""
+    html = '''<!DOCTYPE html>
+<html>
+<head>
+    <title>StudioYou Admin</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: system-ui; max-width: 1200px; margin: 50px auto; padding: 20px; background: #1a1a1a; color: #fff; }
+        h1 { color: #00d9ff; }
+        .section { background: #2a2a2a; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        input, button { padding: 10px; margin: 5px 0; font-size: 14px; }
+        input { width: 100%%; max-width: 400px; background: #1a1a1a; border: 1px solid #444; color: #fff; }
+        button { background: #00d9ff; border: none; color: #000; cursor: pointer; font-weight: bold; }
+        button:hover { background: #00b8dd; }
+        .result { margin-top: 10px; padding: 10px; background: #1a1a1a; border-radius: 4px; }
+        .error { color: #ff4444; }
+        .success { color: #00ff88; }
+        table { width: 100%%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #444; }
+        th { color: #00d9ff; font-weight: bold; }
+        tr:hover { background: #333; }
+    </style>
+</head>
+<body>
+    <h1>StudioYou Admin Panel</h1>
+    
+    <div class="section">
+        <h2>User Inventory</h2>
+        <input type="password" id="invSecret" placeholder="Admin Secret" />
+        <button onclick="loadUsers()">Load All Users</button>
+        <div id="invResult"></div>
+    </div>
 
-        <div class="section">
-            <h2>Delete User Formation</h2>
-            <input type="password" id="secret" placeholder="Admin Secret" />
-            <input type="email" id="email" placeholder="User Email" />
-            <button onclick="deleteUser()">Delete User</button>
-            <div id="result" class="result"></div>
-        </div>
+    <div class="section">
+        <h2>Delete User</h2>
+        <input type="password" id="delSecret" placeholder="Admin Secret" />
+        <input type="email" id="delEmail" placeholder="User Email" />
+        <button onclick="deleteUser()">Delete</button>
+        <div id="delResult" class="result"></div>
+    </div>
 
-        <div class="section">
-            <h2>View User Formation</h2>
-            <input type="password" id="viewSecret" placeholder="Admin Secret" />
-            <input type="email" id="viewEmail" placeholder="User Email" />
-            <button onclick="viewUser()">View User</button>
-            <pre id="viewResult" class="result"></pre>
-        </div>
+    <div class="section">
+        <h2>View User</h2>
+        <input type="password" id="viewSecret" placeholder="Admin Secret" />
+        <input type="email" id="viewEmail" placeholder="User Email" />
+        <button onclick="viewUser()">View</button>
+        <pre id="viewResult" class="result"></pre>
+    </div>
 
-        <script>
-            async function loadInventory() {
-                const secret = document.getElementById('inventorySecret').value;
-                const result = document.getElementById('inventoryResult');
-                result.innerHTML = '<p class="loading">Loading users...</p>';
+    <script>
+        async function loadUsers() {
+            const secret = document.getElementById('invSecret').value;
+            const result = document.getElementById('invResult');
+            result.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const res = await fetch('/admin/list-users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ secret })
+                });
+                const data = await res.json();
                 
-                try {
-                    const response = await fetch('/admin/list-users', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ secret })
-                    });
-                    const data = await response.json();
-                    
-                    if (!data.success) {
-                        result.className = 'result error';
-                        result.textContent = data.error;
-                        return;
-                    }
-                    
-                    const users = data.users || [];
-                    const html = `
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Signup Date</th>
-                                    <th>Email</th>
-                                    <th>Full Name</th>
-                                    <th>Studio Name</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${users.map(u => `
-                                    <tr>
-                                        <td>${new Date(u.created_at).toLocaleDateString()}</td>
-                                        <td>${u.email}</td>
-                                        <td>${u.first_name || ''} ${u.last_name || ''}</td>
-                                        <td>${u.studio_name || 'none'}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                        <p style="margin-top: 10px; color: #888;">Total users: ${users.length}</p>
-                    `;
-                    result.innerHTML = html;
-                } catch (err) {
+                if (!data.success) {
                     result.className = 'result error';
-                    result.textContent = 'Error: ' + err.message;
+                    result.textContent = data.error;
+                    return;
                 }
-            }
-
-            async function deleteUser() {
-                const secret = document.getElementById('secret').value;
-                const email = document.getElementById('email').value;
-                const result = document.getElementById('result');
                 
-                try {
-                    const response = await fetch('/admin/delete-user', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ secret, email })
-                    });
-                    const data = await response.json();
-                    result.className = data.success ? 'result success' : 'result error';
-                    result.textContent = data.message || data.error;
-                } catch (err) {
-                    result.className = 'result error';
-                    result.textContent = 'Error: ' + err.message;
-                }
+                const users = data.users || [];
+                let html = '<table><thead><tr><th>Date</th><th>Email</th><th>Name</th><th>Studio</th></tr></thead><tbody>';
+                users.forEach(u => {
+                    const name = (u.first_name || '') + ' ' + (u.last_name || '');
+                    const studio = u.studio_name || 'none';
+                    const date = new Date(u.created_at).toLocaleDateString();
+                    html += `<tr><td>${date}</td><td>${u.email}</td><td>${name.trim()}</td><td>${studio}</td></tr>`;
+                });
+                html += '</tbody></table><p>Total: ' + users.length + '</p>';
+                result.innerHTML = html;
+            } catch (err) {
+                result.className = 'result error';
+                result.textContent = 'Error: ' + err.message;
             }
+        }
 
-            async function viewUser() {
-                const secret = document.getElementById('viewSecret').value;
-                const email = document.getElementById('viewEmail').value;
-                const result = document.getElementById('viewResult');
-                
-                try {
-                    const response = await fetch('/admin/view-user', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ secret, email })
-                    });
-                    const data = await response.json();
-                    result.className = data.success ? 'result success' : 'result error';
-                    result.textContent = JSON.stringify(data.data || data, null, 2);
-                } catch (err) {
-                    result.className = 'result error';
-                    result.textContent = 'Error: ' + err.message;
-                }
+        async function deleteUser() {
+            const secret = document.getElementById('delSecret').value;
+            const email = document.getElementById('delEmail').value;
+            const result = document.getElementById('delResult');
+            
+            try {
+                const res = await fetch('/admin/delete-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ secret, email })
+                });
+                const data = await res.json();
+                result.className = data.success ? 'result success' : 'result error';
+                result.textContent = data.message || data.error;
+            } catch (err) {
+                result.className = 'result error';
+                result.textContent = 'Error: ' + err.message;
             }
-        </script>
-    </body>
-    </html>
-    """Simple admin panel for user management."""
-    return """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>StudioYou Admin</title>
-        <style>
-            body { font-family: system-ui; max-width: 800px; margin: 50px auto; padding: 20px; background: #1a1a1a; color: #fff; }
-            h1 { color: #00d9ff; }
-            .section { background: #2a2a2a; padding: 20px; margin: 20px 0; border-radius: 8px; }
-            input, button { padding: 10px; margin: 5px 0; font-size: 14px; }
-            input { width: 100%; max-width: 400px; background: #1a1a1a; border: 1px solid #444; color: #fff; }
-            button { background: #00d9ff; border: none; color: #000; cursor: pointer; font-weight: bold; }
-            button:hover { background: #00b8dd; }
-            .result { margin-top: 10px; padding: 10px; background: #1a1a1a; border-radius: 4px; }
-            .error { color: #ff4444; }
-            .success { color: #00ff88; }
-        </style>
-    </head>
-    <body>
-        <h1>🛠️ StudioYou Admin Panel</h1>
-        
-        <div class="section">
-            <h2>Delete User Formation</h2>
-            <input type="password" id="secret" placeholder="Admin Secret" />
-            <input type="email" id="email" placeholder="User Email" />
-            <button onclick="deleteUser()">Delete User</button>
-            <div id="result" class="result"></div>
-        </div>
+        }
 
-        <div class="section">
-            <h2>View User Formation</h2>
-            <input type="password" id="viewSecret" placeholder="Admin Secret" />
-            <input type="email" id="viewEmail" placeholder="User Email" />
-            <button onclick="viewUser()">View User</button>
-            <pre id="viewResult" class="result"></pre>
-        </div>
-
-        <script>
-            async function deleteUser() {
-                const secret = document.getElementById('secret').value;
-                const email = document.getElementById('email').value;
-                const result = document.getElementById('result');
-                
-                try {
-                    const response = await fetch('/admin/delete-user', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ secret, email })
-                    });
-                    const data = await response.json();
-                    result.className = data.success ? 'result success' : 'result error';
-                    result.textContent = data.message || data.error;
-                } catch (err) {
-                    result.className = 'result error';
-                    result.textContent = 'Error: ' + err.message;
-                }
+        async function viewUser() {
+            const secret = document.getElementById('viewSecret').value;
+            const email = document.getElementById('viewEmail').value;
+            const result = document.getElementById('viewResult');
+            
+            try {
+                const res = await fetch('/admin/view-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ secret, email })
+                });
+                const data = await res.json();
+                result.className = data.success ? 'result success' : 'result error';
+                result.textContent = JSON.stringify(data.data || data, null, 2);
+            } catch (err) {
+                result.className = 'result error';
+                result.textContent = 'Error: ' + err.message;
             }
-
-            async function viewUser() {
-                const secret = document.getElementById('viewSecret').value;
-                const email = document.getElementById('viewEmail').value;
-                const result = document.getElementById('viewResult');
-                
-                try {
-                    const response = await fetch('/admin/view-user', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ secret, email })
-                    });
-                    const data = await response.json();
-                    result.className = data.success ? 'result success' : 'result error';
-                    result.textContent = JSON.stringify(data.data || data, null, 2);
-                } catch (err) {
-                    result.className = 'result error';
-                    result.textContent = 'Error: ' + err.message;
-                }
-            }
-        </script>
-    </body>
-    </html>
-    """
-
-@app.route("/admin/delete-user", methods=["POST"])
-def admin_delete_user():
-    """Delete a user's formation data."""
-    try:
-        data = request.json
-        secret = data.get("secret")
-        email = data.get("email")
-        
-        if secret != ADMIN_SECRET:
-            return jsonify({"success": False, "error": "Invalid admin secret"}), 403
-        
-        if not email:
-            return jsonify({"success": False, "error": "Email required"}), 400
-        
-        # Delete from formations table
-        result = db.table("formations").delete().eq("email", email).execute()
-        
-        logger.info(f"Admin deleted formation for {email}")
-        
-        return jsonify({
-            "success": True,
-            "message": f"Deleted formation for {email}",
-            "count": len(result.data) if result.data else 0
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Admin delete error: {str(e)}")
-        return jsonify({"success": False, "error": str(e)}), 500
-
-@app.route("/admin/view-user", methods=["POST"])
-def admin_view_user():
-    """View a user's formation data."""
-    try:
-        data = request.json
-        secret = data.get("secret")
-        email = data.get("email")
-        
-        if secret != ADMIN_SECRET:
-            return jsonify({"success": False, "error": "Invalid admin secret"}), 403
-        
-        if not email:
-            return jsonify({"success": False, "error": "Email required"}), 400
-        
-        # Get formation
-        result = db.table("formations").select("*").eq("email", email).execute()
-        
-        if result.data:
-            return jsonify({
-                "success": True,
-                "data": result.data[0]
-            }), 200
-        else:
-            return jsonify({
-                "success": False,
-                "message": "No formation found for this email"
-            }), 404
-        
-    except Exception as e:
-        logger.error(f"Admin view error: {str(e)}")
-        return jsonify({"success": False, "error": str(e)}), 500
-
+        }
+    </script>
+</body>
+</html>'''
+    return html
 
 @app.route("/admin/list-users", methods=["POST"])
 def admin_list_users():
-    """List all users with basic info."""
     try:
         data = request.json
-        secret = data.get("secret")
+        if data.get("secret") != ADMIN_SECRET:
+            return jsonify({"success": False, "error": "Invalid secret"}), 403
         
-        if secret != ADMIN_SECRET:
-            return jsonify({"success": False, "error": "Invalid admin secret"}), 403
-        
-        # Get all formations, ordered by created_at desc
         result = db.table("formations").select("email, first_name, data, studio_name, created_at").order("created_at", desc=True).execute()
         
         users = []
         for row in result.data:
-            # Extract last_name from data JSON if available
             data_json = row.get("data", {})
-            last_name = data_json.get("lastName", "") if isinstance(data_json, dict) else ""
-            
             users.append({
                 "email": row.get("email"),
                 "first_name": row.get("first_name", ""),
-                "last_name": last_name,
+                "last_name": data_json.get("lastName", "") if isinstance(data_json, dict) else "",
                 "studio_name": row.get("studio_name", ""),
                 "created_at": row.get("created_at", "")
             })
         
-        return jsonify({
-            "success": True,
-            "users": users,
-            "count": len(users)
-        }), 200
-        
+        return jsonify({"success": True, "users": users}), 200
     except Exception as e:
-        logger.error(f"Admin list users error: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route("/admin/delete-user", methods=["POST"])
+def admin_delete_user():
+    try:
+        data = request.json
+        if data.get("secret") != ADMIN_SECRET:
+            return jsonify({"success": False, "error": "Invalid secret"}), 403
+        
+        email = data.get("email")
+        if not email:
+            return jsonify({"success": False, "error": "Email required"}), 400
+        
+        result = db.table("formations").delete().eq("email", email).execute()
+        return jsonify({"success": True, "message": f"Deleted {email}"}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/admin/view-user", methods=["POST"])
+def admin_view_user():
+    try:
+        data = request.json
+        if data.get("secret") != ADMIN_SECRET:
+            return jsonify({"success": False, "error": "Invalid secret"}), 403
+        
+        email = data.get("email")
+        if not email:
+            return jsonify({"success": False, "error": "Email required"}), 400
+        
+        result = db.table("formations").select("*").eq("email", email).execute()
+        
+        if result.data:
+            return jsonify({"success": True, "data": result.data[0]}), 200
+        else:
+            return jsonify({"success": False, "message": "Not found"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500

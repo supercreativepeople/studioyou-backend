@@ -507,7 +507,7 @@ def admin_panel():
                                         <td>${new Date(u.created_at).toLocaleDateString()}</td>
                                         <td>${u.email}</td>
                                         <td>${u.first_name || ''} ${u.last_name || ''}</td>
-                                        <td>${u.studio_name || ''}</td>
+                                        <td>${u.studio_name || 'none'}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>

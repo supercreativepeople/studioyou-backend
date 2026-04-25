@@ -79,15 +79,15 @@ def send_magic_link(email: str, first_name: str = None, studio_name: str = None,
                         else:
                             data_json = formation_data.get("data", {})
                         
-                        # Try firstName first (what's actually saved), then creatorName
-                        logger.info(f"DEBUG: data_json keys = {data_json.keys()}, full data = {data_json}")
-                        creator_name = data_json.get("firstName") or data_json.get("creatorName")
-                        if creator_name:
-                            first_name = str(creator_name).split()[0]
-                            logger.info(f"DEBUG: Found creator_name={creator_name}, first_name={first_name}")
-                        else:
+                        # Try first_name column first, then JSON data, then fallback to Creator
+                        first_name = formation_data.get("first_name")
+                        if not first_name:
+                            creator_name = data_json.get("firstName") or data_json.get("creatorName")
+                            if creator_name:
+                                first_name = str(creator_name).split()[0]
+                        if not first_name:
                             first_name = "Creator"
-                            logger.info(f"No firstName or creatorName in JSON data for {email}, data_json={data_json}")
+                            logger.info(f"No first_name found for {email}")
                     except Exception as e:
                         first_name = "Creator"
                         logger.warning(f"Error parsing formation data for {email}: {str(e)}")
@@ -253,6 +253,7 @@ def formation_endpoint():
             db.table("formations").update({
                 "data": formation,
                 "studio_name": studio_name,
+                "first_name": first_name,
                 "creator_type": data.get("creatorType", ""),
                 "updated_at": datetime.utcnow().isoformat()
             }).eq("email", email).execute()
@@ -265,6 +266,7 @@ def formation_endpoint():
                 "email": email,
                 "data": formation,
                 "studio_name": studio_name,
+                "first_name": first_name,
                 "creator_type": data.get("creatorType", ""),
                 "created_at": datetime.utcnow().isoformat(),
                 "updated_at": datetime.utcnow().isoformat()

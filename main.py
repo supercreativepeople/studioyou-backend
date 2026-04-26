@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 # Environment variables
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 SECRET_KEY = os.getenv("SECRET_KEY")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://studioyou.app")

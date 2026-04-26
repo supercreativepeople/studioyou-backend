@@ -8,6 +8,7 @@ from flask_cors import CORS
 import requests
 from supabase import create_client
 from dotenv import load_dotenv
+import anthropic
 import secrets
 import string
 
@@ -696,7 +697,6 @@ def formation_chat():
             context += f"The creator's name is {first_name}. "
         
         # Call Claude API (using Anthropic SDK)
-        import anthropic
         
         anthropic_key = os.getenv("ANTHROPIC_API_KEY")
         if not anthropic_key:

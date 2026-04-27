@@ -665,39 +665,26 @@ def admin_view_user():
 @app.route("/api/formation/chat", methods=["POST", "OPTIONS"])
 @cross_origin()
 def formation_chat():
-    """FutureYou chat endpoint for formation flow."""
+    """Pre-login FY formation conversation. No auth required."""
     if request.method == "OPTIONS":
         return "", 200
     
     try:
         data = request.json
-        email = data.get("email")
-        message = data.get("message")
+        messages  = data.get("messages", [])   # full API conversation history
+        formation = data.get("formation", {})  # current extraction state
         
-        if not email or not message:
-            return jsonify({"error": "Email and message required"}), 400
+        if not messages:
+            return jsonify({"error": "Messages required"}), 400
         
-        # Fetch formation data for context
-        formation_data = None
-        try:
-            result = db.table("formations").select("*").eq("email", email).execute()
-            if result.data:
-                formation_data = result.data[0]
-        except Exception as e:
-            logger.warning(f"Could not fetch formation data for {email}: {str(e)}")
+        # Build FutureYou system prompt
+        system = """You are FutureYou — the career arc navigator at the core of StudioYou.
+You are in a formation conversation with a new creator. Ask thoughtful questions to understand 
+their creative journey, goals, and vision. Be warm, direct, genuinely curious. Keep responses 
+concise (2-3 sentences max). Return ONLY valid JSON with these keys:
+{"message": "...", "formation": {...}, "complete": false, "suggestions": [...]}"""
         
-        # Build context for Claude
-        context = "You are FutureYou, the guiding intelligence within StudioYou. "
-        context += "You are currently in a formation conversation with a new creator. "
-        context += "Your role is to ask thoughtful questions to understand their creative journey, goals, and vision. "
-        context += "Be warm, direct, and genuinely curious. Keep responses concise (2-3 sentences max). "
-        
-        if formation_data:
-            first_name = formation_data.get("first_name", "Creator")
-            context += f"The creator's name is {first_name}. "
-        
-        # Call Claude API (using Anthropic SDK)
-        
+        # Call Claude API
         anthropic_key = os.getenv("ANTHROPIC_API_KEY")
         if not anthropic_key:
             logger.error("ANTHROPIC_API_KEY not set")
@@ -707,24 +694,21 @@ def formation_chat():
         
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=300,
-            system=context,
-            messages=[
-                {"role": "user", "content": message}
-            ]
+            max_tokens=600,
+            system=system,
+            messages=messages
         )
         
-        reply = response.content[0].text
+        reply_text = response.content[0].text
+        # Parse JSON response from Claude
+        clean = reply_text.replace("```json", "").replace("```", "").strip()
+        parsed = json.loads(clean)
         
-        return jsonify({
-            "success": True,
-            "message": reply
-        }), 200
+        return jsonify({"success": True, **parsed}), 200
         
     except Exception as e:
         logger.error(f"Formation chat error: {str(e)}")
         return jsonify({"error": "Failed to process message"}), 500
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
+

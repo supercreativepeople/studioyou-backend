@@ -472,7 +472,6 @@ ADMIN_SECRET = os.getenv("ADMIN_SECRET", "studioyou-admin-2026")
 
 # Admin panel endpoints
 
-ADMIN_SECRET = os.getenv("ADMIN_SECRET", "studioyou-admin-2026")
 
 @app.route("/admin", methods=["GET"])
 def admin_panel():

@@ -338,7 +338,7 @@ def formation_endpoint():
                 "first_name": first_name,
                 "last_name": formation.get("lastName", ""),
                 "creator_type": data.get("creatorType", ""),
-                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat(),
                 "updated_at": datetime.utcnow().isoformat()
             }).execute()
             
@@ -421,7 +421,7 @@ def auth_verify():
             "email": email,
             "token": session_token,
             "expires_at": (datetime.utcnow() + timedelta(days=30)).isoformat(),
-            "created_at": datetime.utcnow().isoformat()
+            "updated_at": datetime.utcnow().isoformat()
         }).execute()
         
         logger.info(f"Session created for {email}")
@@ -615,7 +615,7 @@ def admin_panel():
                 users.forEach(u => {
                     const name = (u.first_name || '') + ' ' + (u.last_name || '');
                     const studio = u.studio_name || 'none';
-                    const date = new Date(u.created_at).toLocaleDateString();
+                    const date = new Date(u.updated_at).toLocaleDateString();
                     html += `<tr><td>${date}</td><td>${u.email}</td><td>${name.trim()}</td><td>${studio}</td></tr>`;
                 });
                 html += '</tbody></table><p>Total: ' + users.length + '</p>';
@@ -675,7 +675,7 @@ def admin_list_users():
         if data.get("secret") != ADMIN_SECRET:
             return jsonify({"success": False, "error": "Invalid secret"}), 403
         
-        result = db.table("formations").select("email, first_name, last_name, studio_name, created_at").order("created_at", desc=True).execute()
+        result = db.table("formations").select("email, first_name, last_name, studio_name, updated_at").order("updated_at", desc=True).execute()
         
         users = []
         for row in result.data:
@@ -684,7 +684,7 @@ def admin_list_users():
                 "first_name": row.get("first_name", ""),
                 "last_name": row.get("last_name", ""),
                 "studio_name": row.get("studio_name", ""),
-                "created_at": row.get("created_at", "")
+                "updated_at": row.get("updated_at", "")
             })
         
         return jsonify({"success": True, "users": users}), 200

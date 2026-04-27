@@ -76,12 +76,30 @@ logger = logging.getLogger(__name__)
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-SECRET_KEY = os.getenv("SECRET_KEY")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://studioyou.app")
 RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "studio@studioyou.studio")
 
 # Initialize Supabase client
-db = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Validate required environment variables
+import sys
+required_vars = {
+    "SUPABASE_URL": SUPABASE_URL,
+    "SUPABASE_SERVICE_KEY": SUPABASE_KEY,
+    "RESEND_API_KEY": RESEND_API_KEY
+}
+missing_vars = [name for name, value in required_vars.items() if not value]
+if missing_vars:
+    logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")
+    sys.exit(1)
+
+# Initialize Supabase client
+try:
+    db = create_client(SUPABASE_URL, SUPABASE_KEY)
+    logger.info("Supabase client initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize Supabase client: {str(e)}")
+    sys.exit(1)
 
 def generate_token(email: str) -> str:
     """Generate a secure random token for magic link."""

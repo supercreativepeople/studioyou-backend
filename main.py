@@ -1,4 +1,53 @@
-# StudiYou Backend - v1.2.0 - Branded Email Template (April 24, 2026)
+"""
+StudioYou Backend API
+======================
+Version: v1.2.3
+Date: 2026-04-27
+Commit: 93a16a8
+Architecture: Supabase Python SDK
+Python: 3.11+
+
+API CONTRACT - Formation Chat Endpoint
+---------------------------------------
+POST /api/formation/chat
+Request:
+  {
+    "messages": [{"role": "user|assistant", "content": "..."}],
+    "formation": {
+      "contentTypes": [],
+      "platforms": [],
+      "primaryGenre": "",
+      "email": "",
+      "studioName": ""
+    }
+  }
+
+Response:
+  {
+    "success": true,
+    "message": "FutureYou's response text",
+    "formation": {...updated formation state...},
+    "complete": false,
+    "suggestions": ["chip1", "chip2"]
+  }
+
+CRITICAL: Frontend expects messages ARRAY, not single message string.
+DO NOT change to email/message format - that's the OLD incompatible version.
+
+Dependencies:
+  - Flask + CORS
+  - Supabase Python SDK (not raw requests)
+  - Anthropic SDK
+  - Resend (email)
+
+Environment Variables:
+  - ANTHROPIC_API_KEY
+  - SUPABASE_URL
+  - SUPABASE_SERVICE_KEY (not SUPABASE_KEY)
+  - RESEND_API_KEY
+  - ADMIN_SECRET
+"""
+
 import os
 import json
 import logging

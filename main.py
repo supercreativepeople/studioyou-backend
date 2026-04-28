@@ -159,7 +159,7 @@ def formation_chat():
 
         # Call Claude API
         response = anthropic_client.messages.create(
-            model="claude-3-5-sonnet-20241022",
+            model="claude-3-opus-20250729",
             max_tokens=1024,
             system=system_prompt,
             messages=messages
@@ -173,7 +173,7 @@ def formation_chat():
             "content": assistant_message,
             "tier": tier,
             "timestamp": datetime.utcnow().isoformat(),
-            "model": "claude-3-5-sonnet-20241022"
+            "model": "claude-3-opus-20250729"
         }), 200
 
     except Exception as e:

@@ -177,8 +177,8 @@ def formation_chat():
         }), 200
 
     except Exception as e:
-        logger.error(f"Chat endpoint error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Chat endpoint error: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Failed to process message: {str(e)}"}), 500
 
 
 @app.route("/api/formation/submit", methods=["POST"])

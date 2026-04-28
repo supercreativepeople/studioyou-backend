@@ -132,8 +132,6 @@ def formation_chat():
         custom_system_prompt = data.get("systemPrompt")
 
         # Validate required fields
-        if not email:
-            return jsonify({"error": "email is required"}), 400
         if not messages or not isinstance(messages, list):
             return jsonify({"error": "messages array is required"}), 400
 

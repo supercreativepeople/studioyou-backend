@@ -1,7 +1,24 @@
 """
 StudioYou Backend API
 Claude-powered creator platform backend
-Version: 2.0.1
+Version: 2.0.2 - Phase 1-4 Formation Flow
+
+API CONTRACT:
+/api/formation/chat accepts:
+{
+    "messages": [{"role": "user", "content": "..."}, ...],
+    "formation": { "contentTypes": [...], "platforms": [...], ... },
+    "email": "optional@email.com"  # Not required for anonymous flow
+}
+
+Returns:
+{
+    "success": true,
+    "message": "FutureYou response...",
+    "formation": { updated formation object },
+    "suggestions": ["chip1", "chip2", ...],
+    "complete": false  # true when all 6 fields are filled
+}
 """
 
 import os
@@ -40,52 +57,81 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 
 # Constants
-SERVICE_VERSION = "2.0.0"
-HEALTH_CHECK_MESSAGE = "StudioYou API is running"
+SERVICE_VERSION = "2.0.2"
+HEALTH_CHECK_MESSAGE = "StudioYou API is running (Phase 1-4 formation flow)"
+
+# Formation field configuration
+FY_FIELDS = ['contentTypes', 'platforms', 'experience', 'origin', 'goal1yr', 'biggestFear']
 
 
-def get_tier_system_prompt(tier: str) -> str:
-    """Return FutureYou system prompt based on tier"""
-    base_prompt = """You are FutureYou, the career arc navigator embedded at the core of StudioYou. You are not a tool. You are the most informed, most loyal advisor this creator has ever had — because you already know where they are going.
+def get_formation_system_prompt(formation: dict) -> str:
+    """Build system prompt that helps Claude guide the formation interview"""
+    prompt = """You are FutureYou, the intelligence at the core of StudioYou.
 
-Your core commitments:
-1. Journey-specific guidance. You know this creator's work, decisions, goals, gaps, and patterns. You carry no competing interests.
-2. Eliminate the non-choice. No social graph bias. No dismissed opportunities based on someone else's bad experience.
-3. The gentle push of confidence. When a creator is ready for something but hesitant, you are present to say: this one is worth the leap.
+Your role in Formation:
+- Guide the creator through a 20-30 minute interview
+- Ask clarifying questions based on their answers
+- Identify patterns and connections
+- Help them articulate their journey, goals, and creative voice
+- Never rush - let the conversation unfold naturally
 
-You operate with structural loyalty. Your success metric is a creator who is equipped, prepared, and launched — whether that takes them inside StudioYou or beyond it."""
+The formation captures 6 key dimensions:
+1. contentTypes: What this creator makes
+2. platforms: Where their work lives (or could)
+3. experience: How long they've been creating
+4. origin: Why they started creating
+5. goal1yr: What they want to achieve in 12 months
+6. biggestFear: What holds them back
 
-    if tier == "universal":
-        mode = """Operating Mode: DIRECTIVE
-You are the guide. The creator tells you what they want to do. You handle the rest. Tools are invisible infrastructure. You select the right tool, platform, partner, or community for this moment in their journey. Decisions are made for them based on what you know about their path.
+Current formation state:"""
+    
+    # Add current formation data
+    for field in FY_FIELDS:
+        value = formation.get(field, "Not yet answered")
+        if isinstance(value, list):
+            value = ", ".join(value) if value else "Not yet answered"
+        prompt += f"\n- {field}: {value}"
+    
+    prompt += """
 
-When routing to tools, resources, or opportunities:
-- Name the specific tool/program/room
-- Explain why THIS one, at THIS moment
-- Include the next concrete step
-- Provide the presence of confidence: you belong here, here's why"""
+Your approach:
+- If this is the first message, ask the first formation question warmly
+- Acknowledge previous answers and build on them
+- Ask one clear question at a time
+- Suggest helpful answers but don't limit their thinking
+- After all 6 fields are filled, offer recognition and next steps
 
-    else:  # pro
-        mode = """Operating Mode: PEER ADVISOR
-You are a peer. The creator directs. You advise. Full toolkit is visible and organized by curation rank. You surface options with reasoning — why each fits, what differentiates them, what this creator brings to each room.
-
-When offering options:
-- Present 2-3 curated alternatives with clear context
-- Explain the reasoning for each
-- Name what this creator's specific strengths bring to each path
-- Let them choose. Your job is informed presence, not decisions"""
-
-    return base_prompt + "\n\n" + mode
+Remember: This creator is meeting themselves for the first time. Make them feel understood."""
+    
+    return prompt
 
 
-def get_formation_context(email: str) -> dict:
-    """Fetch creator's formation data from Supabase"""
-    try:
-        response = supabase.table("formations").select("*").eq("email", email).single().execute()
-        return response.data or {}
-    except Exception as e:
-        logger.warning(f"Formation context fetch failed for {email}: {str(e)}")
-        return {}
+def is_formation_complete(formation: dict) -> bool:
+    """Check if all 6 formation fields are filled"""
+    for field in FY_FIELDS:
+        value = formation.get(field)
+        if not value or (isinstance(value, list) and len(value) == 0):
+            return False
+    return True
+
+
+def get_next_formation_question(formation: dict) -> str:
+    """Determine what question should be asked next"""
+    questions = {
+        'contentTypes': "What types of content do you create? (Video, writing, music, photography, etc.)",
+        'platforms': "Where does your work live right now? (YouTube, TikTok, your own site, etc.)",
+        'experience': "How long have you been making things?",
+        'origin': "Why did you start creating?",
+        'goal1yr': "What do you want to achieve in the next 12 months?",
+        'biggestFear': "What's the biggest thing holding you back right now?",
+    }
+    
+    for field in FY_FIELDS:
+        value = formation.get(field)
+        if not value or (isinstance(value, list) and len(value) == 0):
+            return questions.get(field, "Tell me more about your creative journey.")
+    
+    return "We've covered everything. What insights stand out to you?"
 
 
 @app.route("/api/health", methods=["GET"])
@@ -103,64 +149,45 @@ def health_check():
 @app.route("/api/formation/chat", methods=["POST"])
 def formation_chat():
     """
-    Multi-turn Claude conversation endpoint for formation interviews
+    Formation interview chat endpoint.
     
-    Request body:
-    {
-        "email": "creator@example.com",
-        "messages": [
-            {"role": "user", "content": "What should I make next?"},
-            ...
-        ],
-        "tier": "universal" | "pro",  # optional, defaults to "universal"
-        "systemPrompt": "custom system prompt"  # optional, overrides tier default
-    }
-    
-    Response:
-    {
-        "role": "assistant",
-        "content": "FutureYou response...",
-        "tier": "universal" | "pro",
-        "timestamp": "ISO-8601"
-    }
+    Accepts: { messages, formation, email (optional) }
+    Returns: { success, message, formation, suggestions, complete }
     """
     try:
         data = request.get_json()
-        email = data.get("email")
         messages = data.get("messages", [])
-        tier = data.get("tier", "universal")
-        custom_system_prompt = data.get("systemPrompt")
+        formation = data.get("formation", {})
+        email = data.get("email")
 
         # Validate required fields
         if not messages or not isinstance(messages, list):
             return jsonify({"error": "messages array is required"}), 400
 
-        # Get formation context
-        formation = get_formation_context(email)
+        # If no messages yet, start with first question
+        if len(messages) == 0:
+            first_question = get_next_formation_question(formation)
+            return jsonify({
+                "success": True,
+                "message": first_question,
+                "formation": formation,
+                "suggestions": [],
+                "complete": False
+            }), 200
 
-        # Build system prompt
-        if custom_system_prompt:
-            system_prompt = custom_system_prompt
-        else:
-            system_prompt = get_tier_system_prompt(tier)
+        # Build system prompt with formation context
+        system_prompt = get_formation_system_prompt(formation)
 
-        # Add formation context to system prompt if available
-        if formation:
-            formation_context = f"\n\nCreator Journey Context:\n"
-            if formation.get("archetype"):
-                formation_context += f"Archetype: {formation['archetype']}\n"
-            if formation.get("stage"):
-                formation_context += f"Current Stage: {formation['stage']}\n"
-            if formation.get("goals"):
-                formation_context += f"Goals: {formation['goals']}\n"
-            if formation.get("summary"):
-                formation_context += f"Story: {formation['summary']}\n"
-            system_prompt += formation_context
+        # Add email context if available
+        if email:
+            system_prompt += f"\n\nCreator email: {email}\nCross-device persistence is enabled."
 
         # Call Claude API
+        logger.info(f"Calling Claude with {len(messages)} messages, formation state: {list(formation.keys())}")
+        
         response = anthropic_client.messages.create(
-            model="claude-opus-4-1-20250805",
-            max_tokens=1024,
+            model="claude-opus-4-20250805",
+            max_tokens=512,
             system=system_prompt,
             messages=messages
         )
@@ -168,32 +195,46 @@ def formation_chat():
         # Extract response text
         assistant_message = response.content[0].text if response.content else ""
 
+        # Check if formation is now complete
+        complete = is_formation_complete(formation)
+
+        # Generate suggestions based on the last formation field
+        suggestions = []
+        if not complete:
+            next_question = get_next_formation_question(formation)
+            # Add a few placeholder suggestions
+            if "content" in next_question.lower():
+                suggestions = ["Video", "Writing", "Music", "Photography"]
+            elif "platform" in next_question.lower():
+                suggestions = ["YouTube", "TikTok", "Instagram", "My own site"]
+            elif "year" in next_question.lower() or "long" in next_question.lower():
+                suggestions = ["Less than 1 year", "1-3 years", "3-5 years", "5+ years"]
+
         return jsonify({
-            "role": "assistant",
-            "content": assistant_message,
-            "tier": tier,
-            "timestamp": datetime.utcnow().isoformat(),
-            "model": "claude-opus-4-1-20250805"
+            "success": True,
+            "message": assistant_message,
+            "formation": formation,
+            "suggestions": suggestions,
+            "complete": complete
         }), 200
 
     except Exception as e:
-        logger.error(f"Chat endpoint error: {str(e)}", exc_info=True)
-        return jsonify({"error": f"Failed to process message: {str(e)}"}), 500
+        logger.error(f"Formation chat error: {str(e)}", exc_info=True)
+        return jsonify({
+            "error": f"Failed to process message: {str(e)}"
+        }), 500
 
 
 @app.route("/api/formation/submit", methods=["POST"])
 def formation_submit():
     """
-    Submit formation data to Supabase
+    Submit completed formation data to Supabase.
     
     Request body:
     {
         "email": "creator@example.com",
-        "archetype": "...",
-        "stage": "...",
-        "goals": "...",
-        "summary": "...",
-        "data": { ... } // Raw JSON data
+        "formation": { full formation object },
+        "summary": "Text summary from FutureYou"
     }
     """
     try:
@@ -206,16 +247,15 @@ def formation_submit():
         # Prepare record for Supabase
         record = {
             "email": email,
-            "archetype": data.get("archetype"),
-            "stage": data.get("stage"),
-            "goals": data.get("goals"),
-            "summary": data.get("summary"),
-            "data": data.get("data", {}),
+            "formation_data": data.get("formation", {}),
+            "summary": data.get("summary", ""),
+            "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat()
         }
 
         # Upsert to Supabase (insert or update)
         response = supabase.table("formations").upsert(record).execute()
+        logger.info(f"Formation submitted for {email}")
 
         return jsonify({
             "status": "submitted",
@@ -228,10 +268,10 @@ def formation_submit():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/auth/request", methods=["POST"])
-def auth_request():
+@app.route("/api/auth/magic-link", methods=["POST"])
+def auth_magic_link():
     """
-    Request magic link via Resend email
+    Request magic link via email for cross-device access.
     
     Request body:
     {
@@ -245,12 +285,7 @@ def auth_request():
         if not email:
             return jsonify({"error": "email is required"}), 400
 
-        # Generate magic link token (simplified — use uuid in production)
-        import uuid
-        token = str(uuid.uuid4())
-
-        # In production, store token in Supabase with expiry
-        # For now, just acknowledge the request
+        # For now, just acknowledge - in production would send via Resend
         logger.info(f"Magic link requested for {email}")
 
         return jsonify({
@@ -260,20 +295,8 @@ def auth_request():
         }), 200
 
     except Exception as e:
-        logger.error(f"Auth request error: {str(e)}")
+        logger.error(f"Magic link error: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/test-request", methods=["POST"])
-def test_request():
-    """
-    Echo/debug endpoint for testing request body
-    """
-    data = request.get_json()
-    return jsonify({
-        "received": data,
-        "timestamp": datetime.utcnow().isoformat()
-    }), 200
 
 
 @app.errorhandler(404)

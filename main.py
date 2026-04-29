@@ -1,12 +1,14 @@
 # StudiYou Backend - v1.2.0 - Branded Email Template (April 24, 2026)
 import os
+import json
 import logging
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 import requests
 from supabase import create_client
 from dotenv import load_dotenv
+import anthropic
 import secrets
 import string
 
@@ -71,12 +73,25 @@ def send_magic_link(email: str, first_name: str = None, studio_name: str = None,
                 
                 # Extract first name
                 if not first_name:
-                    if "firstName" in formation_data and formation_data["firstName"]:
-                        first_name = formation_data["firstName"]
-                    elif "creatorName" in formation_data and formation_data["creatorName"]:
-                        first_name = formation_data["creatorName"].split()[0]
-                    else:
+                    try:
+                        # Parse JSON data field
+                        if isinstance(formation_data.get("data"), str):
+                            data_json = json.loads(formation_data.get("data", "{}"))
+                        else:
+                            data_json = formation_data.get("data", {})
+                        
+                        # Try first_name column first, then JSON data, then fallback to Creator
+                        first_name = formation_data.get("first_name")
+                        if not first_name:
+                            creator_name = data_json.get("firstName") or data_json.get("creatorName")
+                            if creator_name:
+                                first_name = str(creator_name).split()[0]
+                        if not first_name:
+                            first_name = "Creator"
+                            logger.info(f"No first_name found for {email}")
+                    except Exception as e:
                         first_name = "Creator"
+                        logger.warning(f"Error parsing formation data for {email}: {str(e)}")
                 
                 # Extract studio name
                 if not studio_name:
@@ -118,11 +133,11 @@ def send_magic_link(email: str, first_name: str = None, studio_name: str = None,
                         <tr>
                             <td style="padding: 40px 32px; text-align: center;">
                                 
-                                <!-- YOUR STUDIO label and Formation Arc badge -->
-                                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
+                                <!-- StudioYou Logo and Formation Arc badge -->
+                                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
                                     <tr>
-                                        <td align="left">
-                                            <p style="margin: 0; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: rgba(240, 242, 255, 0.5); font-weight: 500;">Your Studio</p>
+                                        <td align="left" style="padding-bottom: 8px;">
+                                            <img src="https://studioyou.app/assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" width="24" height="24" style="display: inline-block; object-fit: contain;">
                                         </td>
                                         <td align="right">
                                             <span style="display: inline-block; background-color: #00c8ff; color: #06091a; font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600; padding: 4px 8px; border-radius: 3px;">Formation Arc</span>
@@ -133,9 +148,9 @@ def send_magic_link(email: str, first_name: str = None, studio_name: str = None,
                                 <!-- Studio Name -->
                                 <h2 style="margin: 0 0 24px 0; font-size: 28px; font-weight: 300; color: #f0f2ff; letter-spacing: -0.5px;">{studio_name}</h2>
                                 
-                                <!-- StudioYou Logo -->
+                                <!-- StudioYou Shutter Logo -->
                                 <div style="margin: 32px 0; text-align: center;">
-                                    <img src="https://studioyou.app/assets/SY_OFFICIAL_SHUTTER_KEY.png" alt="StudioYou" width="48" height="48" style="display: inline-block; object-fit: contain;">
+                                    <img src="https://studioyou.app/assets/SY_OFFICIAL_SHUTTER_KEY.png" alt="StudioYou" width="64" height="64" style="display: inline-block; object-fit: contain;">
                                 </div>
                                 
                                 <!-- Welcome message -->
@@ -186,7 +201,7 @@ def send_magic_link(email: str, first_name: str = None, studio_name: str = None,
                 "Content-Type": "application/json"
             },
             json={
-                "from": RESEND_FROM_EMAIL,
+                "from": f"StudioYou <{RESEND_FROM_EMAIL}>",
                 "to": email,
                 "subject": "Welcome back to your studio.",
                 "html": email_html
@@ -239,6 +254,8 @@ def formation_endpoint():
             db.table("formations").update({
                 "data": formation,
                 "studio_name": studio_name,
+                "first_name": first_name,
+                "last_name": formation.get("lastName", ""),
                 "creator_type": data.get("creatorType", ""),
                 "updated_at": datetime.utcnow().isoformat()
             }).eq("email", email).execute()
@@ -251,6 +268,8 @@ def formation_endpoint():
                 "email": email,
                 "data": formation,
                 "studio_name": studio_name,
+                "first_name": first_name,
+                "last_name": formation.get("lastName", ""),
                 "creator_type": data.get("creatorType", ""),
                 "created_at": datetime.utcnow().isoformat(),
                 "updated_at": datetime.utcnow().isoformat()
@@ -284,7 +303,7 @@ def auth_request():
         if result.data:
             logger.info(f"Found existing formation for {email}")
             formation_data = result.data[0]
-            first_name = formation_data.get("firstName") or formation_data.get("creatorName", "Creator").split()[0]
+            first_name = formation_data.get("first_name") or formation_data.get("creatorName", "Creator").split()[0]
             studio_name = formation_data.get("studio_name", "Your Studio")
             
             # Send magic link
@@ -395,3 +414,316 @@ def test_request():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=True)
+
+# ============================================================================
+# ADMIN ENDPOINTS
+# ============================================================================
+
+ADMIN_SECRET = os.getenv("ADMIN_SECRET", "studioyou-admin-2026")
+
+# Admin panel endpoints
+
+ADMIN_SECRET = os.getenv("ADMIN_SECRET", "studioyou-admin-2026")
+
+@app.route("/admin", methods=["GET"])
+def admin_panel():
+    """Admin panel HTML."""
+    html = '''<!DOCTYPE html>
+<html>
+<head>
+    <title>StudioYou Admin</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: system-ui; max-width: 1200px; margin: 50px auto; padding: 20px; background: #1a1a1a; color: #fff; }
+        h1 { color: #00d9ff; }
+        .section { background: #2a2a2a; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        input, button { padding: 10px; margin: 5px 0; font-size: 14px; }
+        input { width: 100%%; max-width: 400px; background: #1a1a1a; border: 1px solid #444; color: #fff; }
+        button { background: #00d9ff; border: none; color: #000; cursor: pointer; font-weight: bold; }
+        button:hover { background: #00b8dd; }
+        .result { margin-top: 10px; padding: 10px; background: #1a1a1a; border-radius: 4px; }
+        .error { color: #ff4444; }
+        .success { color: #00ff88; }
+        table { width: 100%%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #444; }
+        th { color: #00d9ff; font-weight: bold; }
+        tr:hover { background: #333; }
+        #loginSection { text-align: center; padding: 100px 20px; }
+        #adminContent { display: none; }
+        .locked { display: block; }
+        .unlocked { display: none; }
+    </style>
+</head>
+<body>
+    <div id="loginSection" class="locked">
+        <h1>StudioYou Admin Panel</h1>
+        <div style="max-width: 400px; margin: 40px auto;">
+            <input type="password" id="masterPassword" placeholder="Admin Secret" onkeypress="if(event.key==='Enter')unlock()" />
+            <button onclick="unlock()" style="width: 100%%; max-width: 400px; margin-top: 10px;">Unlock Panel</button>
+            <div id="loginError" class="result error" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div id="adminContent">
+        <h1>StudioYou Admin Panel</h1>
+        <button onclick="logout()" style="float: right; background: #ff4444;">Logout</button>
+        <div style="clear: both;"></div>
+        
+        <div class="section">
+            <h2>User Inventory</h2>
+            <button onclick="loadUsers()">Load All Users</button>
+            <div id="invResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>Delete User</h2>
+            <input type="email" id="delEmail" placeholder="User Email" />
+            <button onclick="deleteUser()">Delete</button>
+            <div id="delResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>View User</h2>
+            <input type="email" id="viewEmail" placeholder="User Email" />
+            <button onclick="viewUser()">View</button>
+            <pre id="viewResult" class="result"></pre>
+        </div>
+    </div>
+
+    <script>
+        let adminSecret = null;
+
+        function unlock() {
+            const password = document.getElementById('masterPassword').value;
+            adminSecret = password;
+            
+            // Test the password by trying to load users
+            fetch('/admin/list-users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ secret: adminSecret })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('loginSection').style.display = 'none';
+                    document.getElementById('adminContent').style.display = 'block';
+                } else {
+                    document.getElementById('loginError').style.display = 'block';
+                    document.getElementById('loginError').textContent = 'Invalid password';
+                }
+            })
+            .catch(err => {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginError').textContent = 'Error: ' + err.message;
+            });
+        }
+
+        function logout() {
+            adminSecret = null;
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('adminContent').style.display = 'none';
+            document.getElementById('masterPassword').value = '';
+        }
+
+        async function loadUsers() {
+            const result = document.getElementById('invResult');
+            result.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const res = await fetch('/admin/list-users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ secret: adminSecret })
+                });
+                const data = await res.json();
+                
+                if (!data.success) {
+                    result.className = 'result error';
+                    result.textContent = data.error;
+                    return;
+                }
+                
+                const users = data.users || [];
+                let html = '<table><thead><tr><th>Date</th><th>Email</th><th>Name</th><th>Studio</th></tr></thead><tbody>';
+                users.forEach(u => {
+                    const name = (u.first_name || '') + ' ' + (u.last_name || '');
+                    const studio = u.studio_name || 'none';
+                    const date = new Date(u.created_at).toLocaleDateString();
+                    html += `<tr><td>${date}</td><td>${u.email}</td><td>${name.trim()}</td><td>${studio}</td></tr>`;
+                });
+                html += '</tbody></table><p>Total: ' + users.length + '</p>';
+                result.innerHTML = html;
+            } catch (err) {
+                result.className = 'result error';
+                result.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function deleteUser() {
+            const email = document.getElementById('delEmail').value;
+            const result = document.getElementById('delResult');
+            
+            try {
+                const res = await fetch('/admin/delete-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ secret: adminSecret, email })
+                });
+                const data = await res.json();
+                result.className = data.success ? 'result success' : 'result error';
+                result.textContent = data.message || data.error;
+            } catch (err) {
+                result.className = 'result error';
+                result.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function viewUser() {
+            const email = document.getElementById('viewEmail').value;
+            const result = document.getElementById('viewResult');
+            
+            try {
+                const res = await fetch('/admin/view-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ secret: adminSecret, email })
+                });
+                const data = await res.json();
+                result.className = data.success ? 'result success' : 'result error';
+                result.textContent = JSON.stringify(data.data || data, null, 2);
+            } catch (err) {
+                result.className = 'result error';
+                result.textContent = 'Error: ' + err.message;
+            }
+        }
+    </script>
+</body>
+</html>'''
+    return html
+
+@app.route("/admin/list-users", methods=["POST"])
+def admin_list_users():
+    try:
+        data = request.json
+        if data.get("secret") != ADMIN_SECRET:
+            return jsonify({"success": False, "error": "Invalid secret"}), 403
+        
+        result = db.table("formations").select("email, first_name, last_name, studio_name, created_at").order("created_at", desc=True).execute()
+        
+        users = []
+        for row in result.data:
+            users.append({
+                "email": row.get("email"),
+                "first_name": row.get("first_name", ""),
+                "last_name": row.get("last_name", ""),
+                "studio_name": row.get("studio_name", ""),
+                "created_at": row.get("created_at", "")
+            })
+        
+        return jsonify({"success": True, "users": users}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/admin/delete-user", methods=["POST"])
+def admin_delete_user():
+    try:
+        data = request.json
+        if data.get("secret") != ADMIN_SECRET:
+            return jsonify({"success": False, "error": "Invalid secret"}), 403
+        
+        email = data.get("email")
+        if not email:
+            return jsonify({"success": False, "error": "Email required"}), 400
+        
+        result = db.table("formations").delete().eq("email", email).execute()
+        return jsonify({"success": True, "message": f"Deleted {email}"}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/admin/view-user", methods=["POST"])
+def admin_view_user():
+    try:
+        data = request.json
+        if data.get("secret") != ADMIN_SECRET:
+            return jsonify({"success": False, "error": "Invalid secret"}), 403
+        
+        email = data.get("email")
+        if not email:
+            return jsonify({"success": False, "error": "Email required"}), 400
+        
+        result = db.table("formations").select("*").eq("email", email).execute()
+        
+        if result.data:
+            return jsonify({"success": True, "data": result.data[0]}), 200
+        else:
+            return jsonify({"success": False, "message": "Not found"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/formation/chat", methods=["POST", "OPTIONS"])
+@cross_origin()
+def formation_chat():
+    """Pre-login FY formation conversation. No auth required."""
+    if request.method == "OPTIONS":
+        return "", 200
+    
+    try:
+        data = request.json
+        messages  = data.get("messages", [])
+        formation = data.get("formation", {})
+        
+        if not messages:
+            messages = [{"role": "user", "content": "Start my StudioYou formation interview."}]
+        
+        system = """You are FutureYou — the career arc navigator at the core of StudioYou.
+You are in a formation conversation with a new creator. Ask thoughtful questions to understand 
+their creative journey, goals, and vision. Be warm, direct, genuinely curious. Keep responses 
+concise (2-3 sentences max).
+
+YOU MUST respond with ONLY valid JSON, nothing else. No markdown. No code blocks. Just raw JSON:
+{"message": "Your response", "formation": {}, "complete": false, "suggestions": []}"""
+        
+        anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+        if not anthropic_key:
+            logger.error("ANTHROPIC_API_KEY not set")
+            return jsonify({"error": "API configuration error"}), 500
+        
+        client = anthropic.Anthropic(api_key=anthropic_key)
+        
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=600,
+            system=system,
+            messages=messages
+        )
+        
+        reply_text = response.content[0].text.strip()
+        
+        # Handle markdown code blocks if Claude wraps JSON
+        if reply_text.startswith("```"):
+            reply_text = reply_text.split("```")[1]
+            if reply_text.startswith("json"):
+                reply_text = reply_text[4:]
+            reply_text = reply_text.strip()
+        
+        try:
+            parsed = json.loads(reply_text)
+        except json.JSONDecodeError:
+            logger.error(f"Claude returned invalid JSON: {reply_text[:200]}")
+            parsed = {
+                "message": "I'm having trouble processing that. Could you try again?",
+                "formation": formation,
+                "complete": False,
+                "suggestions": []
+            }
+        
+        return jsonify({"success": True, **parsed}), 200
+        
+    except Exception as e:
+        logger.error(f"Formation chat error: {str(e)}")
+        return jsonify({"error": f"Failed to process message: {str(e)}"}), 500
+
+
+

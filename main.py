@@ -674,8 +674,9 @@ def formation_chat():
         messages  = data.get("messages", [])   # full API conversation history
         formation = data.get("formation", {})  # current extraction state
         
+        # Allow empty messages array for initial formation call
         if not messages:
-            return jsonify({"error": "Messages required"}), 400
+            messages = [{"role": "user", "content": "Start my StudioYou formation interview."}]
         
         # Build FutureYou system prompt
         system = """You are FutureYou — the career arc navigator at the core of StudioYou.

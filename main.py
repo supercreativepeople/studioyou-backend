@@ -18,7 +18,13 @@ logger = logging.getLogger(__name__)
 
 # Flask app initialization
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["https://studioyou.app", "http://localhost:3000", "http://localhost:8080"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 # Supabase initialization
 SUPABASE_URL = os.getenv("SUPABASE_URL")

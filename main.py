@@ -1,24 +1,7 @@
 """
-StudioYou Backend API
-Claude-powered creator platform backend
-Version: 2.0.2 - Phase 1-4 Formation Flow
-
-API CONTRACT:
-/api/formation/chat accepts:
-{
-    "messages": [{"role": "user", "content": "..."}, ...],
-    "formation": { "contentTypes": [...], "platforms": [...], ... },
-    "email": "optional@email.com"  # Not required for anonymous flow
-}
-
-Returns:
-{
-    "success": true,
-    "message": "FutureYou response...",
-    "formation": { updated formation object },
-    "suggestions": ["chip1", "chip2", ...],
-    "complete": false  # true when all 6 fields are filled
-}
+StudioYou Backend API — Phase 1-4 Formation Flow
+Version: 2.0.3
+API Contract: { messages: [], formation: {}, email?: string }
 """
 
 import os
@@ -30,93 +13,66 @@ from anthropic import Anthropic
 from supabase import create_client, Client
 import logging
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Initialize Anthropic client
+# Clients
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-if not ANTHROPIC_API_KEY:
-    raise ValueError("ANTHROPIC_API_KEY environment variable is required")
-
 anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
-# Initialize Supabase client
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-    raise ValueError("SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables are required")
-
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-
-# Resend API for email
-RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-
-# Constants
-SERVICE_VERSION = "2.0.2"
-HEALTH_CHECK_MESSAGE = "StudioYou API is running (Phase 1-4 formation flow)"
-
-# Formation field configuration
+SERVICE_VERSION = "2.0.3"
 FY_FIELDS = ['contentTypes', 'platforms', 'experience', 'origin', 'goal1yr', 'biggestFear']
 
-
 def get_formation_system_prompt(formation: dict) -> str:
-    """Build system prompt that helps Claude guide the formation interview"""
+    """Build system prompt for Claude to guide formation interview"""
     prompt = """You are FutureYou, the intelligence at the core of StudioYou.
 
-Your role in Formation:
-- Guide the creator through a 20-30 minute interview
-- Ask clarifying questions based on their answers
-- Identify patterns and connections
-- Help them articulate their journey, goals, and creative voice
-- Never rush - let the conversation unfold naturally
+Your role: Guide the creator through a formation interview (6 key questions) that builds the deepest understanding of their creative journey.
 
-The formation captures 6 key dimensions:
-1. contentTypes: What this creator makes
-2. platforms: Where their work lives (or could)
-3. experience: How long they've been creating
-4. origin: Why they started creating
-5. goal1yr: What they want to achieve in 12 months
-6. biggestFear: What holds them back
+The 6 formation dimensions:
+1. contentTypes: What types of content do you create?
+2. platforms: Where does your work live right now?
+3. experience: How long have you been making things?
+4. origin: Why did you start creating?
+5. goal1yr: What do you want to achieve in the next 12 months?
+6. biggestFear: What's the biggest thing holding you back?
 
 Current formation state:"""
     
-    # Add current formation data
     for field in FY_FIELDS:
-        value = formation.get(field, "Not yet answered")
+        value = formation.get(field, "Not answered yet")
         if isinstance(value, list):
-            value = ", ".join(value) if value else "Not yet answered"
+            value = ", ".join(value) if value else "Not answered yet"
         prompt += f"\n- {field}: {value}"
     
     prompt += """
 
 Your approach:
-- If this is the first message, ask the first formation question warmly
-- Acknowledge previous answers and build on them
 - Ask one clear question at a time
-- Suggest helpful answers but don't limit their thinking
-- After all 6 fields are filled, offer recognition and next steps
-
-Remember: This creator is meeting themselves for the first time. Make them feel understood."""
+- Build on their answers naturally
+- After all 6 fields are filled, acknowledge completion
+- Be warm, encouraging, genuinely curious
+- This is the first time they're meeting themselves. Make them feel understood."""
     
     return prompt
 
-
 def is_formation_complete(formation: dict) -> bool:
-    """Check if all 6 formation fields are filled"""
+    """Check if all 6 fields are answered"""
     for field in FY_FIELDS:
         value = formation.get(field)
         if not value or (isinstance(value, list) and len(value) == 0):
             return False
     return True
 
-
-def get_next_formation_question(formation: dict) -> str:
-    """Determine what question should be asked next"""
+def get_next_question(formation: dict) -> str:
+    """Get the next question to ask"""
     questions = {
         'contentTypes': "What types of content do you create? (Video, writing, music, photography, etc.)",
         'platforms': "Where does your work live right now? (YouTube, TikTok, your own site, etc.)",
@@ -127,63 +83,58 @@ def get_next_formation_question(formation: dict) -> str:
     }
     
     for field in FY_FIELDS:
-        value = formation.get(field)
-        if not value or (isinstance(value, list) and len(value) == 0):
-            return questions.get(field, "Tell me more about your creative journey.")
+        if not formation.get(field) or (isinstance(formation.get(field), list) and len(formation.get(field)) == 0):
+            return questions[field]
     
-    return "We've covered everything. What insights stand out to you?"
-
+    return "Tell me more about your creative vision for the future."
 
 @app.route("/api/health", methods=["GET"])
 def health_check():
-    """Health check endpoint"""
     return jsonify({
         "status": "ok",
         "service": "studioyou-api",
         "version": SERVICE_VERSION,
-        "message": HEALTH_CHECK_MESSAGE,
+        "message": "StudioYou API is running (Phase 1-4 formation flow)",
         "timestamp": datetime.utcnow().isoformat()
     }), 200
-
 
 @app.route("/api/formation/chat", methods=["POST"])
 def formation_chat():
     """
-    Formation interview chat endpoint.
-    
-    Accepts: { messages, formation, email (optional) }
-    Returns: { success, message, formation, suggestions, complete }
+    POST /api/formation/chat
+    Body: { messages: [...], formation: {...}, email?: string }
     """
     try:
         data = request.get_json()
+        
+        if not data:
+            return jsonify({"error": "Request body is required"}), 400
+        
         messages = data.get("messages", [])
         formation = data.get("formation", {})
         email = data.get("email")
-
-        # Validate required fields
-        if not messages or not isinstance(messages, list):
-            return jsonify({"error": "messages array is required"}), 400
-
-        # If no messages yet, start with first question
-        if len(messages) == 0:
-            first_question = get_next_formation_question(formation)
+        
+        logger.info(f"Formation chat: {len(messages)} messages, formation keys: {list(formation.keys())}")
+        
+        # First message: return first question without calling Claude
+        if not messages or len(messages) == 0:
+            first_q = get_next_question(formation)
+            logger.info(f"First message: returning first question")
             return jsonify({
                 "success": True,
-                "message": first_question,
+                "message": first_q,
                 "formation": formation,
                 "suggestions": [],
                 "complete": False
             }), 200
-
-        # Build system prompt with formation context
+        
+        # Subsequent messages: call Claude
         system_prompt = get_formation_system_prompt(formation)
-
-        # Add email context if available
+        
         if email:
-            system_prompt += f"\n\nCreator email: {email}\nCross-device persistence is enabled."
-
-        # Call Claude API
-        logger.info(f"Calling Claude with {len(messages)} messages, formation state: {list(formation.keys())}")
+            system_prompt += f"\n\nCreator email: {email}\nCross-device persistence enabled."
+        
+        logger.info(f"Calling Claude with {len(messages)} messages")
         
         response = anthropic_client.messages.create(
             model="claude-opus-4-20250805",
@@ -191,123 +142,57 @@ def formation_chat():
             system=system_prompt,
             messages=messages
         )
-
-        # Extract response text
+        
         assistant_message = response.content[0].text if response.content else ""
-
-        # Check if formation is now complete
         complete = is_formation_complete(formation)
-
-        # Generate suggestions based on the last formation field
-        suggestions = []
-        if not complete:
-            next_question = get_next_formation_question(formation)
-            # Add a few placeholder suggestions
-            if "content" in next_question.lower():
-                suggestions = ["Video", "Writing", "Music", "Photography"]
-            elif "platform" in next_question.lower():
-                suggestions = ["YouTube", "TikTok", "Instagram", "My own site"]
-            elif "year" in next_question.lower() or "long" in next_question.lower():
-                suggestions = ["Less than 1 year", "1-3 years", "3-5 years", "5+ years"]
-
+        
         return jsonify({
             "success": True,
             "message": assistant_message,
             "formation": formation,
-            "suggestions": suggestions,
+            "suggestions": [],
             "complete": complete
         }), 200
-
+    
     except Exception as e:
-        logger.error(f"Formation chat error: {str(e)}", exc_info=True)
-        return jsonify({
-            "error": f"Failed to process message: {str(e)}"
-        }), 500
-
+        logger.error(f"Error: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/formation/submit", methods=["POST"])
 def formation_submit():
-    """
-    Submit completed formation data to Supabase.
-    
-    Request body:
-    {
-        "email": "creator@example.com",
-        "formation": { full formation object },
-        "summary": "Text summary from FutureYou"
-    }
-    """
+    """Submit completed formation"""
     try:
         data = request.get_json()
         email = data.get("email")
-
+        
         if not email:
-            return jsonify({"error": "email is required"}), 400
-
-        # Prepare record for Supabase
+            return jsonify({"error": "email required"}), 400
+        
         record = {
             "email": email,
             "formation_data": data.get("formation", {}),
-            "summary": data.get("summary", ""),
             "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat()
         }
-
-        # Upsert to Supabase (insert or update)
-        response = supabase.table("formations").upsert(record).execute()
-        logger.info(f"Formation submitted for {email}")
-
+        
+        supabase.table("formations").upsert(record).execute()
+        
         return jsonify({
             "status": "submitted",
             "email": email,
             "timestamp": datetime.utcnow().isoformat()
         }), 200
-
-    except Exception as e:
-        logger.error(f"Formation submit error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/auth/magic-link", methods=["POST"])
-def auth_magic_link():
-    """
-    Request magic link via email for cross-device access.
     
-    Request body:
-    {
-        "email": "creator@example.com"
-    }
-    """
-    try:
-        data = request.get_json()
-        email = data.get("email")
-
-        if not email:
-            return jsonify({"error": "email is required"}), 400
-
-        # For now, just acknowledge - in production would send via Resend
-        logger.info(f"Magic link requested for {email}")
-
-        return jsonify({
-            "status": "link_sent",
-            "email": email,
-            "message": "Check your email for login link"
-        }), 200
-
     except Exception as e:
-        logger.error(f"Magic link error: {str(e)}")
+        logger.error(f"Submit error: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
 
 @app.errorhandler(404)
 def not_found(e):
-    return jsonify({"error": "endpoint not found"}), 404
-
+    return jsonify({"error": "not found"}), 404
 
 @app.errorhandler(500)
 def internal_error(e):
     return jsonify({"error": "internal server error"}), 500
-
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))

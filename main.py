@@ -671,21 +671,20 @@ def formation_chat():
     
     try:
         data = request.json
-        messages  = data.get("messages", [])   # full API conversation history
-        formation = data.get("formation", {})  # current extraction state
+        messages  = data.get("messages", [])
+        formation = data.get("formation", {})
         
-        # Allow empty messages array for initial formation call
         if not messages:
             messages = [{"role": "user", "content": "Start my StudioYou formation interview."}]
         
-        # Build FutureYou system prompt
         system = """You are FutureYou — the career arc navigator at the core of StudioYou.
 You are in a formation conversation with a new creator. Ask thoughtful questions to understand 
 their creative journey, goals, and vision. Be warm, direct, genuinely curious. Keep responses 
-concise (2-3 sentences max). Return ONLY valid JSON with these keys:
-{"message": "...", "formation": {...}, "complete": false, "suggestions": [...]}"""
+concise (2-3 sentences max).
+
+YOU MUST respond with ONLY valid JSON, nothing else. No markdown. No code blocks. Just raw JSON:
+{"message": "Your response", "formation": {}, "complete": false, "suggestions": []}"""
         
-        # Call Claude API
         anthropic_key = os.getenv("ANTHROPIC_API_KEY")
         if not anthropic_key:
             logger.error("ANTHROPIC_API_KEY not set")
@@ -700,16 +699,31 @@ concise (2-3 sentences max). Return ONLY valid JSON with these keys:
             messages=messages
         )
         
-        reply_text = response.content[0].text
-        # Parse JSON response from Claude
-        clean = reply_text.replace("```json", "").replace("```", "").strip()
-        parsed = json.loads(clean)
+        reply_text = response.content[0].text.strip()
+        
+        # Handle markdown code blocks if Claude wraps JSON
+        if reply_text.startswith("```"):
+            reply_text = reply_text.split("```")[1]
+            if reply_text.startswith("json"):
+                reply_text = reply_text[4:]
+            reply_text = reply_text.strip()
+        
+        try:
+            parsed = json.loads(reply_text)
+        except json.JSONDecodeError:
+            logger.error(f"Claude returned invalid JSON: {reply_text[:200]}")
+            parsed = {
+                "message": "I'm having trouble processing that. Could you try again?",
+                "formation": formation,
+                "complete": False,
+                "suggestions": []
+            }
         
         return jsonify({"success": True, **parsed}), 200
         
     except Exception as e:
         logger.error(f"Formation chat error: {str(e)}")
-        return jsonify({"error": "Failed to process message"}), 500
+        return jsonify({"error": f"Failed to process message: {str(e)}"}), 500
 
 
 

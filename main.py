@@ -1,11 +1,11 @@
 """
 StudioYou Backend API — Phase 1-4 Formation Flow
-Version: 2.0.3
-API Contract: { messages: [], formation: {}, email?: string }
+Version: 2.0.4 — Formation state inference from conversation history
 """
 
 import os
 import json
+import re
 from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Clients
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
@@ -27,14 +26,49 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-SERVICE_VERSION = "2.0.3"
+SERVICE_VERSION = "2.0.4"
 FY_FIELDS = ['contentTypes', 'platforms', 'experience', 'origin', 'goal1yr', 'biggestFear']
+FIELD_QUESTIONS = {
+    'contentTypes': "What types of content do you create?",
+    'platforms': "Where does your work live right now?",
+    'experience': "How long have you been making things?",
+    'origin': "Why did you start creating?",
+    'goal1yr': "What do you want to achieve in the next 12 months?",
+    'biggestFear': "What's the biggest thing holding you back?"
+}
+
+def infer_formation_from_messages(messages: list) -> dict:
+    """Infer formation state from message history"""
+    formation = {}
+    
+    # Track which questions have been asked by looking at assistant messages
+    question_order = FY_FIELDS.copy()
+    answered_count = 0
+    
+    for i, msg in enumerate(messages):
+        if msg.get('role') == 'assistant':
+            # Count how many questions have been implicitly asked
+            content = msg.get('content', '').lower()
+            for field in FY_FIELDS:
+                if field not in formation:
+                    question_text = FIELD_QUESTIONS[field].lower()
+                    if any(word in content for word in question_text.split()[:3]):
+                        # This question was asked; next user message should be the answer
+                        if i + 1 < len(messages) and messages[i + 1].get('role') == 'user':
+                            user_answer = messages[i + 1].get('content', '').strip()
+                            if user_answer and user_answer.lower() not in ['yes', 'no', 'ok']:
+                                formation[field] = user_answer
+                                answered_count += 1
+                        break
+    
+    logger.info(f"Inferred formation: {list(formation.keys())} ({answered_count} fields)")
+    return formation
 
 def get_formation_system_prompt(formation: dict) -> str:
-    """Build system prompt for Claude to guide formation interview"""
+    """Build system prompt for Claude"""
     prompt = """You are FutureYou, the intelligence at the core of StudioYou.
 
-Your role: Guide the creator through a formation interview (6 key questions) that builds the deepest understanding of their creative journey.
+Your role: Guide the creator through a formation interview (6 key questions).
 
 The 6 formation dimensions:
 1. contentTypes: What types of content do you create?
@@ -58,34 +92,19 @@ Your approach:
 - Ask one clear question at a time
 - Build on their answers naturally
 - After all 6 fields are filled, acknowledge completion
-- Be warm, encouraging, genuinely curious
-- This is the first time they're meeting themselves. Make them feel understood."""
+- Be warm, encouraging, genuinely curious"""
     
     return prompt
 
 def is_formation_complete(formation: dict) -> bool:
     """Check if all 6 fields are answered"""
-    for field in FY_FIELDS:
-        value = formation.get(field)
-        if not value or (isinstance(value, list) and len(value) == 0):
-            return False
-    return True
+    return len(formation) >= 6 and all(formation.get(f) for f in FY_FIELDS)
 
 def get_next_question(formation: dict) -> str:
     """Get the next question to ask"""
-    questions = {
-        'contentTypes': "What types of content do you create? (Video, writing, music, photography, etc.)",
-        'platforms': "Where does your work live right now? (YouTube, TikTok, your own site, etc.)",
-        'experience': "How long have you been making things?",
-        'origin': "Why did you start creating?",
-        'goal1yr': "What do you want to achieve in the next 12 months?",
-        'biggestFear': "What's the biggest thing holding you back right now?",
-    }
-    
     for field in FY_FIELDS:
-        if not formation.get(field) or (isinstance(formation.get(field), list) and len(formation.get(field)) == 0):
-            return questions[field]
-    
+        if not formation.get(field):
+            return FIELD_QUESTIONS[field]
     return "Tell me more about your creative vision for the future."
 
 @app.route("/api/health", methods=["GET"])
@@ -108,18 +127,22 @@ def formation_chat():
         data = request.get_json()
         
         if not data:
-            return jsonify({"error": "Request body is required"}), 400
+            return jsonify({"error": "Request body required"}), 400
         
         messages = data.get("messages", [])
-        formation = data.get("formation", {})
+        passed_formation = data.get("formation", {})
         email = data.get("email")
         
-        logger.info(f"Formation chat: {len(messages)} messages, formation keys: {list(formation.keys())}")
+        # Infer formation from message history
+        inferred_formation = infer_formation_from_messages(messages)
+        # Merge with passed formation (inferred takes priority)
+        formation = {**passed_formation, **inferred_formation}
         
-        # First message: return first question without calling Claude
+        logger.info(f"Formation chat: {len(messages)} messages, inferred {list(inferred_formation.keys())}, total formation: {list(formation.keys())}")
+        
+        # First message: return first question
         if not messages or len(messages) == 0:
             first_q = get_next_question(formation)
-            logger.info(f"First message: returning first question")
             return jsonify({
                 "success": True,
                 "message": first_q,
@@ -134,7 +157,7 @@ def formation_chat():
         if email:
             system_prompt += f"\n\nCreator email: {email}\nCross-device persistence enabled."
         
-        logger.info(f"Calling Claude with {len(messages)} messages")
+        logger.info(f"Calling Claude with {len(messages)} messages, formation keys: {list(formation.keys())}")
         
         response = anthropic_client.messages.create(
             model="claude-opus-4-20250805",

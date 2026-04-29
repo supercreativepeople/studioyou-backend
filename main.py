@@ -693,7 +693,7 @@ YOU MUST respond with ONLY valid JSON, nothing else. No markdown. No code blocks
         client = anthropic.Anthropic(api_key=anthropic_key)
         
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-opus-4-1",
             max_tokens=600,
             system=system,
             messages=messages

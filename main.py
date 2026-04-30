@@ -553,7 +553,7 @@ Return ONLY a JSON object with these exact keys:
                 "Content-Type":      "application/json",
             },
             json={
-                "model":      "claude-sonnet-4-6",
+                "model":      "claude-opus-4-1",
                 "max_tokens": 800,
                 "messages":   [{"role": "user", "content": prompt}],
             },
@@ -733,7 +733,7 @@ def chat():
         return jsonify({"error": "Messages required"}), 400
 
     payload = {
-        "model":      data.get("model", "claude-sonnet-4-6"),
+        "model":      data.get("model", "claude-opus-4-1"),
         "max_tokens": data.get("max_tokens", 600),
         "messages":   messages,
     }

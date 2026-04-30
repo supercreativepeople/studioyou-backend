@@ -726,4 +726,99 @@ YOU MUST respond with ONLY valid JSON, nothing else. No markdown. No code blocks
         return jsonify({"error": f"Failed to process message: {str(e)}"}), 500
 
 
+@app.route("/api/formation/chat", methods=["POST", "OPTIONS"])
+@cross_origin()
+def formation_chat():
+    """Pre-login FY formation conversation. No auth required."""
+    if request.method == "OPTIONS":
+        return "", 200
+    
+    try:
+        # Log incoming request
+        data = request.json
+        logger.info(f"Formation chat request: messages_count={len(data.get('messages', []))}")
+        
+        messages  = data.get("messages", [])
+        formation = data.get("formation", {})
+        
+        if not messages:
+            messages = [{"role": "user", "content": "Start my StudioYou formation interview."}]
+            logger.info("Empty messages array, using starter message")
+        
+        system = """You are FutureYou — the career arc navigator at the core of StudioYou.
+You are in a formation conversation with a new creator. Ask thoughtful questions to understand 
+their creative journey, goals, and vision. Be warm, direct, genuinely curious. Keep responses 
+concise (2-3 sentences max).
+
+YOU MUST respond with ONLY valid JSON, nothing else. No markdown. No code blocks. Just raw JSON:
+{"message": "Your response", "formation": {}, "complete": false, "suggestions": []}"""
+        
+        # Verify API key
+        anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+        if not anthropic_key:
+            logger.error("CRITICAL: ANTHROPIC_API_KEY not set in environment")
+            return jsonify({"error": "API configuration error: missing ANTHROPIC_API_KEY"}), 500
+        
+        logger.info("ANTHROPIC_API_KEY found, initializing Claude client")
+        
+        # Initialize client and call Claude
+        try:
+            client = anthropic.Anthropic(api_key=anthropic_key)
+            logger.info(f"Calling Claude API with model=claude-opus-4-1, max_tokens=600, message_count={len(messages)}")
+            
+            response = client.messages.create(
+                model="claude-opus-4-1",
+                max_tokens=600,
+                system=system,
+                messages=messages
+            )
+            logger.info(f"Claude API returned successfully, response_type={type(response)}")
+        except Exception as claude_err:
+            logger.error(f"CLAUDE_API_FAILED: {type(claude_err).__name__}: {str(claude_err)}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return jsonify({"error": f"Claude API error: {str(claude_err)}"}), 500
+        
+        # Extract and process response
+        try:
+            reply_text = response.content[0].text.strip()
+            logger.info(f"Claude raw response (first 300 chars): {reply_text[:300]}")
+        except (IndexError, AttributeError) as extract_err:
+            logger.error(f"RESPONSE_EXTRACTION_FAILED: {type(extract_err).__name__}: {str(extract_err)}")
+            logger.error(f"Response object structure: {response}")
+            return jsonify({"error": "Failed to extract Claude response"}), 500
+        
+        # Handle markdown code blocks if Claude wraps JSON
+        if reply_text.startswith("```"):
+            logger.info("Detected markdown code block, unwrapping")
+            reply_text = reply_text.split("```")[1]
+            if reply_text.startswith("json"):
+                reply_text = reply_text[4:]
+            reply_text = reply_text.strip()
+            logger.info(f"After unwrap (first 300 chars): {reply_text[:300]}")
+        
+        # Parse JSON
+        try:
+            parsed = json.loads(reply_text)
+            logger.info(f"JSON parsed successfully: keys={list(parsed.keys())}")
+        except json.JSONDecodeError as json_err:
+            logger.error(f"JSON_PARSE_FAILED: {str(json_err)}")
+            logger.error(f"Failed JSON text (first 500 chars): {reply_text[:500]}")
+            parsed = {
+                "message": "I'm having trouble processing that. Could you try again?",
+                "formation": formation,
+                "complete": False,
+                "suggestions": []
+            }
+            logger.info("Using fallback response")
+        
+        return jsonify({"success": True, **parsed}), 200
+        
+    except Exception as e:
+        logger.error(f"FORMATION_CHAT_UNCAUGHT_ERROR: {type(e).__name__}: {str(e)}")
+        import traceback
+        logger.error(f"Full traceback:\n{traceback.format_exc()}")
+        return jsonify({"error": f"Failed to process message: {str(e)}"}), 500
+
+
 

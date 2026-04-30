@@ -303,9 +303,14 @@ def chat():
         logger.error(f"Chat error: {e}")
         return jsonify({"success": False, "error": "Chat failed"}), 500
 
-@app.route("/health", methods=["GET"])
-def health():
-    return jsonify({"status": "ok"}), 200
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=False)
+@app.route("/api/reactor/token", methods=["GET"])
+def reactor_token():
+    """Return Reactor SDK token for archetypes visualization."""
+    try:
+        reactor_key = os.environ.get("REACTOR_API_KEY", "")
+        if not reactor_key:
+            return jsonify({"error": "Reactor API key not configured"}), 500
+        return jsonify({"token": reactor_key, "success": True})
+    except Exception as e:
+        logger.error(f"Reactor token error: {e}")
+        return jsonify({"error": "Failed to generate token"}), 500

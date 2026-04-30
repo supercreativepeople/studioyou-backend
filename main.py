@@ -63,7 +63,7 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from anthropic import Anthropic
 
 logging.basicConfig(level=logging.INFO)
@@ -318,6 +318,7 @@ def reactor_token():
     cat >> ~/Projects/studioyou-backend/main.py << 'EOF'
 
 @app.route("/api/admin/users", methods=["GET"])
+@cross_origin()
 def admin_list_users():
     """List all users in formations table."""
     try:
@@ -336,6 +337,7 @@ def admin_list_users():
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/admin/users/<email>", methods=["GET"])
+@cross_origin()
 def admin_view_user(email):
     """View full formation data for a user."""
     try:
@@ -353,6 +355,7 @@ def admin_view_user(email):
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/admin/users/<email>", methods=["DELETE"])
+@cross_origin()
 def admin_delete_user(email):
     """Delete a user and all their data."""
     try:

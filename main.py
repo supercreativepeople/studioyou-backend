@@ -315,7 +315,6 @@ def reactor_token():
         logger.error(f"Reactor token error: {e}")
         return jsonify({"error": "Failed to generate token"}), 500
 
-    cat >> ~/Projects/studioyou-backend/main.py << 'EOF'
 
 @app.route("/api/admin/users", methods=["GET"])
 @cross_origin()
@@ -323,35 +322,28 @@ def admin_list_users():
     """List all users in formations table."""
     try:
         response = supabase_client.table("formations").select(
-            "email, first_name, created_at, studio_name"
+            "email, studioName, createdAt"
         ).execute()
-        
-        users = response.data or []
-        return jsonify({
-            "success": True,
-            "count": len(users),
-            "users": users
-        })
+        return jsonify({"success": True, "users": response.data})
     except Exception as e:
         logger.error(f"List users error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/admin/users/<email>", methods=["GET"])
 @cross_origin()
-def admin_view_user(email):
-    """View full formation data for a user."""
+def admin_get_user(email):
+    """Get full formation data for a user."""
     try:
-        response = supabase_client.table("formations").select("*").eq(
-            "email", email
-        ).execute()
+        response = supabase_client.table("formations").select(
+            "*"
+        ).eq("email", email).execute()
         
-        user = response.data[0] if response.data else None
-        if not user:
+        if not response.data:
             return jsonify({"success": False, "error": "User not found"}), 404
         
-        return jsonify({"success": True, "user": user})
+        return jsonify({"success": True, "user": response.data[0]})
     except Exception as e:
-        logger.error(f"View user error: {e}")
+        logger.error(f"Get user error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/admin/users/<email>", methods=["DELETE"])
@@ -359,7 +351,7 @@ def admin_view_user(email):
 def admin_delete_user(email):
     """Delete a user and all their data."""
     try:
-        response = supabase_client.table("formations").delete().eq(
+        supabase_client.table("formations").delete().eq(
             "email", email
         ).execute()
         
@@ -373,5 +365,3 @@ def admin_delete_user(email):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)
-
-EOF

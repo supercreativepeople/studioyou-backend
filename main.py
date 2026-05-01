@@ -196,7 +196,7 @@ def formation_chat():
 
     try:
         response = anthropic_client.messages.create(
-            model="claude-opus-4-1",
+            model="claude-opus-4-20250514",
             max_tokens=600,
             system=system,
             messages=opening,
@@ -336,7 +336,7 @@ def chat():
 
     try:
         response = anthropic_client.messages.create(
-            model="claude-opus-4-1",
+            model="claude-opus-4-20250514",
             max_tokens=1000,
             messages=messages,
         )

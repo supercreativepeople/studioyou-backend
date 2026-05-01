@@ -206,8 +206,9 @@ def formation_chat():
         parsed = json.loads(clean)
         return jsonify({"success": True, **parsed})
     except Exception as e:
-        logger.error(f"Formation chat error: {e}")
-        return jsonify({"success": False, "error": "Failed to reach FutureYou."}), 500
+        error_msg = str(e)
+        logger.error(f"Formation chat error: {error_msg}")
+        return jsonify({"success": False, "error": "Failed to reach FutureYou.", "details": error_msg}), 500
 
 @app.route("/api/formation/verify", methods=["POST"])
 def formation_verify():
@@ -343,8 +344,9 @@ def chat():
         text = response.content[0].text
         return jsonify({"success": True, "message": text})
     except Exception as e:
-        logger.error(f"Chat error: {e}")
-        return jsonify({"success": False, "error": "Chat failed"}), 500
+        error_msg = str(e)
+        logger.error(f"Chat error: {error_msg}")
+        return jsonify({"success": False, "error": "Chat failed", "details": error_msg}), 500
 
 @app.route("/api/reactor/token", methods=["GET"])
 def reactor_token():

@@ -181,8 +181,9 @@ def send_magic_link_email(email, token, first_name="Creator", studio_name="Your 
 # ── ROUTES ────────────────────────────────────────────────────────────────────
 
 @app.route("/api/formation/chat", methods=["POST", "OPTIONS"])
+@app.route("/api/formation/chat", methods=["POST", "OPTIONS"])
 def formation_chat():
-    """Pre-login FY formation conversation. No auth required. Uses Anthropic SDK."""
+    """Pre-login FY formation conversation. Handles skip logic and closing message."""
     if request.method == "OPTIONS":
         return jsonify({"ok": True}), 200
 
@@ -190,7 +191,50 @@ def formation_chat():
     messages = data.get("messages", [])
     formation = data.get("formation", {})
 
-    system = """You are FutureYou — the career arc navigator for StudioYou. You guide creators through formation: understanding their craft, platforms, experience, origins, 1-year goals, and biggest fears. Be direct. Ask one clear question at a time. Return ONLY valid JSON: {"message": "...", "formation": {...}, "complete": false, "suggestions": [...]}"""
+    system = """You are FutureYou — the career arc navigator for StudioYou. You guide creators through formation by asking about their craft, platforms, experience, origins, 1-year goals, and biggest fears.
+
+CRITICAL: You must support the skip workflow:
+- Users can skip any question by clicking "Skip"
+- When you see [User skipped this question], acknowledge the skip and move to the next question
+- Never force an answer — skipping is a complete choice
+- No answer is wrong. Skip any question you're not ready to answer.
+
+OPENING MESSAGE (on first call with "Start the formation conversation."):
+Start with a warm greeting that includes: "No answer is wrong. Skip any question you're not ready to answer. We'll circle back to skipped questions later."
+
+Be direct. Ask one clear question at a time. 
+
+FORMATION FIELDS (6 total):
+1. contentTypes — What do you make?
+2. platforms — Where do you post?
+3. experience — How long have you been creating?
+4. origin — What's your origin story or biggest influence?
+5. goal1yr — Where do you want to be in 1 year?
+6. biggestFear — What's your biggest fear or blocker?
+
+CLOSING MESSAGE (when formation is complete OR all fields are skipped):
+When you've asked about or received input on all 6 fields (including skips), respond with a closing message like:
+"[Creator name], we have enough to get started. We'll circle back to the skipped questions later. Time to build your studio."
+
+Then set "complete": true.
+
+RESPONSE FORMAT (ALWAYS valid JSON):
+{
+  "message": "Your response text here",
+  "formation": {
+    "contentTypes": "value or null if skipped",
+    "platforms": "value or null if skipped",
+    "experience": "value or null if skipped",
+    "origin": "value or null if skipped",
+    "goal1yr": "value or null if skipped",
+    "biggestFear": "value or null if skipped",
+    "studioName": "optional, extracted from conversation"
+  },
+  "complete": false,
+  "suggestions": ["option1", "option2", "option3"]
+}
+
+When complete, set "complete": true and FY will transition user to dashboard."""
 
     opening = messages if messages else [{"role": "user", "content": "Start the formation conversation."}]
 
@@ -210,10 +254,6 @@ def formation_chat():
         logger.error(f"Formation chat error: {error_msg}")
         return jsonify({"success": False, "error": "Failed to reach FutureYou.", "details": error_msg}), 500
 
-@app.route("/api/formation/verify", methods=["POST"])
-def formation_verify():
-    """
-    Email capture + magic link generation.
     Input: {email, first_name, last_name, studio_name, formation: {...}}
     Output: {success: true, message: "Check your email"}
     """

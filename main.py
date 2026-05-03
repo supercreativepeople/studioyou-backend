@@ -496,5 +496,60 @@ def health():
     """Health check endpoint."""
     return jsonify({"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()})
 
+@app.route('/api/formation/welcome', methods=['POST'])
+def formation_welcome():
+    """Generate personalized welcome message for new creator onboarding."""
+    try:
+        data = request.get_json()
+        responses = data.get('responses', [])
+        
+        while len(responses) < 6:
+            responses.append('')
+        
+        system_prompt = """You are welcoming a new creator into StudioYou.
+Generate ONE brief welcome message that makes them feel like they just unlocked something special.
+Choose randomly from these three styles:
+
+STYLE A: "Congratulations — you're about to build your creative studio on your terms. No more juggling tools. No more wondering if you're on the right path. Just you, your ideas, and a partner who gets what you're building. Let's go."
+
+STYLE B: "Welcome to your studio. You're done managing the chaos. From here on, it's all creation. Let's build."
+
+STYLE C: "You're building something. No gatekeepers. No learning curves. Just the tools and guidance you need to get it from your head to the world. Let's go."
+
+Keep under 50 words. No features, no pitch. Just: You're in. Let's go.
+Return ONLY the message text."""
+        
+        user_message = f"""User responses:
+1: {responses[0] if responses[0] else '(no response)'}
+2: {responses[1] if responses[1] else '(no response)'}
+3: {responses[2] if responses[2] else '(no response)'}
+4: {responses[3] if responses[3] else '(no response)'}
+5: {responses[4] if responses[4] else '(no response)'}
+6: {responses[5] if responses[5] else '(no response)'}"""
+        
+        response = anthropic_client.messages.create(
+            model="claude-opus-4-20250514",
+            max_tokens=100,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_message}]
+        )
+        
+        welcome_text = response.content[0].text.strip()
+        
+        return jsonify({
+            "success": True,
+            "message": welcome_text
+        })
+    
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f"Welcome message generation error: {error_msg}")
+        return jsonify({
+            "success": False,
+            "error": "Failed to generate welcome message",
+            "details": error_msg
+        }), 500
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)

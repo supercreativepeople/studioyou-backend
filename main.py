@@ -1,7 +1,7 @@
 """
 ╔════════════════════════════════════════════════════════════════════════════╗
 ║ FILE: main.py                                                              ║
-║ VERSION: Phase 10.25 — Magic Link System Implementation                    ║
+║ VERSION: Phase 10.26 — Admin Panel Fix                                        ║
 ║ CREATED: April 29, 2026                                                    ║
 ║ MODIFIED: April 30, 2026 — 11:30 PM PT                                     ║
 ║ STATUS: Ready for Deployment with Magic Link Endpoints                     ║

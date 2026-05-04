@@ -459,6 +459,10 @@ def reactor_token():
 def admin_list_users():
     """List all users in formations table."""
     try:
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            logger.error("Missing Supabase configuration")
+            return jsonify({"success": False, "error": "Supabase not configured"}), 500
+        
         users = sb_get("formations", None)
         return jsonify({"success": True, "users": users, "count": len(users) if users else 0})
     except Exception as e:

@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Build timestamp - force rebuild (Apr 24, 2026 12:01 PM)
+# Build timestamp - force rebuild (May 4, 2026 03:50 PM)
 RUN echo "Build time: $(date)"
 
 # Copy requirements first (before code) so changes to code don't invalidate pip cache

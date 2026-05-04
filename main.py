@@ -181,7 +181,6 @@ def send_magic_link_email(email, token, first_name="Creator", studio_name="Your 
 # ── ROUTES ────────────────────────────────────────────────────────────────────
 
 @app.route("/api/formation/chat", methods=["POST", "OPTIONS"])
-@app.route("/api/formation/chat", methods=["POST", "OPTIONS"])
 def formation_chat():
     """Pre-login FY formation conversation. Handles skip logic and closing message."""
     if request.method == "OPTIONS":
@@ -251,43 +250,6 @@ Set complete:true ONLY after Q6 is asked/answered/skipped.
 
     """
 
-    opening = messages if messages elseopening = messages if messages else [{"role": "user", "content": "Start the formation conversation."}]
-
-    try:
-        response = anthropic_client.messages.create(
-            model="claude-opus-4-20250514",
-            max_tokens=600,
-            system=system,
-            messages=opening,
-        )
-        text = response.content[0].text
-        clean = text.replace("```json", "").replace("```", "").strip()
-        parsed = json.loads(clean)
-        return jsonify({"success": True, **parsed})
-    except Exception as e:
-        error_msg = str(e)
-        logger.error(f"Formation chat error: {error_msg}")
-        return jsonify({"success": False, "error": "Failed to reach FutureYou.", "details": error_msg}), 500
-Then set "complete": true.
-
-RESPONSE FORMAT (ALWAYS valid JSON):
-{
-  "message": "Your response text here",
-  "formation": {
-    "contentTypes": "value or null if skipped",
-    "platforms": "value or null if skipped",
-    "experience": "value or null if skipped",
-    "origin": "value or null if skipped",
-    "goal1yr": "value or null if skipped",
-    "biggestFear": "value or null if skipped",
-    "studioName": "optional, extracted from conversation"
-  },
-  "complete": false,
-  "suggestions": ["option1", "option2", "option3"]
-}
-
-When complete, set "complete": true and FY will transition user to dashboard."""
-
     opening = messages if messages else [{"role": "user", "content": "Start the formation conversation."}]
 
     try:
@@ -306,9 +268,9 @@ When complete, set "complete": true and FY will transition user to dashboard."""
         logger.error(f"Formation chat error: {error_msg}")
         return jsonify({"success": False, "error": "Failed to reach FutureYou.", "details": error_msg}), 500
 
-    Input: {email, first_name, last_name, studio_name, formation: {...}}
-    Output: {success: true, message: "Check your email"}
-    """
+@app.route("/api/formation/verify", methods=["POST"])
+@cross_origin()
+def formation_verify():
     data = request.get_json()
     email = data.get("email", "").strip().lower()
     first_name = data.get("first_name", "").strip()

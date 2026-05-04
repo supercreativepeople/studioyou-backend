@@ -460,7 +460,7 @@ def admin_list_users():
     """List all users in formations table."""
     try:
         users = sb_get("formations", None)
-        return jsonify({"success": True, "users": users})
+        return jsonify({"success": True, "users": users, "count": len(users) if users else 0})
     except Exception as e:
         logger.error(f"List users error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500

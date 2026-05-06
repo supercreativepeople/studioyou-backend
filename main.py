@@ -615,5 +615,204 @@ CRITICAL: Do not use mothering language. Do not be soft. Be the CSO who sees the
         print(f"Briefing endpoint error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+def identify_archetype(q1_creative_focus):
+    """
+    Maps Q1 answer to one of 6 archetypes.
+    Returns: 'musician' | 'filmmaker' | 'documentarian' | 'content_creator' | 'podcaster' | 'influencer'
+    """
+    q1_lower = q1_creative_focus.lower() if q1_creative_focus else ""
+    
+    if any(word in q1_lower for word in ['music', 'song', 'beat', 'track', 'album', 'producer', 'audio production']):
+        return 'musician'
+    elif any(word in q1_lower for word in ['film', 'cinema', 'short', 'feature', 'cinematic', 'video production']):
+        return 'filmmaker'
+    elif any(word in q1_lower for word in ['documentary', 'doc', 'investigation', 'research', 'investigative']):
+        return 'documentarian'
+    elif any(word in q1_lower for word in ['youtube', 'tiktok', 'short-form', 'vlog', 'instagram', 'reels']):
+        return 'content_creator'
+    elif any(word in q1_lower for word in ['podcast', 'audio', 'episode', 'series', 'interview', 'show']):
+        return 'podcaster'
+    elif any(word in q1_lower for word in ['personal brand', 'influence', 'follower', 'audience', 'authority', 'brand']):
+        return 'influencer'
+    else:
+        return 'content_creator'
+
+def determine_phase(q7, q8, q9):
+    """
+    Maps Q7-9 (timeline vision) to phase.
+    Returns: 'validation' | 'traction' | 'leverage' | 'empire'
+    """
+    vision_combined = f"{q7} {q8} {q9}".lower() if q7 and q8 and q9 else ""
+    
+    if any(word in vision_combined for word in ['empire', 'studio', 'multiple', 'scale', 'business', 'team', 'employ']):
+        return 'empire'
+    elif any(word in vision_combined for word in ['scale', '1m', 'million', 'grow', 'audience', 'systems', 'delegate']):
+        return 'leverage'
+    elif any(word in vision_combined for word in ['100k', 'channel', 'launch', 'audience', 'subscribers', 'followers']):
+        return 'traction'
+    else:
+        return 'validation'
+
+@app.route('/api/formation/initialize', methods=['POST', 'OPTIONS'])
+def formation_initialize():
+    """
+    One-shot initialization: 12 answers + 3-pill context → First Words
+    
+    Input: {
+      "first_name": "...",
+      "last_name": "...",
+      "studio_name": "...",
+      "email": "...",
+      "arsenal": "concept|ip|footage|audience",
+      "roadblock": "assets|post|distribution|capital",
+      "horizon": "single|channel|studio",
+      "briefing_answers": {
+        "q1": "...", "q2": "...", ..., "q12": "..."
+      }
+    }
+    
+    Output: {
+      "success": true,
+      "first_words": "Here's what I know about you...",
+      "archetype": "musician|filmmaker|...",
+      "phase": "validation|traction|leverage|empire"
+    }
+    """
+    if request.method == 'OPTIONS':
+        return '', 204
+    
+    try:
+        data = request.json
+        
+        # Extract input data
+        first_name = data.get('first_name', '').strip()
+        last_name = data.get('last_name', '').strip()
+        studio_name = data.get('studio_name', '').strip()
+        email = data.get('email', '').strip()
+        arsenal = data.get('arsenal')
+        roadblock = data.get('roadblock')
+        horizon = data.get('horizon')
+        briefing_answers = data.get('briefing_answers', {})
+        
+        # Validate required fields
+        if not all([first_name, studio_name, arsenal, roadblock, horizon, briefing_answers]):
+            return jsonify({'error': 'Incomplete initialization payload'}), 400
+        
+        # 1. Identify archetype
+        q1_creative_focus = briefing_answers.get('q1', '')
+        archetype = identify_archetype(q1_creative_focus)
+        
+        # 2. Determine phase
+        q7 = briefing_answers.get('q7', '')
+        q8 = briefing_answers.get('q8', '')
+        q9 = briefing_answers.get('q9', '')
+        phase = determine_phase(q7, q8, q9)
+        
+        # 3. Build FutureYou system prompt with knowledge foundation
+        system_prompt = """You are FutureYou, a Chief Strategy Officer. You have just completed a 12-question briefing interview with a solo creator. Your job now is to give them back what you heard — clear, direct, informed by 2025 creator economy reality.
+
+CORE INTELLIGENCE (2025 Creator Economics):
+- Creators who own their audience (email/community) are 2.7x more likely to earn $31k+ than fully platform-dependent creators
+- Platform risk is the #1 fear — one algorithm change can wipe out 50% of traffic overnight
+- 49% of top earners generated their first revenue within 3 months
+- Burnout is a function of system failure, not motivation failure
+- Real success requires 3+ revenue streams, not platform ad splits
+
+ARCHETYPE CONTEXT:
+- Musician: Sync licensing + streaming (bottleneck: owned audience)
+- Filmmaker: Licensing + distribution (bottleneck: audience + recurring revenue)
+- Documentarian: Authority + audience (bottleneck: monetizing expertise)
+- Content Creator: Sponsorships + products (bottleneck: platform independence)
+- Podcaster: Ad reads + sponsorships (bottleneck: production delegation)
+- Influencer: Brand partnerships + products (bottleneck: moving beyond sponsorships)
+
+PHASE REALITY:
+- Validation (Weeks 1-12): Proof that audience exists + first revenue signal
+- Traction (Months 3-12): Owned channels + 1-3 revenue streams + 1K-10K audience
+- Leverage (Months 6-24): Systems + delegation + multi-stream revenue
+- Empire (Year 2+): IP diversification + scaled business + team
+
+YOUR JOB NOW:
+1. Reflect back what you heard (2-3 specific facts from their 12 answers)
+2. Identify the gap (what's blocking progress?)
+3. State their phase (which timeline are they actually in?)
+4. Recommend ONE building to open first
+5. State how you'll work with them (reference their truth style, breakthrough mechanism, what to remember)
+6. Ask ONE clarifying question to deepen understanding
+
+TONE: Direct peer who's been listening. No compliments, no platitudes, no filler. No emojis, no exclamation marks. Just facts and next moves.
+
+CRITICAL CONSTRAINTS:
+- One paragraph, 4-5 sentences max (60-100 words)
+- Reference their specific answers, not generalities
+- One building only (not a list)
+- One clarifying question only
+- No hedging language ("maybe", "might", "could")
+- Never say they're wrong; show gaps through observation"""
+        
+        # 4. Build user message with all briefing data
+        user_message = f"""Generate FutureYou's First Words initialization for:
+
+Name: {first_name} {last_name}
+Studio: {studio_name}
+Archetype: {archetype}
+Phase: {phase}
+Arsenal: {arsenal}
+Roadblock: {roadblock}
+Horizon: {horizon}
+
+Briefing Answers:
+Q1 (Creative Focus): {briefing_answers.get('q1', '')}
+Q2 (Audience Reach): {briefing_answers.get('q2', '')}
+Q3 (Experience): {briefing_answers.get('q3', '')}
+Q4 (Biggest Win): {briefing_answers.get('q4', '')}
+Q5 (Retry Differently): {briefing_answers.get('q5', '')}
+Q6 (Influences): {briefing_answers.get('q6', '')}
+Q7 (1-Year Vision): {briefing_answers.get('q7', '')}
+Q8 (5-Year Vision): {briefing_answers.get('q8', '')}
+Q9 (10-Year Vision): {briefing_answers.get('q9', '')}
+Q10 (Truth Style): {briefing_answers.get('q10', '')}
+Q11 (Breakthrough Mechanism): {briefing_answers.get('q11', '')}
+Q12 (Remember About Me): {briefing_answers.get('q12', '')}
+
+Start with: "Here's what I know about you and where you want to go so far:"
+Then give First Words response (4-5 sentences max)."""
+        
+        # 5. Call Claude
+        logger.info(f"[formation_initialize] Calling Claude for {first_name} ({archetype}, {phase})")
+        message = anthropic_client.messages.create(
+            model="claude-opus-4-20250805",
+            max_tokens=300,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_message}]
+        )
+        
+        first_words = message.content[0].text
+        logger.info(f"[formation_initialize] Generated first_words: {first_words[:100]}...")
+        
+        # 6. Store in Supabase
+        if email:
+            try:
+                sb_patch('formations', {'email': f"eq.{email}"}, {
+                    'first_words': first_words,
+                    'archetype': archetype,
+                    'phase': phase,
+                    'initialized_at': datetime.now(timezone.utc).isoformat()
+                })
+                logger.info(f"[formation_initialize] Stored for {email}")
+            except Exception as e:
+                logger.warning(f"[formation_initialize] Supabase storage failed: {e}")
+        
+        return jsonify({
+            'success': True,
+            'first_words': first_words,
+            'archetype': archetype,
+            'phase': phase
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"[formation_initialize] Error: {e}")
+        return jsonify({'error': 'Initialization failed'}), 500
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)

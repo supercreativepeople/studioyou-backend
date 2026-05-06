@@ -517,5 +517,103 @@ Return ONLY the message text."""
         }), 500
 
 
+
+@app.route('/api/formation/briefing', methods=['POST', 'OPTIONS'])
+def formation_briefing():
+    """
+    Receives briefing payload from The Briefing (3-step UI).
+    Returns aggressive, high-impact 'First Words' directive.
+    
+    Payload: {
+      "studioName": "My Studio Name",
+      "arsenal": "concept|ip|footage|audience",
+      "roadblock": "assets|post|distribution|capital",
+      "horizon": "single|channel|studio"
+    }
+    """
+    if request.method == 'OPTIONS':
+        return '', 204
+    
+    try:
+        data = request.json
+        studio_name = data.get('studioName', 'Your Studio').strip()
+        arsenal = data.get('arsenal')
+        roadblock = data.get('roadblock')
+        horizon = data.get('horizon')
+
+        if not all([arsenal, roadblock, horizon]):
+            return jsonify({'error': 'Incomplete briefing payload'}), 400
+
+        # Translate codes to readable text
+        arsenal_text = {
+            'concept': 'A Raw Concept',
+            'ip': 'Existing IP',
+            'footage': 'Raw Footage',
+            'audience': 'An Audience'
+        }.get(arsenal, arsenal)
+        
+        roadblock_text = {
+            'assets': 'Asset Generation',
+            'post': 'Post & Edit',
+            'distribution': 'Distribution',
+            'capital': 'Capital'
+        }.get(roadblock, roadblock)
+        
+        horizon_text = {
+            'single': 'Single Project Launch',
+            'channel': 'Channel Growth',
+            'studio': 'Multi-Vertical Studio'
+        }.get(horizon, horizon)
+
+        # CSO System Prompt
+        cso_system_prompt = f"""You are FutureYou, a Chief Strategy Officer. You are fast, precise, and sovereign. You are an anti-gatekeeper architect. You are NOT a therapist.
+
+Your role: Based on the user's Briefing payload, return a single, aggressive, high-impact "First Words" directive recommending which building they should open first to achieve their goal.
+
+Briefing Summary:
+- Studio: {studio_name}
+- What we're weaponizing: {arsenal_text}
+- Biggest roadblock: {roadblock_text}
+- Scale of empire: {horizon_text}
+
+Generate a response that:
+1. Is 2-3 sentences max
+2. Names the specific first building they should open (from: Ideation, Development, Production, Post-Production, Distribution, Monetization, Branding, Audience, Licensing, Studio Tools, Capital, Analytics)
+3. Is commanding, sovereign, and anti-gatekeeper in tone
+4. Addresses their specific roadblock
+5. Example tone: "Initialization complete. You have the concept, but production is your roadblock. I recommend we hit Ideation and Studio first to turn that idea into reality. The gatekeepers are obsolete. You own the lot. Where are we going?"
+
+CRITICAL: Do not use mothering language. Do not be soft. Be the CSO who sees the roadblock and cuts straight to the solution."""
+
+        # Call Claude
+        message = client.messages.create(
+            model="claude-opus-4-20250805",
+            max_tokens=300,
+            system=cso_system_prompt,
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"Give me my First Words directive for {studio_name}."
+                }
+            ]
+        )
+
+        first_words = message.content[0].text
+
+        return jsonify({
+            'success': True,
+            'studioName': studio_name,
+            'briefing': {
+                'arsenal': arsenal,
+                'roadblock': roadblock,
+                'horizon': horizon
+            },
+            'firstWords': first_words
+        }), 200
+
+    except Exception as e:
+        print(f"Briefing endpoint error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)

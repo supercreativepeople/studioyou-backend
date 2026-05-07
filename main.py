@@ -711,6 +711,20 @@ def debug_echo_payload():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/api/debug/env', methods=['GET'])
+def debug_env():
+    """Debug: Print env vars (for development only)"""
+    return jsonify({
+        "SUPABASE_URL": SUPABASE_URL[:20] + "..." if SUPABASE_URL else "MISSING",
+        "SUPABASE_KEY": SUPABASE_KEY[:20] + "..." if SUPABASE_KEY else "MISSING",
+        "ANTHROPIC_API_KEY": ANTHROPIC_API_KEY[:20] + "..." if ANTHROPIC_API_KEY else "MISSING",
+        "RESEND_API_KEY": RESEND_API_KEY[:20] + "..." if RESEND_API_KEY else "MISSING",
+        "SY_SECRET_KEY": SECRET_KEY[:20] + "..." if SECRET_KEY else "MISSING",
+        "FRONTEND_URL": FRONTEND_URL,
+        "REACTOR_API_KEY": REACTOR_API_KEY[:20] + "..." if REACTOR_API_KEY else "MISSING",
+    })
+
 @app.route('/api/formation/initialize', methods=['POST', 'OPTIONS'])
 def formation_initialize():
     """

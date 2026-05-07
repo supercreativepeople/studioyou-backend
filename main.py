@@ -811,8 +811,11 @@ Then give First Words response (4-5 sentences max)."""
         }), 200
         
     except Exception as e:
-        logger.error(f"[formation_initialize] Error: {e}")
-        return jsonify({'error': 'Initialization failed'}), 500
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.error(f"[formation_initialize] Error: {e}\nTraceback:\n{error_trace}")
+        print(f"[ERROR] formation_initialize: {e}\n{error_trace}", flush=True)
+        return jsonify({'error': f'Initialization failed: {str(e)}'}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)

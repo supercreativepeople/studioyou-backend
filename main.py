@@ -481,7 +481,7 @@ def debug_claude_test():
     """Simple test: call Claude and return the raw response."""
     try:
         message = anthropic_client.messages.create(
-            model="claude-opus-4-20250805",
+            model="claude-opus-4-20250514",
             max_tokens=100,
             messages=[{"role": "user", "content": "Say 'hello' in one word."}]
         )
@@ -627,7 +627,7 @@ CRITICAL: Do not use mothering language. Do not be soft. Be the CSO who sees the
 
         # Call Claude
         message = client.messages.create(
-            model="claude-opus-4-20250805",
+            model="claude-opus-4-20250514",
             max_tokens=300,
             system=cso_system_prompt,
             messages=[
@@ -859,7 +859,7 @@ Then give First Words response (4-5 sentences max)."""
         # 5. Call Claude
         print(f"[STEP 7] anthropic_client={anthropic_client}, type={type(anthropic_client)}", flush=True)
         message = anthropic_client.messages.create(
-            model="claude-opus-4-20250805",
+            model="claude-opus-4-20250514",
             max_tokens=300,
             system=system_prompt,
             messages=[{"role": "user", "content": user_message}]

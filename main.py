@@ -462,6 +462,20 @@ def health():
     """Health check endpoint."""
     return jsonify({"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()})
 
+@app.route("/api/debug/anthropic", methods=["GET"])
+def debug_anthropic():
+    """Check if Anthropic client is initialized."""
+    try:
+        api_key = os.getenv('ANTHROPIC_API_KEY')
+        return jsonify({
+            'anthropic_initialized': anthropic_client is not None,
+            'api_key_set': bool(api_key),
+            'api_key_first_20': api_key[:20] if api_key else None,
+            'model_available': True
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'anthropic_client': str(anthropic_client)}), 500
+
 @app.route('/api/formation/welcome', methods=['POST'])
 def formation_welcome():
     """Generate personalized welcome message for new creator onboarding."""

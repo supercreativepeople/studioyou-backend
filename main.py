@@ -751,20 +751,24 @@ def formation_initialize():
         roadblock = data.get('roadblock')
         horizon = data.get('horizon')
         briefing_answers = data.get('briefing_answers', {})
+        print(f"[STEP 1] Data extracted: {first_name=}, {studio_name=}", flush=True)
         
         # Validate required fields
         if not all([first_name, studio_name, arsenal, roadblock, horizon, briefing_answers]):
             return jsonify({'error': 'Incomplete initialization payload'}), 400
+        print(f"[STEP 2] Validation passed", flush=True)
         
         # 1. Identify archetype
         q1_creative_focus = briefing_answers.get('q1', '')
         archetype = identify_archetype(q1_creative_focus)
+        print(f"[STEP 3] Archetype={archetype}", flush=True)
         
         # 2. Determine phase
         q7 = briefing_answers.get('q7', '')
         q8 = briefing_answers.get('q8', '')
         q9 = briefing_answers.get('q9', '')
         phase = determine_phase(q7, q8, q9)
+        print(f"[STEP 4] Phase={phase}", flush=True)
         
         # 3. Build FutureYou system prompt with knowledge foundation
         system_prompt = """You are FutureYou, a Chief Strategy Officer. You have just completed a 12-question briefing interview with a solo creator. Your job now is to give them back what you heard — clear, direct, informed by 2025 creator economy reality.
@@ -807,6 +811,7 @@ CRITICAL CONSTRAINTS:
 - One clarifying question only
 - No hedging language ("maybe", "might", "could")
 - Never say they're wrong; show gaps through observation"""
+        print(f"[STEP 5] System prompt created", flush=True)
         
         # 4. Build user message with all briefing data
         user_message = f"""Generate FutureYou's First Words initialization for:
@@ -835,18 +840,20 @@ Q12 (Remember About Me): {briefing_answers.get('q12', '')}
 
 Start with: "Here's what I know about you and where you want to go so far:"
 Then give First Words response (4-5 sentences max)."""
+        print(f"[STEP 6] User message created", flush=True)
         
         # 5. Call Claude
-        logger.info(f"[formation_initialize] Calling Claude for {first_name} ({archetype}, {phase})")
+        print(f"[STEP 7] anthropic_client={anthropic_client}, type={type(anthropic_client)}", flush=True)
         message = anthropic_client.messages.create(
             model="claude-opus-4-20250805",
             max_tokens=300,
             system=system_prompt,
             messages=[{"role": "user", "content": user_message}]
         )
+        print(f"[STEP 8] Claude call succeeded", flush=True)
         
         first_words = message.content[0].text
-        logger.info(f"[formation_initialize] Generated first_words: {first_words[:100]}...")
+        print(f"[STEP 9] first_words extracted: {first_words[:50]}...", flush=True)
         
         # 6. Store in Supabase
         if email:
@@ -857,9 +864,9 @@ Then give First Words response (4-5 sentences max)."""
                     'phase': phase,
                     'initialized_at': datetime.now(timezone.utc).isoformat()
                 })
-                logger.info(f"[formation_initialize] Stored for {email}")
+                print(f"[STEP 10] Stored in Supabase", flush=True)
             except Exception as e:
-                logger.warning(f"[formation_initialize] Supabase storage failed: {e}")
+                print(f"[SUPABASE WARN] {e}", flush=True)
         
         return jsonify({
             'success': True,

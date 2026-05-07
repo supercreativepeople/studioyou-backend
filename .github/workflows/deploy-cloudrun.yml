@@ -43,8 +43,8 @@ jobs:
             SUPABASE_URL=${{ secrets.SUPABASE_URL }},\
             SUPABASE_KEY=${{ secrets.SUPABASE_KEY }},\
             RESEND_API_KEY=${{ secrets.RESEND_API_KEY }},\
-            SY_SECRET_KEY=${{ secrets.SY_SECRET_KEY }},\
-            FRONTEND_URL=${{ secrets.FRONTEND_URL }},\
+            SY_SECRET_KEY=${{ secrets.SECRET_KEY }},\
+            FRONTEND_URL=https://studioyou.app,\
             REACTOR_API_KEY=${{ secrets.REACTOR_API_KEY }}"
 
       - name: Verify deployment

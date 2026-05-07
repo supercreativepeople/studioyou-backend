@@ -476,6 +476,32 @@ def debug_anthropic():
     except Exception as e:
         return jsonify({'error': str(e), 'anthropic_client': str(anthropic_client)}), 500
 
+@app.route("/api/debug/claude-test", methods=["POST"])
+def debug_claude_test():
+    """Simple test: call Claude and return the raw response."""
+    try:
+        message = anthropic_client.messages.create(
+            model="claude-opus-4-20250805",
+            max_tokens=100,
+            messages=[{"role": "user", "content": "Say 'hello' in one word."}]
+        )
+        return jsonify({
+            'success': True,
+            'response': message.content[0].text,
+            'model': message.model,
+            'usage': {
+                'input_tokens': message.usage.input_tokens,
+                'output_tokens': message.usage.output_tokens
+            }
+        }), 200
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
+
 @app.route('/api/formation/welcome', methods=['POST'])
 def formation_welcome():
     """Generate personalized welcome message for new creator onboarding."""

@@ -693,6 +693,24 @@ def determine_phase(q7, q8, q9):
     else:
         return 'validation'
 
+@app.route("/api/debug/echo-payload", methods=["POST", "OPTIONS"])
+def debug_echo_payload():
+    """Echo back the request payload for debugging."""
+    if request.method == 'OPTIONS':
+        return '', 204
+    
+    try:
+        data = request.json
+        return jsonify({
+            'received': True,
+            'payload': data,
+            'first_name': data.get('first_name'),
+            'briefing_answers_keys': list(data.get('briefing_answers', {}).keys()),
+            'briefing_answers_count': len(data.get('briefing_answers', {}))
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/formation/initialize', methods=['POST', 'OPTIONS'])
 def formation_initialize():
     """

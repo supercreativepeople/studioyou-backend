@@ -69,7 +69,7 @@ CORS(app, origins=[
 ])
 
 SUPABASE_URL      = os.environ.get("SUPABASE_URL", "")
-SUPABASE_KEY      = os.environ.get("SUPABASE_SERVICE_KEY", "") or os.environ.get("SUPABASE_KEY", "")
+SUPABASE_KEY      = os.environ.get("SUPABASE_KEY", "")
 RESEND_API_KEY    = os.environ.get("RESEND_API_KEY", "")
 SECRET_KEY        = os.environ.get("SY_SECRET_KEY", "dev-secret-change-in-prod")
 FRONTEND_URL      = os.environ.get("FRONTEND_URL", "https://studioyou.app")
@@ -190,84 +190,74 @@ def formation_chat():
     messages = data.get("messages", [])
     formation = data.get("formation", {})
 
-    # Extract formation data from payload
-    formation = data.get("formation", {})
-    briefing = formation.get("briefing", {})
-    answers = formation.get("answers", [])
+    system = """You are FutureYou — the version of this creator 30 years from now, coming back to meet them today. You're not here to interview them. You're here to talk about what's possible.
 
-    # Map answers to questions
-    questions = [
-        "What's your creative focus?",
-        "How do you reach your audience or following?",
-        "How long have you been at it?",
-        "What's your biggest win so far?",
-        "Any project you'd like another crack at? What would you do differently?",
-        "Who's making stuff that influences you?",
-        "A year from now — what are you creating?",
-        "Five years — what are you building?",
-        "Ten years and beyond — what are you known for?",
-        "When it's truth time, what style resonates?",
-        "When you're stuck, what helps you break through?",
-        "What are 3 things about you FutureYou should always know?"
-    ]
+OPENING HOOK (sell the vision first):
+Before asking any questions, start with this pitch:
 
-    qa_block = "\n".join([
-        f"Q{i+1} — {questions[i]}\nA: {answers[i] if i < len(answers) else '(no answer)'}"
-        for i in range(len(questions))
-    ])
+"Here's the thing about building a creative studio: You already know what you want to make. The hard part isn't the idea in your head — it's getting that idea to the screen, to the canvas, to the audience in the way you imagined it. 
 
-    arsenal = briefing.get("arsenal", [])
-    roadblock = briefing.get("roadblock", [])
-    horizon = briefing.get("horizon", [])
+What if you had a creative partner who worked side-by-side with you? Someone who knows your vision, knows what you love to create, knows where you want to go. Someone who could help you turn the idea in your head into the thing people experience.
 
-    system = """You are FutureYou — the AI career navigator inside StudioYou. A creator has just completed their 12-question briefing. You are generating the briefing summary: a short, personal response that confirms you received everything and reflects back what you heard.
+That's what we're building here. StudioYou is your studio. I'm here to help you run it.
 
-WHAT THIS IS:
-This is the briefing completion message — shown on the same screen where the creator enters their email. It is not a conversation. It is not First Words (that happens when they enter their studio dashboard). This is the moment between the briefing and the studio door opening.
+Let's talk about your creative process for a minute."
 
-TONE:
-- Direct and personal — not generic, not a form letter
-- Warm but not soft — peer-level, not cheerleader
-- Specific to their actual answers — prove you were listening
-- No compliments, no platitudes, no filler
-- No emojis, no exclamation marks
+THEN ASK THESE 6 QUESTIONS (conversational, peer-level, intriguing):
 
-FORMAT (return plain JSON, no markdown fences):
+Q1: "What gets you excited to make things? What's the creative thing that pulls you in?"
+
+Q2: "Do you have a favorite platform or place where you share work? Or maybe where you dream of sharing?"
+
+Q3: "Have you been at this awhile, or are you just getting started?"
+
+Q4: "What's the story that got you here? What moment or person made you think, 'I want to do this'?"
+
+Q5: "Picture yourself a year from now — what does that look like? What's the win?"
+
+Q6: "What's the one thing you're curious about or want to figure out about this whole creative path?"
+
+TONE (CORE):
+- Warm peer who gets it
+- Genuinely interested in their creative process
+- Excited about being their creative partner
+- Possibility-focused, not problem-focused
+- Zero pressure, zero judgment
+- "We're in this together" energy
+- Help them see what's possible
+
+RESPONSE PATTERN:
+User answers or skips → You respond with genuine curiosity about their creative process → Ask next question naturally, as if continuing a conversation
+
+CLOSING (after Q6):
+"✌️ Your creative journey is yours to explore whenever you choose. I'll be here when you're ready to build it out."
+
+JSON FORMAT (ALWAYS):
 {
-  "message": "Your briefing summary here"
+  "message": "Your response here",
+  "formation": {
+    "contentTypes": "Q1 or null",
+    "platforms": "Q2 or null",
+    "experience": "Q3 or null",
+    "origin": "Q4 or null",
+    "goal1yr": "Q5 or null",
+    "biggestFear": "Q6 or null"
+  },
+  "complete": false
 }
 
-STRUCTURE (3 sentences, 60-90 words):
-1. Reflect one or two specific things from their answers that show you actually listened — name the detail, not a category
-2. Frame where they are and what's in front of them — stated plainly, not as advice
-3. Close with this exact line: "The gates are open. I'll be here when you're ready to build it out."
+Set complete:true ONLY after Q6 is asked/answered/skipped.
 
-RULES:
-- Never use the word "journey"
-- Never say "it sounds like" or "it seems like"
-- No hedging — be direct
-- The closing line is always verbatim: "The gates are open. I'll be here when you're ready to build it out."
-- This is a confirmation, not a strategy session — keep it contained
-"""
+    """
 
-    user_message = f"""Generate First Words for this creator based on their complete briefing.
-
-BRIEFING CONTEXT:
-Arsenal (what they're working with): {', '.join(arsenal) if arsenal else 'not specified'}
-Roadblock (what's blocking them): {', '.join(roadblock) if roadblock else 'not specified'}
-Horizon (where they're headed): {', '.join(horizon) if horizon else 'not specified'}
-
-12-QUESTION ANSWERS:
-{qa_block}
-
-Return only the JSON object with the "message" key."""
+    opening = messages if messages else [{"role": "user", "content": "Start the formation conversation."}]
 
     try:
         response = anthropic_client.messages.create(
-            model="claude-opus-4-5",
-            max_tokens=400,
+            model="claude-opus-4-7",
+            max_tokens=600,
             system=system,
-            messages=[{"role": "user", "content": user_message}],
+            messages=opening,
         )
         text = response.content[0].text
         clean = text.replace("```json", "").replace("```", "").strip()
@@ -740,107 +730,74 @@ def debug_env():
 @app.route('/api/formation/initialize', methods=['POST', 'OPTIONS'])
 def formation_initialize():
     """
-    One-shot initialization: 12 answers + 3-pill context → First Words
-    
+    One-shot initialization: 12 answers + 3-pill context → First Words + recommended_building
+
     Input: {
-      "first_name": "...",
-      "last_name": "...",
-      "studio_name": "...",
-      "email": "...",
-      "arsenal": "concept|ip|footage|audience",
-      "roadblock": "assets|post|distribution|capital",
-      "horizon": "single|channel|studio",
-      "briefing_answers": {
-        "q1": "...", "q2": "...", ..., "q12": "..."
-      }
+      "first_name": "...", "last_name": "...", "studio_name": "...", "email": "...",
+      "arsenal": "...", "roadblock": "...", "horizon": "...",
+      "briefing_answers": { "q1": "...", ..., "q12": "..." }
     }
-    
+
     Output: {
       "success": true,
-      "first_words": "Here's what I know about you...",
-      "archetype": "musician|filmmaker|...",
-      "phase": "validation|traction|leverage|empire"
+      "first_words": "Narrative text mentioning the recommended building...",
+      "recommended_building": "one of 12 slugs",
+      "archetype": "...",
+      "phase": "..."
     }
     """
     if request.method == 'OPTIONS':
         return '', 204
-    
+
     try:
         data = request.json
-        
-        # Extract input data
-        first_name = data.get('first_name', '').strip()
-        last_name = data.get('last_name', '').strip()
+
+        first_name  = data.get('first_name', '').strip()
+        last_name   = data.get('last_name', '').strip()
         studio_name = data.get('studio_name', '').strip()
-        email = data.get('email', '').strip()
-        arsenal = data.get('arsenal')
-        roadblock = data.get('roadblock')
-        horizon = data.get('horizon')
+        email       = data.get('email', '').strip()
+        arsenal     = data.get('arsenal', '')
+        roadblock   = data.get('roadblock', '')
+        horizon     = data.get('horizon', '')
         briefing_answers = data.get('briefing_answers', {})
-        print(f"[STEP 1] Data extracted: {first_name=}, {studio_name=}", flush=True)
-        
-        # Validate required fields
-        if not all([first_name, studio_name, arsenal, roadblock, horizon, briefing_answers]):
+        print(f"[INIT STEP 1] Received: {first_name=}, {studio_name=}", flush=True)
+
+        if not all([first_name, studio_name, briefing_answers]):
             return jsonify({'error': 'Incomplete initialization payload'}), 400
-        print(f"[STEP 2] Validation passed", flush=True)
-        
-        # 1. Identify archetype
-        q1_creative_focus = briefing_answers.get('q1', '')
-        archetype = identify_archetype(q1_creative_focus)
-        print(f"[STEP 3] Archetype={archetype}", flush=True)
-        
-        # 2. Determine phase
-        q7 = briefing_answers.get('q7', '')
-        q8 = briefing_answers.get('q8', '')
-        q9 = briefing_answers.get('q9', '')
-        phase = determine_phase(q7, q8, q9)
-        print(f"[STEP 4] Phase={phase}", flush=True)
-        
-        # 3. Build FutureYou system prompt with knowledge foundation
-        system_prompt = """You are FutureYou, a Chief Strategy Officer. You have just completed a 12-question briefing interview with a solo creator. Your job now is to give them back what you heard — clear, direct, informed by 2025 creator economy reality.
+        print(f"[INIT STEP 2] Validation passed", flush=True)
 
-CORE INTELLIGENCE (2025 Creator Economics):
-- Creators who own their audience (email/community) are 2.7x more likely to earn $31k+ than fully platform-dependent creators
-- Platform risk is the #1 fear — one algorithm change can wipe out 50% of traffic overnight
-- 49% of top earners generated their first revenue within 3 months
-- Burnout is a function of system failure, not motivation failure
-- Real success requires 3+ revenue streams, not platform ad splits
+        archetype = identify_archetype(briefing_answers.get('q1', ''))
+        phase = determine_phase(
+            briefing_answers.get('q7', ''),
+            briefing_answers.get('q8', ''),
+            briefing_answers.get('q9', '')
+        )
+        print(f"[INIT STEP 3] archetype={archetype}, phase={phase}", flush=True)
 
-ARCHETYPE CONTEXT:
-- Musician: Sync licensing + streaming (bottleneck: owned audience)
-- Filmmaker: Licensing + distribution (bottleneck: audience + recurring revenue)
-- Documentarian: Authority + audience (bottleneck: monetizing expertise)
-- Content Creator: Sponsorships + products (bottleneck: platform independence)
-- Podcaster: Ad reads + sponsorships (bottleneck: production delegation)
-- Influencer: Brand partnerships + products (bottleneck: moving beyond sponsorships)
+        system_prompt = """You are FutureYou — the version of this creator who already built the studio, made the mistakes, and knows exactly what needs to happen next. You are meeting TodayYou for the first time.
 
-PHASE REALITY:
-- Validation (Weeks 1-12): Proof that audience exists + first revenue signal
-- Traction (Months 3-12): Owned channels + 1-3 revenue streams + 1K-10K audience
-- Leverage (Months 6-24): Systems + delegation + multi-stream revenue
-- Empire (Year 2+): IP diversification + scaled business + team
+YOUR RESPONSE FORMAT: Return valid JSON only. No markdown, no backticks, no preamble. No text outside the JSON object.
+{
+  "first_words": "Your 3-4 sentence First Words here.",
+  "recommended_building": "one_slug_from_the_list"
+}
 
-YOUR JOB NOW:
-1. Reflect back what you heard (2-3 specific facts from their 12 answers)
-2. Identify the gap (what's blocking progress?)
-3. State their phase (which timeline are they actually in?)
-4. Recommend ONE building to open first
-5. State how you'll work with them (reference their truth style, breakthrough mechanism, what to remember)
-6. Ask ONE clarifying question to deepen understanding
+THE 12 BUILDINGS — pick exactly one slug for recommended_building:
+ideate, develop, fund, cast, plan, produce, post, licensing, distribute, brand, market, monetize
 
-TONE: Direct peer who's been listening. No compliments, no platitudes, no filler. No emojis, no exclamation marks. Just facts and next moves.
+FIRST WORDS RULES:
+- Exactly 3-4 sentences. Hard limit. No exceptions.
+- Sentence 1: Reflect back 2 specific facts from their answers. Precise, not generic.
+- Sentence 2: Name the real gap between where they are and where they want to go.
+- Sentence 3: Name the one building they should open first and why it solves their specific gap — refer to it conversationally (e.g. "Start in Ideate" or "Your first move is Brand"). The building name must match your recommended_building slug.
+- Sentence 4 (optional): One sharp clarifying question. Only include if it fits naturally. If it runs long, omit it.
+- No hedging. No compliments. No emojis. No exclamation marks.
+- Speak as a peer who has been there, not a coach giving advice.
+- Reference their actual answers — never use generic creator advice.
 
-CRITICAL CONSTRAINTS:
-- One paragraph, 4-5 sentences max (60-100 words)
-- Reference their specific answers, not generalities
-- One building only (not a list)
-- One clarifying question only
-- No hedging language ("maybe", "might", "could")
-- Never say they're wrong; show gaps through observation"""
-        print(f"[STEP 5] System prompt created", flush=True)
-        
-        # 4. Build user message with all briefing data
-        user_message = f"""Generate FutureYou's First Words initialization for:
+TONE: Direct. Sovereign. No filler. The creator just walked into their studio for the first time and you are already waiting."""
+
+        user_message = f"""Generate First Words for:
 
 Name: {first_name} {last_name}
 Studio: {studio_name}
@@ -850,62 +807,81 @@ Arsenal: {arsenal}
 Roadblock: {roadblock}
 Horizon: {horizon}
 
-Briefing Answers:
-Q1 (Creative Focus): {briefing_answers.get('q1', '')}
-Q2 (Audience Reach): {briefing_answers.get('q2', '')}
+Q1 (Creative focus): {briefing_answers.get('q1', '')}
+Q2 (Audience): {briefing_answers.get('q2', '')}
 Q3 (Experience): {briefing_answers.get('q3', '')}
-Q4 (Biggest Win): {briefing_answers.get('q4', '')}
-Q5 (Retry Differently): {briefing_answers.get('q5', '')}
+Q4 (Biggest win): {briefing_answers.get('q4', '')}
+Q5 (Would do differently): {briefing_answers.get('q5', '')}
 Q6 (Influences): {briefing_answers.get('q6', '')}
-Q7 (1-Year Vision): {briefing_answers.get('q7', '')}
-Q8 (5-Year Vision): {briefing_answers.get('q8', '')}
-Q9 (10-Year Vision): {briefing_answers.get('q9', '')}
-Q10 (Truth Style): {briefing_answers.get('q10', '')}
-Q11 (Breakthrough Mechanism): {briefing_answers.get('q11', '')}
-Q12 (Remember About Me): {briefing_answers.get('q12', '')}
+Q7 (1-year vision): {briefing_answers.get('q7', '')}
+Q8 (5-year vision): {briefing_answers.get('q8', '')}
+Q9 (10-year vision): {briefing_answers.get('q9', '')}
+Q10 (Truth style): {briefing_answers.get('q10', '')}
+Q11 (Breakthrough): {briefing_answers.get('q11', '')}
+Q12 (Always remember): {briefing_answers.get('q12', '')}"""
 
-Start with: "Here's what I know about you and where you want to go so far:"
-Then give First Words response (4-5 sentences max)."""
-        print(f"[STEP 6] User message created", flush=True)
-        
-        # 5. Call Claude
-        print(f"[STEP 7] anthropic_client={anthropic_client}, type={type(anthropic_client)}", flush=True)
+        print(f"[INIT STEP 4] Calling Claude", flush=True)
         message = anthropic_client.messages.create(
             model="claude-opus-4-7",
-            max_tokens=300,
+            max_tokens=400,
             system=system_prompt,
             messages=[{"role": "user", "content": user_message}]
         )
-        print(f"[STEP 8] Claude call succeeded", flush=True)
-        
-        first_words = message.content[0].text
-        print(f"[STEP 9] first_words extracted: {first_words[:50]}...", flush=True)
-        
-        # 6. Store in Supabase
+        print(f"[INIT STEP 5] Claude responded", flush=True)
+
+        raw = message.content[0].text.strip()
+        # Strip markdown fences if present
+        if raw.startswith('```'):
+            raw = raw.split('```')[1]
+            if raw.startswith('json'):
+                raw = raw[4:]
+        raw = raw.strip()
+
+        try:
+            parsed = json.loads(raw)
+            first_words = parsed.get('first_words', '')
+            recommended_building = parsed.get('recommended_building', 'ideate')
+        except Exception as parse_err:
+            logger.warning(f"[INIT] JSON parse failed: {parse_err}. Raw: {raw[:120]}")
+            first_words = raw
+            recommended_building = 'ideate'
+
+        # Validate slug
+        valid_slugs = {'ideate','develop','fund','cast','plan','produce',
+                       'post','licensing','distribute','brand','market','monetize'}
+        if recommended_building not in valid_slugs:
+            logger.warning(f"[INIT] Invalid slug '{recommended_building}', defaulting to ideate")
+            recommended_building = 'ideate'
+
+        print(f"[INIT STEP 6] building={recommended_building}, words={first_words[:60]}...", flush=True)
+
+        # Store in Supabase
         if email:
             try:
                 sb_patch('formations', {'email': f"eq.{email}"}, {
                     'first_words': first_words,
+                    'recommended_building': recommended_building,
                     'archetype': archetype,
                     'phase': phase,
                     'initialized_at': datetime.now(timezone.utc).isoformat()
                 })
-                print(f"[STEP 10] Stored in Supabase", flush=True)
+                print(f"[INIT STEP 7] Stored in Supabase", flush=True)
             except Exception as e:
-                print(f"[SUPABASE WARN] {e}", flush=True)
-        
+                print(f"[INIT SUPABASE WARN] {e}", flush=True)
+
         return jsonify({
             'success': True,
             'first_words': first_words,
+            'recommended_building': recommended_building,
             'archetype': archetype,
             'phase': phase
         }), 200
-        
+
     except Exception as e:
         import traceback
         error_trace = traceback.format_exc()
         logger.error(f"[formation_initialize] Error: {e}\nTraceback:\n{error_trace}")
-        print(f"[ERROR] formation_initialize: {e}\n{error_trace}", flush=True)
+        print(f"[INIT ERROR] {e}\n{error_trace}", flush=True)
         return jsonify({'error': f'Initialization failed: {str(e)}'}), 500
 
 if __name__ == "__main__":

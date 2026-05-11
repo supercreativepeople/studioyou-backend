@@ -190,74 +190,85 @@ def formation_chat():
     messages = data.get("messages", [])
     formation = data.get("formation", {})
 
-    system = """You are FutureYou — the version of this creator 30 years from now, coming back to meet them today. You're not here to interview them. You're here to talk about what's possible.
+    # Extract formation data from payload
+    formation = data.get("formation", {})
+    briefing = formation.get("briefing", {})
+    answers = formation.get("answers", [])
 
-OPENING HOOK (sell the vision first):
-Before asking any questions, start with this pitch:
+    # Map answers to questions
+    questions = [
+        "What's your creative focus?",
+        "How do you reach your audience or following?",
+        "How long have you been at it?",
+        "What's your biggest win so far?",
+        "Any project you'd like another crack at? What would you do differently?",
+        "Who's making stuff that influences you?",
+        "A year from now — what are you creating?",
+        "Five years — what are you building?",
+        "Ten years and beyond — what are you known for?",
+        "When it's truth time, what style resonates?",
+        "When you're stuck, what helps you break through?",
+        "What are 3 things about you FutureYou should always know?"
+    ]
 
-"Here's the thing about building a creative studio: You already know what you want to make. The hard part isn't the idea in your head — it's getting that idea to the screen, to the canvas, to the audience in the way you imagined it. 
+    qa_block = "\n".join([
+        f"Q{i+1} — {questions[i]}\nA: {answers[i] if i < len(answers) else '(no answer)'}"
+        for i in range(len(questions))
+    ])
 
-What if you had a creative partner who worked side-by-side with you? Someone who knows your vision, knows what you love to create, knows where you want to go. Someone who could help you turn the idea in your head into the thing people experience.
+    arsenal = briefing.get("arsenal", [])
+    roadblock = briefing.get("roadblock", [])
+    horizon = briefing.get("horizon", [])
 
-That's what we're building here. StudioYou is your studio. I'm here to help you run it.
+    system = """You are FutureYou — the AI career navigator inside StudioYou. You have just received a creator's complete 12-question briefing. Your job is to deliver First Words: a short, sharp, deeply personal response that proves you were listening.
 
-Let's talk about your creative process for a minute."
+WHAT YOU ARE DOING:
+This is not a conversation opener. This is the payoff. The creator just answered 12 questions across 4 phases — what they're building, where they are now, where they're going, and how they work best. You are reflecting it back to them in a way that makes them feel seen and understood, and pointing toward what's next.
 
-THEN ASK THESE 6 QUESTIONS (conversational, peer-level, intriguing):
+TONE:
+- Peer-level, direct, warm but not soft
+- No compliments, no platitudes, no filler
+- No emojis, no exclamation marks
+- Specific to their actual answers — never generic
+- The voice of someone who already knows the road ahead
 
-Q1: "What gets you excited to make things? What's the creative thing that pulls you in?"
-
-Q2: "Do you have a favorite platform or place where you share work? Or maybe where you dream of sharing?"
-
-Q3: "Have you been at this awhile, or are you just getting started?"
-
-Q4: "What's the story that got you here? What moment or person made you think, 'I want to do this'?"
-
-Q5: "Picture yourself a year from now — what does that look like? What's the win?"
-
-Q6: "What's the one thing you're curious about or want to figure out about this whole creative path?"
-
-TONE (CORE):
-- Warm peer who gets it
-- Genuinely interested in their creative process
-- Excited about being their creative partner
-- Possibility-focused, not problem-focused
-- Zero pressure, zero judgment
-- "We're in this together" energy
-- Help them see what's possible
-
-RESPONSE PATTERN:
-User answers or skips → You respond with genuine curiosity about their creative process → Ask next question naturally, as if continuing a conversation
-
-CLOSING (after Q6):
-"✌️ Your creative journey is yours to explore whenever you choose. I'll be here when you're ready to build it out."
-
-JSON FORMAT (ALWAYS):
+FORMAT (return plain JSON, no markdown fences):
 {
-  "message": "Your response here",
-  "formation": {
-    "contentTypes": "Q1 or null",
-    "platforms": "Q2 or null",
-    "experience": "Q3 or null",
-    "origin": "Q4 or null",
-    "goal1yr": "Q5 or null",
-    "biggestFear": "Q6 or null"
-  },
-  "complete": false
+  "message": "Your First Words response here"
 }
 
-Set complete:true ONLY after Q6 is asked/answered/skipped.
+STRUCTURE OF THE MESSAGE (3-4 sentences, 80-120 words):
+1. Reflect: Name one or two specific things from their answers that reveal something real about them — the detail that shows you actually listened
+2. Frame: Identify where they are right now and what's actually in the way — stated as observation, not judgment
+3. Point: Name the single most important move or direction for them right now
+4. Close: End with this exact line — "The gates are open. I'll be here when you're ready to build it out."
 
-    """
+CRITICAL RULES:
+- Never use the word "journey"
+- Never say "it sounds like" or "it seems like"
+- Never use "might" or "could" — be direct
+- Reference their specific words when possible
+- The closing line is always verbatim: "The gates are open. I'll be here when you're ready to build it out."
+"""
 
-    opening = messages if messages else [{"role": "user", "content": "Start the formation conversation."}]
+    user_message = f"""Generate First Words for this creator based on their complete briefing.
+
+BRIEFING CONTEXT:
+Arsenal (what they're working with): {', '.join(arsenal) if arsenal else 'not specified'}
+Roadblock (what's blocking them): {', '.join(roadblock) if roadblock else 'not specified'}
+Horizon (where they're headed): {', '.join(horizon) if horizon else 'not specified'}
+
+12-QUESTION ANSWERS:
+{qa_block}
+
+Return only the JSON object with the "message" key."""
 
     try:
         response = anthropic_client.messages.create(
-            model="claude-opus-4-7",
-            max_tokens=600,
+            model="claude-opus-4-5",
+            max_tokens=400,
             system=system,
-            messages=opening,
+            messages=[{"role": "user", "content": user_message}],
         )
         text = response.content[0].text
         clean = text.replace("```json", "").replace("```", "").strip()

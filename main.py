@@ -282,16 +282,14 @@ def formation_verify():
     if not email or not validate_email(email):
         return jsonify({"success": False, "error": "Invalid email address"}), 400
 
-    try:
-        # Generate magic token
-        magic_token = secrets.token_urlsafe(32)
-        token_expires_at = (datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRY_HOURS)).isoformat()
+    # Step 1: Generate magic token
+    magic_token = secrets.token_urlsafe(32)
+    token_expires_at = (datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRY_HOURS)).isoformat()
 
-        # Save to formations table (create or update)
-        formations = sb_get("formations", {"email": f"eq.{email}"})
-        
-        if formations:
-            # Update existing
+    # Step 2: Write to Supabase (hard failure — this must succeed)
+    try:
+        existing = sb_get("formations", {"email": f"eq.{email}"})
+        if existing:
             sb_patch("formations", {"email": f"eq.{email}"}, {
                 "first_name": first_name,
                 "last_name": last_name,
@@ -301,9 +299,8 @@ def formation_verify():
                 "formation_data": json.dumps(formation),
                 "updated_at": datetime.now(timezone.utc).isoformat()
             })
-            logger.info(f"[formation_verify] Updated existing formation for {email}")
+            logger.info(f"[formation_verify] Updated formation for {email}")
         else:
-            # Create new
             sb_post("formations", {
                 "email": email,
                 "first_name": first_name,
@@ -315,21 +312,26 @@ def formation_verify():
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "updated_at": datetime.now(timezone.utc).isoformat()
             })
-            logger.info(f"[formation_verify] Created new formation for {email}")
-
-        # Send magic link email
-        email_sent = send_magic_link_email(email, magic_token, first_name or "Creator", studio_name or "Your Studio")
-
-        return jsonify({
-            "success": True,
-            "message": "Check your email for your verification link",
-            "email_sent": email_sent,
-            "token": magic_token  # For testing only — remove in production
-        })
-
+            logger.info(f"[formation_verify] Created formation for {email}")
     except Exception as e:
-        logger.error(f"[formation_verify] Error: {e}")
-        return jsonify({"success": False, "error": "Failed to process email"}), 500
+        logger.error(f"[formation_verify] SUPABASE WRITE FAILED for {email}: {type(e).__name__}: {e}")
+        return jsonify({"success": False, "error": "Failed to save your formation. Please try again."}), 500
+
+    # Step 3: Send magic link email (soft failure — Supabase write already succeeded)
+    email_sent = False
+    try:
+        email_sent = send_magic_link_email(email, magic_token, first_name or "Creator", studio_name or "Your Studio")
+        if not email_sent:
+            logger.warning(f"[formation_verify] Email send returned False for {email} — Supabase write succeeded")
+    except Exception as e:
+        logger.error(f"[formation_verify] EMAIL SEND EXCEPTION for {email}: {type(e).__name__}: {e}")
+
+    return jsonify({
+        "success": True,
+        "message": "Check your email for your verification link",
+        "email_sent": email_sent,
+        "token": magic_token
+    })
 
 @app.route("/api/formation/validate", methods=["POST"])
 def formation_validate():

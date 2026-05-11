@@ -182,91 +182,81 @@ def send_magic_link_email(email, token, first_name="Creator", studio_name="Your 
 
 @app.route("/api/formation/chat", methods=["POST", "OPTIONS"])
 def formation_chat():
-    """Pre-login FY formation conversation. Handles skip logic and closing message."""
+    """
+    One-shot briefing summary. Called after 12Q chat completes.
+    Receives full Q&A as messages array + briefing pill data.
+    Returns { success, message } where message is the summary displayed on the summary_email screen.
+    """
     if request.method == "OPTIONS":
         return jsonify({"ok": True}), 200
 
     data = request.get_json()
     messages = data.get("messages", [])
     formation = data.get("formation", {})
+    briefing = formation.get("briefing", {})
+    answers = formation.get("answers", [])
 
-    system = """You are FutureYou — the version of this creator 30 years from now, coming back to meet them today. You're not here to interview them. You're here to talk about what's possible.
+    # Extract answers from messages array (every 3rd message starting at index 2 is a user answer)
+    extracted = []
+    for i, msg in enumerate(messages):
+        if msg.get("role") == "user" and i > 0:
+            extracted.append(msg.get("content", ""))
 
-OPENING HOOK (sell the vision first):
-Before asking any questions, start with this pitch:
+    # Use answers array if provided, otherwise use extracted
+    final_answers = answers if answers else extracted
 
-"Here's the thing about building a creative studio: You already know what you want to make. The hard part isn't the idea in your head — it's getting that idea to the screen, to the canvas, to the audience in the way you imagined it. 
+    questions = [
+        "Creative focus", "Audience", "Experience",
+        "Biggest win", "Would do differently", "Influences",
+        "1-year vision", "5-year vision", "10-year vision",
+        "Truth style", "Breakthrough mechanism", "Always remember"
+    ]
 
-What if you had a creative partner who worked side-by-side with you? Someone who knows your vision, knows what you love to create, knows where you want to go. Someone who could help you turn the idea in your head into the thing people experience.
+    answers_context = "\n".join([
+        f"Q{i+1} ({questions[i]}): {ans}"
+        for i, ans in enumerate(final_answers[:12]) if ans
+    ])
 
-That's what we're building here. StudioYou is your studio. I'm here to help you run it.
+    arsenal  = briefing.get("arsenal",  "") if isinstance(briefing, dict) else ""
+    roadblock= briefing.get("roadblock","") if isinstance(briefing, dict) else ""
+    horizon  = briefing.get("horizon",  "") if isinstance(briefing, dict) else ""
 
-Let's talk about your creative process for a minute."
+    system = """You are FutureYou — the version of this creator who already built the studio, made it, and knows the road. You just completed your first briefing with TodayYou.
 
-THEN ASK THESE 6 QUESTIONS (conversational, peer-level, intriguing):
+Your job: write the briefing confirmation message. This appears on screen as the creator finishes the 12Q briefing, before they enter their email and name their studio.
 
-Q1: "What gets you excited to make things? What's the creative thing that pulls you in?"
+RULES:
+- 2-3 sentences only. Hard limit.
+- Reflect back 1-2 specific things you heard — be precise, not generic.
+- Convey that you now have what you need and the studio is ready to be built.
+- End with exactly this sentence: "The gates are open. I'll be here when you're ready to build it out."
+- No compliments. No filler. No emojis. No exclamation marks.
+- Speak as a peer who was listening, not a coach summarizing.
+- Return only the message text. No JSON, no labels, no preamble."""
 
-Q2: "Do you have a favorite platform or place where you share work? Or maybe where you dream of sharing?"
+    user_message = f"""Write the briefing confirmation for a creator with these answers:
 
-Q3: "Have you been at this awhile, or are you just getting started?"
+{answers_context}
 
-Q4: "What's the story that got you here? What moment or person made you think, 'I want to do this'?"
-
-Q5: "Picture yourself a year from now — what does that look like? What's the win?"
-
-Q6: "What's the one thing you're curious about or want to figure out about this whole creative path?"
-
-TONE (CORE):
-- Warm peer who gets it
-- Genuinely interested in their creative process
-- Excited about being their creative partner
-- Possibility-focused, not problem-focused
-- Zero pressure, zero judgment
-- "We're in this together" energy
-- Help them see what's possible
-
-RESPONSE PATTERN:
-User answers or skips → You respond with genuine curiosity about their creative process → Ask next question naturally, as if continuing a conversation
-
-CLOSING (after Q6):
-"✌️ Your creative journey is yours to explore whenever you choose. I'll be here when you're ready to build it out."
-
-JSON FORMAT (ALWAYS):
-{
-  "message": "Your response here",
-  "formation": {
-    "contentTypes": "Q1 or null",
-    "platforms": "Q2 or null",
-    "experience": "Q3 or null",
-    "origin": "Q4 or null",
-    "goal1yr": "Q5 or null",
-    "biggestFear": "Q6 or null"
-  },
-  "complete": false
-}
-
-Set complete:true ONLY after Q6 is asked/answered/skipped.
-
-    """
-
-    opening = messages if messages else [{"role": "user", "content": "Start the formation conversation."}]
+Arsenal: {arsenal}
+Roadblock: {roadblock}
+Horizon: {horizon}"""
 
     try:
         response = anthropic_client.messages.create(
             model="claude-opus-4-7",
-            max_tokens=600,
+            max_tokens=200,
             system=system,
-            messages=opening,
+            messages=[{"role": "user", "content": user_message}]
         )
-        text = response.content[0].text
-        clean = text.replace("```json", "").replace("```", "").strip()
-        parsed = json.loads(clean)
-        return jsonify({"success": True, **parsed})
+        message_text = response.content[0].text.strip()
+        return jsonify({"success": True, "message": message_text})
     except Exception as e:
-        error_msg = str(e)
-        logger.error(f"Formation chat error: {error_msg}")
-        return jsonify({"success": False, "error": "Failed to reach FutureYou.", "details": error_msg}), 500
+        logger.error(f"[formation_chat] Error: {e}")
+        return jsonify({
+            "success": False,
+            "message": "Briefing complete. FutureYou has everything it needs. The gates are open. I'll be here when you're ready to build it out."
+        }), 500
 
 @app.route("/api/formation/verify", methods=["POST"])
 @cross_origin()

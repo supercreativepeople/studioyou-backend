@@ -876,3 +876,4 @@ Q12 (Always remember): {briefing_answers.get('q12', '')}"""
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)
+# autodeploy test Mon May 11 13:06:39 UTC 2026

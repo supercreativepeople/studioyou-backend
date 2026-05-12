@@ -608,6 +608,7 @@ def debug_formation():
             "first_words": r.get("first_words"),
             "formation_data_type": type(r.get("formation_data")).__name__,
             "formation_data_len": len(r.get("formation_data") or []) if isinstance(r.get("formation_data"), list) else "not_array",
+            "formation_data_preview": str(r.get("formation_data",""))[:200],
             "data_keys": list((r.get("data") or {}).keys()) if isinstance(r.get("data"), dict) else str(type(r.get("data"))),
             "has_briefing_answers": bool(r.get("briefing_answers")),
         })

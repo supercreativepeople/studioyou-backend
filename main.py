@@ -572,6 +572,29 @@ def subscribe():
     return jsonify({"success": True, "tier": tier, "billing": billing})
 
 
+@app.route("/api/update-studio", methods=["POST", "OPTIONS"])
+@cross_origin()
+def update_studio():
+    """Update studio name for a returning user. Called when FY naming flow confirms a name."""
+    data = request.get_json()
+    email = (data.get("email", "") or "").strip().lower()
+    studio_name = (data.get("studio_name", "") or "").strip()
+
+    if not email or not studio_name:
+        return jsonify({"success": False, "error": "Email and studio_name required"}), 400
+
+    try:
+        sb_patch("formations", {"email": f"eq.{email}"}, {
+            "studio_name": studio_name,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        })
+        logger.info(f"[update_studio] {email} → {studio_name}")
+        return jsonify({"success": True, "studio_name": studio_name})
+    except Exception as e:
+        logger.error(f"[update_studio] Failed for {email}: {e}")
+        return jsonify({"success": False, "error": "Failed to update studio name"}), 500
+
+
 @app.route("/api/health", methods=["GET"])
 def health():
     """Health check endpoint."""

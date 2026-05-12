@@ -584,6 +584,33 @@ def subscribe():
     return jsonify({"success": True, "tier": tier, "billing": billing})
 
 
+@app.route("/api/debug/reset-formation", methods=["POST", "OPTIONS"])
+@cross_origin()
+def debug_reset_formation():
+    """Dev only: wipe formation record for an email so user can start fresh."""
+    data = request.get_json()
+    email = (data.get("email","") or "").strip().lower()
+    secret = data.get("secret","")
+    if secret != SECRET_KEY:
+        return jsonify({"error": "Unauthorized"}), 403
+    if not email:
+        return jsonify({"error": "email required"}), 400
+    try:
+        # Delete the record entirely
+        url = f"{SUPABASE_URL}/rest/v1/formations"
+        params = {"email": f"eq.{email}"}
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json"
+        }
+        r = requests.delete(url, headers=headers, params=params)
+        logger.info(f"[reset_formation] Deleted record for {email}: {r.status_code}")
+        return jsonify({"success": True, "email": email, "status": r.status_code})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/debug/formation", methods=["POST", "OPTIONS"])
 @cross_origin()
 def debug_formation():

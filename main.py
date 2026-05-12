@@ -138,7 +138,7 @@ body{{background:#06091a}}
 .chip{{display:inline-block;background:rgba(0,200,255,0.12);color:#00c8ff;font-size:9px;letter-spacing:.2em;text-transform:uppercase;padding:5px 10px;border:1px solid rgba(0,200,255,0.3)}}
 .grad-bar{{height:3px;background:linear-gradient(135deg,#00c8ff 0%,#5e28a8 60%,#7b35d4 100%);margin-bottom:32px}}
 .shutter-wrap{{text-align:center;margin-bottom:28px}}
-.studio-name{{text-align:center;font-size:28px;font-weight:700;letter-spacing:.04em;background:linear-gradient(135deg,#00c8ff,#a06be8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0 0 28px}}
+.studio-name{{text-align:center;font-size:42px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:linear-gradient(135deg,#00c8ff,#a06be8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0 0 28px;line-height:1.05}}
 .greeting{{text-align:center;font-size:18px;font-weight:600;color:#f0f2ff;margin:0 0 10px}}
 .body-text{{text-align:center;font-size:14px;line-height:1.75;color:rgba(240,242,255,.6);margin:0 0 32px;font-weight:300}}
 .btn-wrap{{text-align:center;margin-bottom:40px}}
@@ -150,7 +150,7 @@ a.btn{{display:inline-block;background:linear-gradient(135deg,#00c8ff,#7b35d4);c
 
   <div class="top-bar">
     <div class="top-logo">
-      <img src="https://studioyou.app/assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" width="36" height="36" style="display:block">
+      <img src="https://studioyou.app/assets/SY_OFFICIAL_SHUTTER_KEY.png" alt="" width="36" height="36" style="display:block">
     </div>
     <div class="top-chip"><span class="chip">BRIEFING COMPLETE</span></div>
   </div>
@@ -158,10 +158,10 @@ a.btn{{display:inline-block;background:linear-gradient(135deg,#00c8ff,#7b35d4);c
   <div class="grad-bar"></div>
 
   <div class="shutter-wrap">
-    <img src="https://studioyou.app/assets/SY_OFFICIAL_SHUTTER_KEY.png" alt="" width="56" height="56" style="display:inline-block">
+    <img src="https://studioyou.app/assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" width="72" height="72" style="display:inline-block">
   </div>
 
-  <div class="studio-name">{display_studio}</div>
+  <div class="studio-name">{display_studio.upper()}</div>
 
   <div class="greeting">Welcome back, {display_name}.</div>
   <div class="body-text">Everything you built is right where you left it.<br>One click and you're back on the lot.</div>

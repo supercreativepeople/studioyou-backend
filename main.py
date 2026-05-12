@@ -118,54 +118,41 @@ def validate_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
 
-def send_magic_link_email(email, token, first_name="Creator", studio_name="Your Studio"):
+def send_magic_link_email(email, token, first_name="Creator", studio_name="Your Studio", is_new_user=True):
     """Send magic link email via Resend."""
     link = f"{FRONTEND_URL}/verify?token={token}"
-    
-    body = f"""<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    subject = "Your studio is ready." if is_new_user else "Return to your studio."
+
+    body = f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-  body,table,td,p,a{{margin:0;padding:0;border:0;font-family:'Helvetica Neue',Arial,sans-serif}}
-  body{{background:#06091a}}
-  img{{border:0;display:block}}
-  a.btn{{display:inline-block;background:#00c8ff;color:#06091a;text-decoration:none;font-weight:700;font-size:11px;letter-spacing:.18em;text-transform:uppercase;padding:14px 36px;border-radius:3px}}
-</style>
-</head><body bgcolor="#06091a">
+body{{background:#06091a;color:#f0f2ff;font-family:'Helvetica Neue',Arial,sans-serif;margin:0;padding:40px 20px}}
+.wrap{{max-width:480px;margin:0 auto}}
+.logo{{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:rgba(240,242,255,.4);margin-bottom:40px}}
+h1{{font-size:32px;font-weight:700;line-height:1.1;margin-bottom:16px;color:#f0f2ff}}
+h1 span{{background:linear-gradient(135deg,#00c8ff,#a06be8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}}
+p{{font-size:15px;line-height:1.7;color:rgba(240,242,255,.65);margin-bottom:32px;font-weight:300}}
+a.btn{{display:inline-block;background:linear-gradient(135deg,#00c8ff,#7b35d4);color:#06091a;text-decoration:none;font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;padding:16px 36px}}
+.note{{font-size:11px;color:rgba(240,242,255,.3);margin-top:32px;line-height:1.6}}
+.footer{{margin-top:48px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(240,242,255,.2)}}
+</style></head><body>
+<div class="wrap">
+  <div class="logo">StudioYou &nbsp;/&nbsp; {studio_name}</div>
+  <h1>Hey {first_name}.<br>
+  <span>{"Your studio is ready." if is_new_user else "Your studio is waiting."}</span></h1>
+  <p>{"FutureYou has been formed. Your studio lot is built and standing. One click and you're in." if is_new_user else "Click below to return to your studio. Your formation, your FutureYou priorities, everything you built — right where you left it."}</p>
+  <a class="btn" href="{link}">{"Enter Your Studio" if is_new_user else "Return to Your Studio"}</a>
+  <div class="note">This link expires in 24 hours.<br>If you didn't request this, you can safely ignore it.</div>
+  <div class="footer">studioyou.app &nbsp;·&nbsp; SuperCreativePeople, Inc.</div>
+</div></body></html>"""
 
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#06091a">
-<tr><td align="center" style="padding:48px 20px">
-
-<table width="100%" maxwidth="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;margin:0 auto">
-<tr><td align="center" style="padding:0 0 48px">
-  <h2 style="color:#f0f2ff;margin:0;font-size:28px;font-weight:700">Hey {first_name},</h2>
-</td></tr>
-<tr><td align="center" style="padding:0 0 24px">
-  <p style="color:#f0f2ff;margin:0;font-size:16px;line-height:1.6">Your formation is complete. FutureYou is ready to meet you.</p>
-  <p style="color:#f0f2ff;margin:16px 0 0;font-size:16px;line-height:1.6">One click and your studio opens.</p>
-</td></tr>
-<tr><td align="center" style="padding:0 0 48px">
-  <a href="{link}" class="btn">Enter Your Studio</a>
-</td></tr>
-<tr><td align="center" style="padding:0 0 14px">
-  <p style="color:rgba(240,242,255,0.5);margin:0;font-size:11px">This link expires in 24 hours.</p>
-</td></tr>
-<tr><td align="center" style="padding:24px;border-top:1px solid rgba(240,242,255,0.1)">
-  <p style="color:rgba(240,242,255,0.4);margin:0;font-size:11px">StudioYou &nbsp;|&nbsp; {studio_name}</p>
-</td></tr>
-</table>
-
-</td></tr>
-</table>
-
-</body></html>"""
-    
     try:
         r = requests.post("https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
             json={
                 "from": "StudioYou <studio@studioyou.studio>",
                 "to": [email],
-                "subject": "Your StudioYou Formation is Complete",
+                "subject": subject,
                 "html": body
             })
         success = r.status_code in [200, 201]
@@ -493,7 +480,7 @@ def auth_magic_link():
 
     # Send magic link email
     try:
-        email_sent = send_magic_link_email(email, magic_token, first_name, studio_name)
+        email_sent = send_magic_link_email(email, magic_token, first_name, studio_name, is_new_user=False)
         if not email_sent:
             logger.warning(f"[auth_magic_link] Email send returned False for {email}")
     except Exception as e:

@@ -287,9 +287,11 @@ def formation_verify():
     studio_name = data.get("studio_name", "").strip()
     formation = data.get("formation", {})
 
-    # Validate email
     if not email or not validate_email(email):
         return jsonify({"success": False, "error": "Invalid email address"}), 400
+
+    if not first_name:
+        return jsonify({"success": False, "error": "First name is required"}), 400
 
     # Step 1: Generate magic token
     magic_token = secrets.token_urlsafe(32)
@@ -939,7 +941,7 @@ def formation_initialize():
         briefing_answers = data.get('briefing_answers', {})
         print(f"[INIT STEP 1] Received: {first_name=}, {studio_name=}", flush=True)
 
-        if not all([first_name, studio_name, briefing_answers]):
+        if not first_name or not briefing_answers:
             return jsonify({'error': 'Incomplete initialization payload'}), 400
         print(f"[INIT STEP 2] Validation passed", flush=True)
 

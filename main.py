@@ -572,6 +572,37 @@ def subscribe():
     return jsonify({"success": True, "tier": tier, "billing": billing})
 
 
+@app.route("/api/debug/formation", methods=["POST", "OPTIONS"])
+@cross_origin()
+def debug_formation():
+    """Temp: return formation record for an email to debug data issues."""
+    data = request.get_json()
+    email = (data.get("email","") or "").strip().lower()
+    if not email:
+        return jsonify({"error":"email required"}), 400
+    try:
+        rows = sb_get("formations", {"email": f"eq.{email}"})
+        if not rows:
+            return jsonify({"found": False, "email": email})
+        r = rows[0]
+        return jsonify({
+            "found": True,
+            "email": r.get("email"),
+            "first_name": r.get("first_name"),
+            "studio_name": r.get("studio_name"),
+            "archetype": r.get("archetype"),
+            "phase": r.get("phase"),
+            "recommended_building": r.get("recommended_building"),
+            "first_words": r.get("first_words"),
+            "formation_data_type": type(r.get("formation_data")).__name__,
+            "formation_data_len": len(r.get("formation_data") or []) if isinstance(r.get("formation_data"), list) else "not_array",
+            "data_keys": list((r.get("data") or {}).keys()) if isinstance(r.get("data"), dict) else str(type(r.get("data"))),
+            "has_briefing_answers": bool(r.get("briefing_answers")),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/update-studio", methods=["POST", "OPTIONS"])
 @cross_origin()
 def update_studio():

@@ -143,8 +143,8 @@ a.btn{{display:inline-block;background:linear-gradient(135deg,#00c8ff,#7b35d4);c
 <div class="outer"><div class="wrap">
 
   <div class="logo-row">
-    <img src="https://studioyou.app/assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" width="36" height="36" style="display:block">
-    <img src="https://studioyou.app/assets/SY_SHUTTER_FAVICON.gif" alt="" width="24" height="24" style="display:block">
+    <img src="https://studioyou.app/assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" width="40" height="40" style="display:block">
+    <img src="https://studioyou.app/assets/SY_OFFICIAL_SHUTTER_KEY.png" alt="" width="28" height="28" style="display:block">
   </div>
 
   <h1>{display_studio}</h1>

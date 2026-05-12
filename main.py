@@ -449,6 +449,110 @@ def admin_delete_user(email):
         logger.error(f"Delete user error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route("/api/auth/magic-link", methods=["POST", "OPTIONS"])
+@cross_origin()
+def auth_magic_link():
+    """
+    Returning user sign-in. Accepts {email}, generates a fresh magic token,
+    updates Supabase, sends the magic link email.
+    Does NOT require formation data — this is purely for returning users.
+    """
+    data = request.get_json()
+    email = (data.get("email", "") or "").strip().lower()
+
+    if not email or not validate_email(email):
+        return jsonify({"success": False, "error": "Invalid email address"}), 400
+
+    # Look up existing formation record
+    try:
+        existing = sb_get("formations", {"email": f"eq.{email}"})
+    except Exception as e:
+        logger.error(f"[auth_magic_link] Supabase lookup failed for {email}: {e}")
+        return jsonify({"success": False, "error": "Database error. Please try again."}), 500
+
+    if not existing:
+        return jsonify({"success": False, "error": "No studio found for that email. Please complete your formation first."}), 404
+
+    record = existing[0]
+    first_name   = record.get("first_name") or "Creator"
+    studio_name  = record.get("studio_name") or "Your Studio"
+
+    # Generate fresh token
+    magic_token      = secrets.token_urlsafe(32)
+    token_expires_at = (datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRY_HOURS)).isoformat()
+
+    try:
+        sb_patch("formations", {"email": f"eq.{email}"}, {
+            "magic_token":      magic_token,
+            "token_expires_at": token_expires_at,
+            "updated_at":       datetime.now(timezone.utc).isoformat()
+        })
+    except Exception as e:
+        logger.error(f"[auth_magic_link] Token update failed for {email}: {e}")
+        return jsonify({"success": False, "error": "Failed to generate sign-in link. Please try again."}), 500
+
+    # Send magic link email
+    try:
+        email_sent = send_magic_link_email(email, magic_token, first_name, studio_name)
+        if not email_sent:
+            logger.warning(f"[auth_magic_link] Email send returned False for {email}")
+    except Exception as e:
+        logger.error(f"[auth_magic_link] Email send exception for {email}: {e}")
+        email_sent = False
+
+    return jsonify({
+        "success": True,
+        "message": "Check your email for your sign-in link",
+        "email_sent": email_sent
+    })
+
+
+@app.route("/api/subscribe", methods=["POST", "OPTIONS"])
+@cross_origin()
+def subscribe():
+    """
+    Record tier selection for a founding member.
+    Accepts {email, tier, billing, studio_name}.
+    Soft endpoint — logs to Supabase, non-blocking for frontend.
+    """
+    data        = request.get_json()
+    email       = (data.get("email", "") or "").strip().lower()
+    tier        = data.get("tier", "independent")
+    billing     = data.get("billing", "annual")
+    studio_name = data.get("studio_name", "")
+
+    if not email:
+        return jsonify({"success": False, "error": "Email required"}), 400
+
+    try:
+        # Read existing data field and merge tier info
+        existing = sb_get("formations", {"email": f"eq.{email}"})
+        existing_data = {}
+        if existing:
+            try:
+                existing_data = existing[0].get("data") or {}
+                if isinstance(existing_data, str):
+                    existing_data = json.loads(existing_data)
+            except Exception:
+                existing_data = {}
+
+        existing_data.update({
+            "tier": tier,
+            "billing": billing,
+            "subscribed_at": datetime.now(timezone.utc).isoformat()
+        })
+
+        sb_patch("formations", {"email": f"eq.{email}"}, {
+            "data":       existing_data,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        })
+        logger.info(f"[subscribe] {email} → {tier}/{billing}")
+    except Exception as e:
+        logger.warning(f"[subscribe] Supabase write failed for {email}: {e} (non-fatal)")
+
+    return jsonify({"success": True, "tier": tier, "billing": billing})
+
+
 @app.route("/api/health", methods=["GET"])
 def health():
     """Health check endpoint."""

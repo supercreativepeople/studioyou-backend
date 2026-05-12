@@ -378,15 +378,25 @@ def formation_validate():
             "verified_at": datetime.now(timezone.utc).isoformat()
         })
 
-        # Return user data
+        # Return full user profile — everything needed to hydrate localStorage on any device
+        formation_data_raw = formation.get("formation_data", "{}")
+        try:
+            formation_parsed = json.loads(formation_data_raw) if isinstance(formation_data_raw, str) else (formation_data_raw or {})
+        except Exception:
+            formation_parsed = {}
+
         return jsonify({
             "success": True,
             "user": {
-                "email": formation.get("email"),
-                "first_name": formation.get("first_name"),
-                "last_name": formation.get("last_name"),
-                "studio_name": formation.get("studio_name"),
-                "formation": json.loads(formation.get("formation_data", "{}"))
+                "email":                formation.get("email"),
+                "first_name":           formation.get("first_name") or "",
+                "last_name":            formation.get("last_name") or "",
+                "studio_name":          formation.get("studio_name") or "",
+                "archetype":            formation.get("archetype") or "",
+                "phase":                formation.get("phase") or "",
+                "first_words":          formation.get("first_words") or "",
+                "recommended_building": formation.get("recommended_building") or "",
+                "formation":            formation_parsed,
             }
         })
 

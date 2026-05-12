@@ -121,30 +121,47 @@ def validate_email(email):
 def send_magic_link_email(email, token, first_name="Creator", studio_name="Your Studio", is_new_user=True):
     """Send magic link email via Resend."""
     link = f"{FRONTEND_URL}/verify?token={token}"
-    subject = "Your studio is ready." if is_new_user else "Return to your studio."
+    subject = f"{studio_name} is ready for you."
+    display_studio = studio_name if studio_name and studio_name != "Your Studio" else "Your Studio"
 
     body = f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-body{{background:#06091a;color:#f0f2ff;font-family:'Helvetica Neue',Arial,sans-serif;margin:0;padding:40px 20px}}
+body{{background:#06091a;color:#f0f2ff;font-family:'Helvetica Neue',Arial,sans-serif;margin:0;padding:0}}
+.outer{{background:#06091a;padding:48px 20px}}
 .wrap{{max-width:480px;margin:0 auto}}
-.logo{{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:rgba(240,242,255,.4);margin-bottom:40px}}
-h1{{font-size:32px;font-weight:700;line-height:1.1;margin-bottom:16px;color:#f0f2ff}}
-h1 span{{background:linear-gradient(135deg,#00c8ff,#a06be8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}}
-p{{font-size:15px;line-height:1.7;color:rgba(240,242,255,.65);margin-bottom:32px;font-weight:300}}
-a.btn{{display:inline-block;background:linear-gradient(135deg,#00c8ff,#7b35d4);color:#06091a;text-decoration:none;font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;padding:16px 36px}}
-.note{{font-size:11px;color:rgba(240,242,255,.3);margin-top:32px;line-height:1.6}}
-.footer{{margin-top:48px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(240,242,255,.2)}}
+.logo-row{{display:flex;align-items:center;gap:10px;margin-bottom:40px}}
+.studio-label{{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:rgba(240,242,255,.35);margin-top:2px}}
+h1{{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:rgba(240,242,255,.4);margin:0 0 10px;font-weight:400}}
+h2{{font-size:30px;font-weight:700;line-height:1.1;margin:0 0 24px;color:#f0f2ff}}
+h2 span{{background:linear-gradient(135deg,#00c8ff,#a06be8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}}
+p{{font-size:15px;line-height:1.75;color:rgba(240,242,255,.65);margin:0 0 32px;font-weight:300}}
+a.btn{{display:inline-block;background:linear-gradient(135deg,#00c8ff,#7b35d4);color:#06091a;text-decoration:none;font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;padding:16px 40px}}
+.note{{font-size:11px;color:rgba(240,242,255,.25);margin-top:32px;line-height:1.7}}
+.footer{{margin-top:48px;padding-top:24px;border-top:1px solid rgba(240,242,255,.08);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(240,242,255,.18)}}
 </style></head><body>
-<div class="wrap">
-  <div class="logo">StudioYou &nbsp;/&nbsp; {studio_name}</div>
-  <h1>Hey {first_name}.<br>
-  <span>{"Your studio is ready." if is_new_user else "Your studio is waiting."}</span></h1>
-  <p>{"FutureYou has been formed. Your studio lot is built and standing. One click and you're in." if is_new_user else "Click below to return to your studio. Your formation, your FutureYou priorities, everything you built — right where you left it."}</p>
-  <a class="btn" href="{link}">{"Enter Your Studio" if is_new_user else "Return to Your Studio"}</a>
-  <div class="note">This link expires in 24 hours.<br>If you didn't request this, you can safely ignore it.</div>
-  <div class="footer">studioyou.app &nbsp;·&nbsp; SuperCreativePeople, Inc.</div>
-</div></body></html>"""
+<div class="outer"><div class="wrap">
+
+  <div class="logo-row">
+    <img src="https://studioyou.app/assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" width="36" height="36" style="display:block">
+    <img src="https://studioyou.app/assets/SY_SHUTTER_FAVICON.gif" alt="" width="24" height="24" style="display:block">
+  </div>
+
+  <h1>{display_studio}</h1>
+  <h2>The briefing is done.<br><span>FutureYou is waiting.</span></h2>
+
+  <p>Your briefing is complete. FutureYou already has a direction for you — and the whole lot is standing by. One click gets you back inside.</p>
+
+  <a class="btn" href="{link}">Enter Your Studio</a>
+
+  <div class="note">
+    This link expires in 24 hours.<br>
+    If you didn't request this, you can safely ignore it.
+  </div>
+
+  <div class="footer">studioyou.app</div>
+
+</div></div></body></html>"""
 
     try:
         r = requests.post("https://api.resend.com/emails",

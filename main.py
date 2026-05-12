@@ -121,45 +121,60 @@ def validate_email(email):
 def send_magic_link_email(email, token, first_name="Creator", studio_name="Your Studio", is_new_user=True):
     """Send magic link email via Resend."""
     link = f"{FRONTEND_URL}/verify?token={token}"
-    subject = f"{studio_name} is ready for you."
-    display_studio = studio_name if studio_name and studio_name != "Your Studio" else "Your Studio"
+    display_studio = studio_name if studio_name and studio_name not in ("Your Studio", "", None) else "Your Studio"
+    display_name   = first_name  if first_name  and first_name  not in ("Creator",    "", None) else "Creator"
+    subject = f"{display_studio} is ready for you."
 
     body = f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-body{{background:#06091a;color:#f0f2ff;font-family:'Helvetica Neue',Arial,sans-serif;margin:0;padding:0}}
-.outer{{background:#06091a;padding:48px 20px}}
-.wrap{{max-width:480px;margin:0 auto}}
-.logo-row{{display:flex;align-items:center;gap:10px;margin-bottom:40px}}
-.studio-label{{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:rgba(240,242,255,.35);margin-top:2px}}
-h1{{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:rgba(240,242,255,.4);margin:0 0 10px;font-weight:400}}
-h2{{font-size:30px;font-weight:700;line-height:1.1;margin:0 0 24px;color:#f0f2ff}}
-h2 span{{background:linear-gradient(135deg,#00c8ff,#a06be8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}}
-p{{font-size:15px;line-height:1.75;color:rgba(240,242,255,.65);margin:0 0 32px;font-weight:300}}
-a.btn{{display:inline-block;background:linear-gradient(135deg,#00c8ff,#7b35d4);color:#06091a;text-decoration:none;font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;padding:16px 40px}}
-.note{{font-size:11px;color:rgba(240,242,255,.25);margin-top:32px;line-height:1.7}}
-.footer{{margin-top:48px;padding-top:24px;border-top:1px solid rgba(240,242,255,.08);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(240,242,255,.18)}}
+body,table,td{{margin:0;padding:0;border:0;font-family:'Helvetica Neue',Arial,sans-serif}}
+body{{background:#06091a}}
+.outer{{background:#06091a;padding:0 20px 48px}}
+.wrap{{max-width:520px;margin:0 auto;background:#06091a}}
+.top-bar{{padding:24px 0 20px;display:table;width:100%}}
+.top-logo{{display:table-cell;vertical-align:middle}}
+.top-chip{{display:table-cell;text-align:right;vertical-align:middle}}
+.chip{{display:inline-block;background:rgba(0,200,255,0.12);color:#00c8ff;font-size:9px;letter-spacing:.2em;text-transform:uppercase;padding:5px 10px;border:1px solid rgba(0,200,255,0.3)}}
+.grad-bar{{height:3px;background:linear-gradient(135deg,#00c8ff 0%,#5e28a8 60%,#7b35d4 100%);margin-bottom:32px}}
+.shutter-wrap{{text-align:center;margin-bottom:28px}}
+.studio-name{{text-align:center;font-size:28px;font-weight:700;letter-spacing:.04em;background:linear-gradient(135deg,#00c8ff,#a06be8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0 0 28px}}
+.greeting{{text-align:center;font-size:18px;font-weight:600;color:#f0f2ff;margin:0 0 10px}}
+.body-text{{text-align:center;font-size:14px;line-height:1.75;color:rgba(240,242,255,.6);margin:0 0 32px;font-weight:300}}
+.btn-wrap{{text-align:center;margin-bottom:40px}}
+a.btn{{display:inline-block;background:linear-gradient(135deg,#00c8ff,#7b35d4);color:#06091a;text-decoration:none;font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;padding:16px 44px}}
+.note{{text-align:center;font-size:11px;color:rgba(240,242,255,.25);line-height:1.7;margin-bottom:40px}}
+.footer{{text-align:center;padding-top:20px;border-top:1px solid rgba(240,242,255,.08);font-size:10px;color:rgba(240,242,255,.18)}}
 </style></head><body>
 <div class="outer"><div class="wrap">
 
-  <div class="logo-row">
-    <img src="https://studioyou.app/assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" width="40" height="40" style="display:block">
-    <img src="https://studioyou.app/assets/SY_OFFICIAL_SHUTTER_KEY.png" alt="" width="28" height="28" style="display:block">
+  <div class="top-bar">
+    <div class="top-logo">
+      <img src="https://studioyou.app/assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" width="36" height="36" style="display:block">
+    </div>
+    <div class="top-chip"><span class="chip">BRIEFING COMPLETE</span></div>
   </div>
 
-  <h1>{display_studio}</h1>
-  <h2>The briefing is done.<br><span>FutureYou is waiting.</span></h2>
+  <div class="grad-bar"></div>
 
-  <p>Your briefing is complete. FutureYou already has a direction for you — and the whole lot is standing by. One click gets you back inside.</p>
+  <div class="shutter-wrap">
+    <img src="https://studioyou.app/assets/SY_OFFICIAL_SHUTTER_KEY.png" alt="" width="56" height="56" style="display:inline-block">
+  </div>
 
-  <a class="btn" href="{link}">Enter Your Studio</a>
+  <div class="studio-name">{display_studio}</div>
+
+  <div class="greeting">Welcome back, {display_name}.</div>
+  <div class="body-text">Everything you built is right where you left it.<br>One click and you're back on the lot.</div>
+
+  <div class="btn-wrap"><a class="btn" href="{link}">Return to Your Studio</a></div>
 
   <div class="note">
-    This link expires in 24 hours.<br>
-    If you didn't request this, you can safely ignore it.
+    This link opens your studio directly — no password needed.<br>
+    It expires in 24 hours and can only be used once.<br>
+    If you didn't request this, you can safely ignore this email.
   </div>
 
-  <div class="footer">studioyou.app</div>
+  <div class="footer">&copy; 2026 StudioYou. All rights reserved.</div>
 
 </div></div></body></html>"""
 

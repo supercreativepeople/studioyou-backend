@@ -124,9 +124,20 @@ def send_magic_link_email(email, token, first_name="Creator", studio_name="Your 
     display_studio = studio_name if studio_name and studio_name not in ("Your Studio", "", None) else "Your Studio"
     display_name   = first_name  if first_name  and first_name  not in ("Creator",    "", None) else "Creator"
     subject = f"{display_studio} is ready for you."
+    words = display_studio.upper().split()
+    if len(words) > 1:
+        cyan_words = " ".join(words[:-1])
+        white_word = words[-1]
+        studio_name_html = (
+            '<span style="color:#00c8ff">' + cyan_words + '</span>'
+            ' <span style="color:#f0f2ff">' + white_word + '</span>'
+        )
+    else:
+        studio_name_html = '<span style="color:#00c8ff">' + words[0] + '</span>'
 
     body = f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
 body,table,td{{margin:0;padding:0;border:0;font-family:'Helvetica Neue',Arial,sans-serif}}
 body{{background:#06091a}}
@@ -138,7 +149,7 @@ body{{background:#06091a}}
 .chip{{display:inline-block;background:rgba(0,200,255,0.12);color:#00c8ff;font-size:9px;letter-spacing:.2em;text-transform:uppercase;padding:5px 10px;border:1px solid rgba(0,200,255,0.3)}}
 .grad-bar{{height:3px;background:linear-gradient(135deg,#00c8ff 0%,#5e28a8 60%,#7b35d4 100%);margin-bottom:32px}}
 .shutter-wrap{{text-align:center;margin-bottom:28px}}
-.studio-name{{text-align:center;font-size:42px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#00c8ff;margin:0 0 28px;line-height:1.05}}
+.studio-name{{text-align:center;font-family:'Bebas Neue','Helvetica Neue',Arial,sans-serif;font-size:52px;font-weight:400;letter-spacing:.03em;text-transform:uppercase;margin:0 0 28px;line-height:1.05}}
 .greeting{{text-align:center;font-size:18px;font-weight:600;color:#f0f2ff;margin:0 0 10px}}
 .body-text{{text-align:center;font-size:14px;line-height:1.75;color:rgba(240,242,255,.6);margin:0 0 32px;font-weight:300}}
 .btn-wrap{{text-align:center;margin-bottom:40px}}
@@ -161,7 +172,7 @@ a.btn{{display:inline-block;background:linear-gradient(135deg,#00c8ff,#7b35d4);c
     <img src="https://studioyou.app/assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" width="72" style="display:inline-block;width:72px;height:auto">
   </div>
 
-  <div class="studio-name">{display_studio.upper()}</div>
+  <div class="studio-name">{studio_name_html}</div>
 
   <div class="greeting">Welcome back, {display_name}.</div>
   <div class="body-text">Everything you built is right where you left it.<br>One click and you're back on the lot.</div>

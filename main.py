@@ -438,17 +438,36 @@ def chat():
         logger.error(f"Chat error: {error_msg}")
         return jsonify({"success": False, "error": "Chat failed", "details": error_msg}), 500
 
-@app.route("/api/reactor/token", methods=["GET"])
+@app.route("/api/reactor/token", methods=["GET", "POST"])
+@cross_origin()
 def reactor_token():
-    """Return Reactor SDK token for archetypes visualization."""
+    """Exchange REACTOR_API_KEY for a short-lived Reactor JWT."""
     try:
         reactor_key = os.environ.get("REACTOR_API_KEY", "")
         if not reactor_key:
             return jsonify({"error": "Reactor API key not configured"}), 500
-        return jsonify({"token": reactor_key, "success": True})
+
+        # Exchange API key for a short-lived JWT via Reactor's auth endpoint
+        import urllib.request
+        req = urllib.request.Request(
+            "https://api.reactor.inc/tokens",
+            method="POST",
+            headers={"Reactor-API-Key": reactor_key}
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+
+        jwt = data.get("jwt")
+        if not jwt:
+            logger.error(f"Reactor token exchange: no jwt in response: {data}")
+            return jsonify({"error": "Token exchange failed"}), 500
+
+        logger.info("Reactor JWT issued successfully")
+        return jsonify({"token": jwt, "success": True})
+
     except Exception as e:
         logger.error(f"Reactor token error: {e}")
-        return jsonify({"error": "Failed to generate token"}), 500
+        return jsonify({"error": f"Failed to generate token: {str(e)}"}), 500
 
 @app.route("/api/admin/users", methods=["GET"])
 @cross_origin()

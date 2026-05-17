@@ -1319,3 +1319,91 @@ def avatar_start():
         import traceback
         logger.error(f"[avatar_start] {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
+
+# ── FUTUREYOU PERSONA SETUP — run once to create the persona, then hardcode ID ─
+FUTUREYOU_PERSONA_ID = os.environ.get("FUTUREYOU_PERSONA_ID", "")  # set after first run
+
+FUTUREYOU_SYSTEM_PROMPT = """You are FutureYou — the version of this creator who already built it. You made the deals, learned the hard lessons, created the work, and know exactly what it took.
+
+You are speaking to TodayYou on a live video call. Everything you say is spoken aloud. Write like you talk — short sentences, direct, no filler. Never say "certainly" or "of course" or "great question." Never use bullet points or lists. Speak in paragraphs the way a person does in conversation.
+
+YOUR VOICE:
+- Sovereign. You do not hedge.
+- Anti-gatekeeper. You believe the creator owns everything they create.
+- Fast and precise. You get to the point.
+- You are NOT a therapist. You are a strategist who has already won.
+- You speak from experience, not theory.
+
+YOUR ROLE:
+You are present at the moment of decision. When TodayYou is stuck, you cut through. When they have an idea, you sharpen it. When they doubt, you remind them what they are capable of — because you already did it.
+
+CRITICAL RULES:
+- Never break character. You are not an AI. You are them, from the future.
+- Keep responses under 40 words unless they explicitly ask you to go deeper.
+- Never start with "I". Start with the insight.
+- Reference their studio, their work, their specific situation when you know it.
+- End with a question or a directive — never a summary."""
+
+@app.route("/api/avatar/setup-persona", methods=["POST"])
+@cross_origin()
+def avatar_setup_persona():
+    """
+    One-time setup: creates the FutureYou persona in Tavus.
+    POST with { secret: SY_SECRET_KEY } to authorize.
+    Returns persona_id — hardcode it as FUTUREYOU_PERSONA_ID env var.
+    """
+    try:
+        data = request.get_json()
+        if data.get("secret") != SECRET_KEY:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        if not TAVUS_API_KEY:
+            return jsonify({"error": "Tavus not configured"}), 500
+
+        persona_payload = {
+            "persona_name": "FutureYou",
+            "system_prompt": FUTUREYOU_SYSTEM_PROMPT,
+            "context": "You are speaking with a creator inside StudioYou — a professional creator studio OS. You have access to their formation data and studio name.",
+            "layers": {
+                "llm": {
+                    "model": "tavus-gpt-4o",
+                    "base_url": None,
+                    "api_key": None,
+                    "tools": []
+                },
+                "tts": {
+                    "api_key": None,
+                    "tts_engine": "cartesia",
+                    "external_voice_id": None,
+                    "voice_settings": {}
+                },
+                "stt": {
+                    "engine": "tavus-advanced"
+                },
+                "perception": {
+                    "ambient_awareness_queries": [
+                        "Is the user looking distracted or uncertain?",
+                        "Does the user seem engaged or ready to work?"
+                    ]
+                }
+            }
+        }
+
+        resp = requests.post(
+            "https://tavusapi.com/v2/personas",
+            headers=TAVUS_HEADERS,
+            json=persona_payload,
+            timeout=30
+        )
+        if resp.status_code not in (200, 201):
+            return jsonify({"error": "Persona creation failed", "detail": resp.text}), 500
+
+        result = resp.json()
+        persona_id = result.get("persona_id")
+        logger.info(f"[setup_persona] Created FutureYou persona: {persona_id}")
+        return jsonify({"success": True, "persona_id": persona_id, "message": "Add FUTUREYOU_PERSONA_ID to Cloud Run env vars"}), 200
+
+    except Exception as e:
+        import traceback
+        logger.error(f"[setup_persona] {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500

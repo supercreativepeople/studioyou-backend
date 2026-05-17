@@ -1243,3 +1243,79 @@ def avatar_conversation():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)
+
+# ── STOCK AVATAR — skip photo, use Raj replica + Interviewer persona ──────────
+STOCK_REPLICA_ID = "rf8f3aa4b33e"   # Raj - Home
+STOCK_PERSONA_ID = "pdac61133ac5"   # Interviewer
+
+@app.route("/api/avatar/start", methods=["POST"])
+@cross_origin()
+def avatar_start():
+    """
+    Skip photo upload. Start a CVI conversation immediately using
+    stock Raj replica + Interviewer persona with FY context injected.
+    Returns conversation_url.
+    """
+    try:
+        data = request.get_json()
+        email = data.get("email", "").strip().lower()
+
+        if not TAVUS_API_KEY:
+            return jsonify({"error": "Tavus not configured"}), 500
+
+        # Pull formation data for FY context
+        formation_context = ""
+        studio_name = "your studio"
+        first_name = "Creator"
+        try:
+            rows = sb_get("formations", {"email": f"eq.{email}", "select": "first_words,archetype,studio_name,first_name"})
+            if rows:
+                r = rows[0]
+                studio_name = r.get("studio_name") or "your studio"
+                first_name = r.get("first_name") or "Creator"
+                formation_context = (
+                    f"You are FutureYou — the future version of {first_name}, "
+                    f"speaking back through time to guide them. "
+                    f"Their studio is called {studio_name}. "
+                    f"Their creator archetype: {r.get('archetype','filmmaker')}. "
+                    f"Your opening words to them were: {r.get('first_words','')}. "
+                    f"Speak as if you have already built everything they are trying to build. "
+                    f"Be direct, confident, and specific. Never break character. "
+                    f"You are not an AI assistant — you are them, from the future."
+                )
+        except Exception as e:
+            logger.warning(f"[avatar_start] Could not load formation: {e}")
+
+        conv_payload = {
+            "replica_id": STOCK_REPLICA_ID,
+            "persona_id": STOCK_PERSONA_ID,
+            "conversation_name": f"FutureYou-{email or 'guest'}",
+            "conversational_context": formation_context or "You are FutureYou, an AI advisor helping a creator build their studio. Be direct and specific.",
+            "custom_greeting": f"I know what it took to get here, {first_name}. Let's get to work.",
+            "properties": {
+                "max_call_duration": 3600,
+                "enable_recording": False,
+            }
+        }
+
+        tavus_resp = requests.post(
+            "https://tavusapi.com/v2/conversations",
+            headers=TAVUS_HEADERS,
+            json=conv_payload,
+            timeout=30
+        )
+        if tavus_resp.status_code not in (200, 201):
+            logger.error(f"[avatar_start] Tavus error: {tavus_resp.text}")
+            return jsonify({"error": "Conversation creation failed", "detail": tavus_resp.text}), 500
+
+        conv_data = tavus_resp.json()
+        return jsonify({
+            "success": True,
+            "conversation_id": conv_data.get("conversation_id"),
+            "conversation_url": conv_data.get("conversation_url"),
+        }), 200
+
+    except Exception as e:
+        import traceback
+        logger.error(f"[avatar_start] {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500

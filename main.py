@@ -898,5 +898,188 @@ Then give First Words response (4-5 sentences max)."""
         print(f"[ERROR] formation_initialize: {e}\n{error_trace}", flush=True)
         return jsonify({'error': f'Initialization failed: {str(e)}'}), 500
 
+
+# ── TAVUS + LIVEKIT AVATAR ────────────────────────────────────────────────────
+
+TAVUS_API_KEY   = os.environ.get("TAVUS_API_KEY", "")
+LIVEKIT_API_KEY    = os.environ.get("LIVEKIT_API_KEY", "")
+LIVEKIT_API_SECRET = os.environ.get("LIVEKIT_API_SECRET", "")
+LIVEKIT_URL        = os.environ.get("LIVEKIT_URL", "")
+
+TAVUS_HEADERS = {
+    "x-api-key": TAVUS_API_KEY,
+    "Content-Type": "application/json",
+}
+
+@app.route("/api/avatar/upload", methods=["POST"])
+@cross_origin()
+def avatar_upload():
+    """
+    Accepts { email, photo_base64, mime_type } 
+    Uploads photo to Supabase Storage avatars bucket,
+    creates a Tavus replica, returns replica_id.
+    """
+    try:
+        data = request.get_json()
+        email = data.get("email", "").strip().lower()
+        photo_b64 = data.get("photo_base64", "")
+        mime_type = data.get("mime_type", "image/jpeg")
+
+        if not email or not photo_b64:
+            return jsonify({"error": "email and photo_base64 required"}), 400
+
+        if not TAVUS_API_KEY:
+            return jsonify({"error": "Tavus not configured"}), 500
+
+        # 1. Decode photo
+        import base64
+        photo_bytes = base64.b64decode(photo_b64)
+        ext = mime_type.split("/")[-1].replace("jpeg", "jpg")
+        filename = f"{email.replace('@','_').replace('.','_')}.{ext}"
+
+        # 2. Upload to Supabase Storage avatars bucket
+        storage_url = f"{SUPABASE_URL}/storage/v1/object/avatars/{filename}"
+        storage_headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": mime_type,
+            "x-upsert": "true",
+        }
+        upload_resp = requests.post(storage_url, headers=storage_headers, data=photo_bytes)
+        if upload_resp.status_code not in (200, 201):
+            logger.error(f"[avatar_upload] Storage upload failed: {upload_resp.text}")
+            return jsonify({"error": "Photo upload failed", "detail": upload_resp.text}), 500
+
+        photo_url = f"{SUPABASE_URL}/storage/v1/object/public/avatars/{filename}"
+
+        # 3. Create Tavus replica
+        replica_payload = {
+            "train_video_url": photo_url,
+            "replica_name": f"FutureYou-{email}",
+        }
+        tavus_resp = requests.post(
+            "https://tavusapi.com/v2/replicas",
+            headers=TAVUS_HEADERS,
+            json=replica_payload,
+            timeout=30
+        )
+        if tavus_resp.status_code not in (200, 201):
+            logger.error(f"[avatar_upload] Tavus replica failed: {tavus_resp.text}")
+            return jsonify({"error": "Replica creation failed", "detail": tavus_resp.text}), 500
+
+        replica_data = tavus_resp.json()
+        replica_id = replica_data.get("replica_id")
+
+        # 4. Store replica_id in Supabase formations
+        try:
+            sb_patch("formations", {"email": f"eq.{email}"}, {"data": {"replica_id": replica_id}})
+        except Exception as e:
+            logger.warning(f"[avatar_upload] Could not store replica_id: {e}")
+
+        return jsonify({"success": True, "replica_id": replica_id, "photo_url": photo_url}), 200
+
+    except Exception as e:
+        import traceback
+        logger.error(f"[avatar_upload] {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/avatar/status/<replica_id>", methods=["GET"])
+@cross_origin()
+def avatar_status(replica_id):
+    """Poll Tavus replica training status."""
+    try:
+        if not TAVUS_API_KEY:
+            return jsonify({"error": "Tavus not configured"}), 500
+
+        resp = requests.get(
+            f"https://tavusapi.com/v2/replicas/{replica_id}",
+            headers=TAVUS_HEADERS,
+            timeout=15
+        )
+        if resp.status_code != 200:
+            return jsonify({"error": "Status check failed", "detail": resp.text}), 500
+
+        d = resp.json()
+        return jsonify({
+            "replica_id": replica_id,
+            "status": d.get("status"),          # training | ready | error
+            "progress": d.get("training_progress"),
+        }), 200
+
+    except Exception as e:
+        logger.error(f"[avatar_status] {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/avatar/conversation", methods=["POST"])
+@cross_origin()
+def avatar_conversation():
+    """
+    Accepts { email, replica_id, persona_id (optional) }
+    Creates a Tavus CVI conversation, returns conversation_url for LiveKit.
+    """
+    try:
+        data = request.get_json()
+        email = data.get("email", "").strip().lower()
+        replica_id = data.get("replica_id", "")
+        persona_id = data.get("persona_id")
+
+        if not replica_id:
+            return jsonify({"error": "replica_id required"}), 400
+
+        if not TAVUS_API_KEY:
+            return jsonify({"error": "Tavus not configured"}), 500
+
+        # Pull formation data for FY context
+        formation_context = ""
+        try:
+            rows = sb_get("formations", {"email": f"eq.{email}", "select": "first_words,archetype,studio_name,formation_data"})
+            if rows:
+                r = rows[0]
+                formation_context = (
+                    f"You are FutureYou, the AI advisor for {r.get('studio_name','this studio')}. "
+                    f"Archetype: {r.get('archetype','creator')}. "
+                    f"Your opening words: {r.get('first_words','')}"
+                )
+        except Exception as e:
+            logger.warning(f"[avatar_conversation] Could not load formation: {e}")
+
+        conv_payload = {
+            "replica_id": replica_id,
+            "conversation_name": f"FutureYou-{email}",
+            "conversational_context": formation_context or "You are FutureYou, an AI advisor helping a creator build their studio.",
+            "custom_greeting": "I know what it took to get here. Let's get to work.",
+            "properties": {
+                "max_call_duration": 3600,
+                "enable_recording": False,
+            }
+        }
+        if persona_id:
+            conv_payload["persona_id"] = persona_id
+
+        tavus_resp = requests.post(
+            "https://tavusapi.com/v2/conversations",
+            headers=TAVUS_HEADERS,
+            json=conv_payload,
+            timeout=30
+        )
+        if tavus_resp.status_code not in (200, 201):
+            logger.error(f"[avatar_conversation] Tavus conversation failed: {tavus_resp.text}")
+            return jsonify({"error": "Conversation creation failed", "detail": tavus_resp.text}), 500
+
+        conv_data = tavus_resp.json()
+        return jsonify({
+            "success": True,
+            "conversation_id": conv_data.get("conversation_id"),
+            "conversation_url": conv_data.get("conversation_url"),
+        }), 200
+
+    except Exception as e:
+        import traceback
+        logger.error(f"[avatar_conversation] {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)

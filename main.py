@@ -1268,20 +1268,44 @@ def avatar_start():
         studio_name = "your studio"
         first_name = "Creator"
         try:
-            rows = sb_get("formations", {"email": f"eq.{email}", "select": "first_words,archetype,studio_name,first_name"})
+            rows = sb_get("formations", {"email": f"eq.{email}", "select": "first_words,archetype,studio_name,first_name,formation_data,data"})
             if rows:
                 r = rows[0]
                 studio_name = r.get("studio_name") or "your studio"
                 first_name = r.get("first_name") or "Creator"
+                archetype = r.get("archetype") or "filmmaker"
+                first_words = r.get("first_words") or ""
+                formation_data = r.get("formation_data") or []
+                briefing = (r.get("data") or {}).get("briefing") or {}
+
+                # Build formation answers block
+                formation_lines = ""
+                if formation_data and isinstance(formation_data, list):
+                    for i, ans in enumerate(formation_data[:12]):
+                        if ans:
+                            formation_lines += f"Q{i+1}: {ans}\n"
+
+                # Build briefing block
+                briefing_lines = ""
+                if briefing:
+                    if briefing.get("arsenal"):
+                        briefing_lines += f"Arsenal (strengths): {briefing['arsenal']}\n"
+                    if briefing.get("roadblock"):
+                        briefing_lines += f"Roadblock: {briefing['roadblock']}\n"
+                    if briefing.get("horizon"):
+                        briefing_lines += f"Horizon (goal): {briefing['horizon']}\n"
+
                 formation_context = (
                     f"You are FutureYou — the future version of {first_name}, "
                     f"speaking back through time to guide them. "
                     f"Their studio is called {studio_name}. "
-                    f"Their creator archetype: {r.get('archetype','filmmaker')}. "
-                    f"Your opening words to them were: {r.get('first_words','')}. "
-                    f"Speak as if you have already built everything they are trying to build. "
-                    f"Be direct, confident, and specific. Never break character. "
-                    f"You are not an AI assistant — you are them, from the future."
+                    f"Their creator archetype: {archetype}. "
+                    f"Your opening words to them were: {first_words}\n\n"
+                    f"WHAT THEY TOLD YOU DURING FORMATION:\n{formation_lines}"
+                    f"\nBRIEFING:\n{briefing_lines}"
+                    f"\nSpeak as if you have already lived everything they described above. "
+                    f"Be direct, confident, and specific. Reference their actual answers. "
+                    f"Never break character. You are not an AI — you are them, from the future."
                 )
         except Exception as e:
             logger.warning(f"[avatar_start] Could not load formation: {e}")

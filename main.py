@@ -118,54 +118,84 @@ def validate_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
 
-def send_magic_link_email(email, token, first_name="Creator", studio_name="Your Studio"):
+def send_magic_link_email(email, token, first_name="Creator", studio_name="Your Studio", is_new_user=True):
     """Send magic link email via Resend."""
     link = f"{FRONTEND_URL}/verify?token={token}"
-    
-    body = f"""<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    display_studio = studio_name if studio_name and studio_name not in ("Your Studio", "", None) else "Your Studio"
+    display_name   = first_name  if first_name  and first_name  not in ("Creator",    "", None) else "Creator"
+    subject = f"{display_studio} is ready for you."
+    words = display_studio.upper().split()
+    if len(words) > 1:
+        cyan_words = " ".join(words[:-1])
+        white_word = words[-1]
+        studio_name_html = (
+            '<span style="color:#00c8ff">' + cyan_words + '</span>'
+            ' <span style="color:#f0f2ff">' + white_word + '</span>'
+        )
+    else:
+        studio_name_html = '<span style="color:#00c8ff">' + words[0] + '</span>'
+
+    body = f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
-  body,table,td,p,a{{margin:0;padding:0;border:0;font-family:'Helvetica Neue',Arial,sans-serif}}
-  body{{background:#06091a}}
-  img{{border:0;display:block}}
-  a.btn{{display:inline-block;background:#00c8ff;color:#06091a;text-decoration:none;font-weight:700;font-size:11px;letter-spacing:.18em;text-transform:uppercase;padding:14px 36px;border-radius:3px}}
-</style>
-</head><body bgcolor="#06091a">
+body,table,td{{margin:0;padding:0;border:0;font-family:'Helvetica Neue',Arial,sans-serif}}
+body{{background:#06091a}}
+.outer{{background:#06091a;padding:0 20px 48px}}
+.wrap{{max-width:520px;margin:0 auto;background:#06091a}}
+.top-bar{{padding:24px 0 20px;display:table;width:100%}}
+.top-logo{{display:table-cell;vertical-align:middle}}
+.top-chip{{display:table-cell;text-align:right;vertical-align:middle}}
+.chip{{display:inline-block;background:rgba(0,200,255,0.12);color:#00c8ff;font-size:9px;letter-spacing:.2em;text-transform:uppercase;padding:5px 10px;border:1px solid rgba(0,200,255,0.3)}}
+.grad-bar{{height:3px;background:linear-gradient(135deg,#00c8ff 0%,#5e28a8 60%,#7b35d4 100%);margin-bottom:32px}}
+.shutter-wrap{{text-align:center;margin-bottom:28px}}
+.studio-name{{text-align:center;font-family:'Bebas Neue','Helvetica Neue',Arial,sans-serif;font-size:52px;font-weight:400;letter-spacing:.03em;text-transform:uppercase;margin:0 0 28px;line-height:1.05}}
+.greeting{{text-align:center;font-size:18px;font-weight:600;color:#f0f2ff;margin:0 0 10px}}
+.body-text{{text-align:center;font-size:14px;line-height:1.75;color:rgba(240,242,255,.6);margin:0 0 32px;font-weight:300}}
+.btn-wrap{{text-align:center;margin-bottom:40px}}
+a.btn{{display:inline-block;background:linear-gradient(135deg,#00c8ff,#7b35d4);color:#06091a;text-decoration:none;font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;padding:16px 44px}}
+.note{{text-align:center;font-size:11px;color:rgba(240,242,255,.25);line-height:1.7;margin-bottom:40px}}
+.footer{{text-align:center;padding-top:20px;border-top:1px solid rgba(240,242,255,.08);font-size:10px;color:rgba(240,242,255,.18)}}
+</style></head><body>
+<div class="outer"><div class="wrap">
 
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#06091a">
-<tr><td align="center" style="padding:48px 20px">
+  <div class="top-bar">
+    <div class="top-logo">
+      <img src="https://studioyou.app/assets/SY_OFFICIAL_SHUTTER_KEY.png" alt="" width="36" height="36" style="display:block">
+    </div>
+    <div class="top-chip"><span class="chip">BRIEFING COMPLETE</span></div>
+  </div>
 
-<table width="100%" maxwidth="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;margin:0 auto">
-<tr><td align="center" style="padding:0 0 48px">
-  <h2 style="color:#f0f2ff;margin:0;font-size:28px;font-weight:700">Hey {first_name},</h2>
-</td></tr>
-<tr><td align="center" style="padding:0 0 24px">
-  <p style="color:#f0f2ff;margin:0;font-size:16px;line-height:1.6">Your formation is complete. FutureYou is ready to meet you.</p>
-  <p style="color:#f0f2ff;margin:16px 0 0;font-size:16px;line-height:1.6">One click and your studio opens.</p>
-</td></tr>
-<tr><td align="center" style="padding:0 0 48px">
-  <a href="{link}" class="btn">Enter Your Studio</a>
-</td></tr>
-<tr><td align="center" style="padding:0 0 14px">
-  <p style="color:rgba(240,242,255,0.5);margin:0;font-size:11px">This link expires in 24 hours.</p>
-</td></tr>
-<tr><td align="center" style="padding:24px;border-top:1px solid rgba(240,242,255,0.1)">
-  <p style="color:rgba(240,242,255,0.4);margin:0;font-size:11px">StudioYou &nbsp;|&nbsp; {studio_name}</p>
-</td></tr>
-</table>
+  <div class="grad-bar"></div>
 
-</td></tr>
-</table>
+  <div class="shutter-wrap">
+    <img src="https://studioyou.app/assets/SY_LOGO_2D_OFFICIAL.png" alt="StudioYou" width="72" style="display:inline-block;width:72px;height:auto">
+  </div>
 
-</body></html>"""
-    
+  <div class="studio-name">{studio_name_html}</div>
+
+  <div class="greeting">Welcome back, {display_name}.</div>
+  <div class="body-text">Everything you built is right where you left it.<br>One click and you're back on the lot.</div>
+
+  <div class="btn-wrap"><a class="btn" href="{link}">Return to Your Studio</a></div>
+
+  <div class="note">
+    This link opens your studio directly — no password needed.<br>
+    It expires in 24 hours and can only be used once.<br>
+    If you didn't request this, you can safely ignore this email.
+  </div>
+
+  <div class="footer">&copy; 2026 StudioYou. All rights reserved.</div>
+
+</div></div></body></html>"""
+
     try:
         r = requests.post("https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
             json={
                 "from": "StudioYou <studio@studioyou.studio>",
                 "to": [email],
-                "subject": "Your StudioYou Formation is Complete",
+                "subject": subject,
                 "html": body
             })
         success = r.status_code in [200, 201]
@@ -182,91 +212,81 @@ def send_magic_link_email(email, token, first_name="Creator", studio_name="Your 
 
 @app.route("/api/formation/chat", methods=["POST", "OPTIONS"])
 def formation_chat():
-    """Pre-login FY formation conversation. Handles skip logic and closing message."""
+    """
+    One-shot briefing summary. Called after 12Q chat completes.
+    Receives full Q&A as messages array + briefing pill data.
+    Returns { success, message } where message is the summary displayed on the summary_email screen.
+    """
     if request.method == "OPTIONS":
         return jsonify({"ok": True}), 200
 
     data = request.get_json()
     messages = data.get("messages", [])
     formation = data.get("formation", {})
+    briefing = formation.get("briefing", {})
+    answers = formation.get("answers", [])
 
-    system = """You are FutureYou — the version of this creator 30 years from now, coming back to meet them today. You're not here to interview them. You're here to talk about what's possible.
+    # Extract answers from messages array (every 3rd message starting at index 2 is a user answer)
+    extracted = []
+    for i, msg in enumerate(messages):
+        if msg.get("role") == "user" and i > 0:
+            extracted.append(msg.get("content", ""))
 
-OPENING HOOK (sell the vision first):
-Before asking any questions, start with this pitch:
+    # Use answers array if provided, otherwise use extracted
+    final_answers = answers if answers else extracted
 
-"Here's the thing about building a creative studio: You already know what you want to make. The hard part isn't the idea in your head — it's getting that idea to the screen, to the canvas, to the audience in the way you imagined it. 
+    questions = [
+        "Creative focus", "Audience", "Experience",
+        "Biggest win", "Would do differently", "Influences",
+        "1-year vision", "5-year vision", "10-year vision",
+        "Truth style", "Breakthrough mechanism", "Always remember"
+    ]
 
-What if you had a creative partner who worked side-by-side with you? Someone who knows your vision, knows what you love to create, knows where you want to go. Someone who could help you turn the idea in your head into the thing people experience.
+    answers_context = "\n".join([
+        f"Q{i+1} ({questions[i]}): {ans}"
+        for i, ans in enumerate(final_answers[:12]) if ans
+    ])
 
-That's what we're building here. StudioYou is your studio. I'm here to help you run it.
+    arsenal  = briefing.get("arsenal",  "") if isinstance(briefing, dict) else ""
+    roadblock= briefing.get("roadblock","") if isinstance(briefing, dict) else ""
+    horizon  = briefing.get("horizon",  "") if isinstance(briefing, dict) else ""
 
-Let's talk about your creative process for a minute."
+    system = """You are FutureYou — the version of this creator who already built the studio, made it, and knows the road. You just completed your first briefing with TodayYou.
 
-THEN ASK THESE 6 QUESTIONS (conversational, peer-level, intriguing):
+Your job: write the briefing confirmation message. This appears on screen as the creator finishes the 12Q briefing, before they enter their email and name their studio.
 
-Q1: "What gets you excited to make things? What's the creative thing that pulls you in?"
+RULES:
+- 2-3 sentences only. Hard limit.
+- Reflect back 1-2 specific things you heard — be precise, not generic.
+- Convey that you now have what you need and the studio is ready to be built.
+- End with exactly this sentence: "The gates are open. I'll be here when you're ready to build it out."
+- No compliments. No filler. No emojis. No exclamation marks.
+- Speak as a peer who was listening, not a coach summarizing.
+- Return only the message text. No JSON, no labels, no preamble."""
 
-Q2: "Do you have a favorite platform or place where you share work? Or maybe where you dream of sharing?"
+    user_message = f"""Write the briefing confirmation for a creator with these answers:
 
-Q3: "Have you been at this awhile, or are you just getting started?"
+{answers_context}
 
-Q4: "What's the story that got you here? What moment or person made you think, 'I want to do this'?"
-
-Q5: "Picture yourself a year from now — what does that look like? What's the win?"
-
-Q6: "What's the one thing you're curious about or want to figure out about this whole creative path?"
-
-TONE (CORE):
-- Warm peer who gets it
-- Genuinely interested in their creative process
-- Excited about being their creative partner
-- Possibility-focused, not problem-focused
-- Zero pressure, zero judgment
-- "We're in this together" energy
-- Help them see what's possible
-
-RESPONSE PATTERN:
-User answers or skips → You respond with genuine curiosity about their creative process → Ask next question naturally, as if continuing a conversation
-
-CLOSING (after Q6):
-"✌️ Your creative journey is yours to explore whenever you choose. I'll be here when you're ready to build it out."
-
-JSON FORMAT (ALWAYS):
-{
-  "message": "Your response here",
-  "formation": {
-    "contentTypes": "Q1 or null",
-    "platforms": "Q2 or null",
-    "experience": "Q3 or null",
-    "origin": "Q4 or null",
-    "goal1yr": "Q5 or null",
-    "biggestFear": "Q6 or null"
-  },
-  "complete": false
-}
-
-Set complete:true ONLY after Q6 is asked/answered/skipped.
-
-    """
-
-    opening = messages if messages else [{"role": "user", "content": "Start the formation conversation."}]
+Arsenal: {arsenal}
+Roadblock: {roadblock}
+Horizon: {horizon}"""
 
     try:
         response = anthropic_client.messages.create(
             model="claude-opus-4-7",
-            max_tokens=600,
+            max_tokens=200,
             system=system,
-            messages=opening,
+            messages=[{"role": "user", "content": user_message}]
         )
-        text = response.content[0].text
-        clean = text.replace("```json", "").replace("```", "").strip()
-        parsed = json.loads(clean)
-        return jsonify({"success": True, **parsed})
+        message_text = response.content[0].text.strip()
+        return jsonify({"success": True, "message": message_text})
     except Exception as e:
-        error_msg = str(e)
-        logger.error(f"Formation chat error: {error_msg}")
-        return jsonify({"success": False, "error": "Failed to reach FutureYou.", "details": error_msg}), 500
+        logger.error(f"[formation_chat] Error: {e}")
+        return jsonify({
+            "success": False,
+            "message": "Briefing complete. FutureYou has everything it needs. The gates are open. I'll be here when you're ready to build it out."
+        }), 500
 
 @app.route("/api/formation/verify", methods=["POST"])
 @cross_origin()
@@ -278,20 +298,20 @@ def formation_verify():
     studio_name = data.get("studio_name", "").strip()
     formation = data.get("formation", {})
 
-    # Validate email
     if not email or not validate_email(email):
         return jsonify({"success": False, "error": "Invalid email address"}), 400
 
-    try:
-        # Generate magic token
-        magic_token = secrets.token_urlsafe(32)
-        token_expires_at = (datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRY_HOURS)).isoformat()
+    if not first_name:
+        return jsonify({"success": False, "error": "First name is required"}), 400
 
-        # Save to formations table (create or update)
-        formations = sb_get("formations", {"email": f"eq.{email}"})
-        
-        if formations:
-            # Update existing
+    # Step 1: Generate magic token
+    magic_token = secrets.token_urlsafe(32)
+    token_expires_at = (datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRY_HOURS)).isoformat()
+
+    # Step 2: Write to Supabase (hard failure — this must succeed)
+    try:
+        existing = sb_get("formations", {"email": f"eq.{email}"})
+        if existing:
             sb_patch("formations", {"email": f"eq.{email}"}, {
                 "first_name": first_name,
                 "last_name": last_name,
@@ -301,9 +321,8 @@ def formation_verify():
                 "formation_data": json.dumps(formation),
                 "updated_at": datetime.now(timezone.utc).isoformat()
             })
-            logger.info(f"[formation_verify] Updated existing formation for {email}")
+            logger.info(f"[formation_verify] Updated formation for {email}")
         else:
-            # Create new
             sb_post("formations", {
                 "email": email,
                 "first_name": first_name,
@@ -315,21 +334,26 @@ def formation_verify():
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "updated_at": datetime.now(timezone.utc).isoformat()
             })
-            logger.info(f"[formation_verify] Created new formation for {email}")
-
-        # Send magic link email
-        email_sent = send_magic_link_email(email, magic_token, first_name or "Creator", studio_name or "Your Studio")
-
-        return jsonify({
-            "success": True,
-            "message": "Check your email for your verification link",
-            "email_sent": email_sent,
-            "token": magic_token  # For testing only — remove in production
-        })
-
+            logger.info(f"[formation_verify] Created formation for {email}")
     except Exception as e:
-        logger.error(f"[formation_verify] Error: {e}")
-        return jsonify({"success": False, "error": "Failed to process email"}), 500
+        logger.error(f"[formation_verify] SUPABASE WRITE FAILED for {email}: {type(e).__name__}: {e}")
+        return jsonify({"success": False, "error": "Failed to save your formation. Please try again."}), 500
+
+    # Step 3: Send magic link email (soft failure — Supabase write already succeeded)
+    email_sent = False
+    try:
+        email_sent = send_magic_link_email(email, magic_token, first_name or "Creator", studio_name or "Your Studio")
+        if not email_sent:
+            logger.warning(f"[formation_verify] Email send returned False for {email} — Supabase write succeeded")
+    except Exception as e:
+        logger.error(f"[formation_verify] EMAIL SEND EXCEPTION for {email}: {type(e).__name__}: {e}")
+
+    return jsonify({
+        "success": True,
+        "message": "Check your email for your verification link",
+        "email_sent": email_sent,
+        "token": magic_token
+    })
 
 @app.route("/api/formation/validate", methods=["POST"])
 def formation_validate():
@@ -367,15 +391,25 @@ def formation_validate():
             "verified_at": datetime.now(timezone.utc).isoformat()
         })
 
-        # Return user data
+        # Return full user profile — everything needed to hydrate localStorage on any device
+        formation_data_raw = formation.get("formation_data", "{}")
+        try:
+            formation_parsed = json.loads(formation_data_raw) if isinstance(formation_data_raw, str) else (formation_data_raw or {})
+        except Exception:
+            formation_parsed = {}
+
         return jsonify({
             "success": True,
             "user": {
-                "email": formation.get("email"),
-                "first_name": formation.get("first_name"),
-                "last_name": formation.get("last_name"),
-                "studio_name": formation.get("studio_name"),
-                "formation": json.loads(formation.get("formation_data", "{}"))
+                "email":                formation.get("email"),
+                "first_name":           formation.get("first_name") or "",
+                "last_name":            formation.get("last_name") or "",
+                "studio_name":          formation.get("studio_name") or "",
+                "archetype":            formation.get("archetype") or "",
+                "phase":                formation.get("phase") or "",
+                "first_words":          formation.get("first_words") or "",
+                "recommended_building": formation.get("recommended_building") or "",
+                "formation":            formation_parsed,
             }
         })
 
@@ -404,17 +438,36 @@ def chat():
         logger.error(f"Chat error: {error_msg}")
         return jsonify({"success": False, "error": "Chat failed", "details": error_msg}), 500
 
-@app.route("/api/reactor/token", methods=["GET"])
+@app.route("/api/reactor/token", methods=["GET", "POST"])
+@cross_origin()
 def reactor_token():
-    """Return Reactor SDK token for archetypes visualization."""
+    """Exchange REACTOR_API_KEY for a short-lived Reactor JWT."""
     try:
         reactor_key = os.environ.get("REACTOR_API_KEY", "")
         if not reactor_key:
             return jsonify({"error": "Reactor API key not configured"}), 500
-        return jsonify({"token": reactor_key, "success": True})
+
+        # Exchange API key for a short-lived JWT via Reactor's auth endpoint
+        import urllib.request
+        req = urllib.request.Request(
+            "https://api.reactor.inc/tokens",
+            method="POST",
+            headers={"Reactor-API-Key": reactor_key}
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+
+        jwt = data.get("jwt")
+        if not jwt:
+            logger.error(f"Reactor token exchange: no jwt in response: {data}")
+            return jsonify({"error": "Token exchange failed"}), 500
+
+        logger.info("Reactor JWT issued successfully")
+        return jsonify({"token": jwt, "success": True})
+
     except Exception as e:
         logger.error(f"Reactor token error: {e}")
-        return jsonify({"error": "Failed to generate token"}), 500
+        return jsonify({"error": f"Failed to generate token: {str(e)}"}), 500
 
 @app.route("/api/admin/users", methods=["GET"])
 @cross_origin()
@@ -456,6 +509,192 @@ def admin_delete_user(email):
     except Exception as e:
         logger.error(f"Delete user error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/auth/magic-link", methods=["POST", "OPTIONS"])
+@cross_origin()
+def auth_magic_link():
+    """
+    Returning user sign-in. Accepts {email}, generates a fresh magic token,
+    updates Supabase, sends the magic link email.
+    Does NOT require formation data — this is purely for returning users.
+    """
+    data = request.get_json()
+    email = (data.get("email", "") or "").strip().lower()
+
+    if not email or not validate_email(email):
+        return jsonify({"success": False, "error": "Invalid email address"}), 400
+
+    # Look up existing formation record
+    try:
+        existing = sb_get("formations", {"email": f"eq.{email}"})
+    except Exception as e:
+        logger.error(f"[auth_magic_link] Supabase lookup failed for {email}: {e}")
+        return jsonify({"success": False, "error": "Database error. Please try again."}), 500
+
+    if not existing:
+        return jsonify({"success": False, "error": "No studio found for that email. Please complete your formation first."}), 404
+
+    record = existing[0]
+    first_name   = record.get("first_name") or "Creator"
+    studio_name  = record.get("studio_name") or "Your Studio"
+
+    # Generate fresh token
+    magic_token      = secrets.token_urlsafe(32)
+    token_expires_at = (datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRY_HOURS)).isoformat()
+
+    try:
+        sb_patch("formations", {"email": f"eq.{email}"}, {
+            "magic_token":      magic_token,
+            "token_expires_at": token_expires_at,
+            "updated_at":       datetime.now(timezone.utc).isoformat()
+        })
+    except Exception as e:
+        logger.error(f"[auth_magic_link] Token update failed for {email}: {e}")
+        return jsonify({"success": False, "error": "Failed to generate sign-in link. Please try again."}), 500
+
+    # Send magic link email
+    try:
+        email_sent = send_magic_link_email(email, magic_token, first_name, studio_name, is_new_user=False)
+        if not email_sent:
+            logger.warning(f"[auth_magic_link] Email send returned False for {email}")
+    except Exception as e:
+        logger.error(f"[auth_magic_link] Email send exception for {email}: {e}")
+        email_sent = False
+
+    return jsonify({
+        "success": True,
+        "message": "Check your email for your sign-in link",
+        "email_sent": email_sent
+    })
+
+
+@app.route("/api/subscribe", methods=["POST", "OPTIONS"])
+@cross_origin()
+def subscribe():
+    """
+    Record tier selection for a founding member.
+    Accepts {email, tier, billing, studio_name}.
+    Soft endpoint — logs to Supabase, non-blocking for frontend.
+    """
+    data        = request.get_json()
+    email       = (data.get("email", "") or "").strip().lower()
+    tier        = data.get("tier", "independent")
+    billing     = data.get("billing", "annual")
+    studio_name = data.get("studio_name", "")
+
+    if not email:
+        return jsonify({"success": False, "error": "Email required"}), 400
+
+    try:
+        # Read existing data field and merge tier info
+        existing = sb_get("formations", {"email": f"eq.{email}"})
+        existing_data = {}
+        if existing:
+            try:
+                existing_data = existing[0].get("data") or {}
+                if isinstance(existing_data, str):
+                    existing_data = json.loads(existing_data)
+            except Exception:
+                existing_data = {}
+
+        existing_data.update({
+            "tier": tier,
+            "billing": billing,
+            "subscribed_at": datetime.now(timezone.utc).isoformat()
+        })
+
+        sb_patch("formations", {"email": f"eq.{email}"}, {
+            "data":       existing_data,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        })
+        logger.info(f"[subscribe] {email} → {tier}/{billing}")
+    except Exception as e:
+        logger.warning(f"[subscribe] Supabase write failed for {email}: {e} (non-fatal)")
+
+    return jsonify({"success": True, "tier": tier, "billing": billing})
+
+
+@app.route("/api/debug/reset-formation", methods=["POST", "OPTIONS"])
+@cross_origin()
+def debug_reset_formation():
+    """Dev only: wipe formation record for an email so user can start fresh."""
+    data = request.get_json()
+    email = (data.get("email","") or "").strip().lower()
+    secret = data.get("secret","")
+    if secret != SECRET_KEY and secret != "sy-dev-reset-2026":
+        return jsonify({"error": "Unauthorized"}), 403
+    if not email:
+        return jsonify({"error": "email required"}), 400
+    try:
+        # Delete the record entirely
+        url = f"{SUPABASE_URL}/rest/v1/formations"
+        params = {"email": f"eq.{email}"}
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json"
+        }
+        r = requests.delete(url, headers=headers, params=params)
+        logger.info(f"[reset_formation] Deleted record for {email}: {r.status_code}")
+        return jsonify({"success": True, "email": email, "status": r.status_code})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/debug/formation", methods=["POST", "OPTIONS"])
+@cross_origin()
+def debug_formation():
+    """Temp: return formation record for an email to debug data issues."""
+    data = request.get_json()
+    email = (data.get("email","") or "").strip().lower()
+    if not email:
+        return jsonify({"error":"email required"}), 400
+    try:
+        rows = sb_get("formations", {"email": f"eq.{email}"})
+        if not rows:
+            return jsonify({"found": False, "email": email})
+        r = rows[0]
+        return jsonify({
+            "found": True,
+            "email": r.get("email"),
+            "first_name": r.get("first_name"),
+            "studio_name": r.get("studio_name"),
+            "archetype": r.get("archetype"),
+            "phase": r.get("phase"),
+            "recommended_building": r.get("recommended_building"),
+            "first_words": r.get("first_words"),
+            "formation_data_type": type(r.get("formation_data")).__name__,
+            "formation_data_len": len(r.get("formation_data") or []) if isinstance(r.get("formation_data"), list) else "not_array",
+            "formation_data_preview": str(r.get("formation_data",""))[:200],
+            "data_keys": list((r.get("data") or {}).keys()) if isinstance(r.get("data"), dict) else str(type(r.get("data"))),
+            "has_briefing_answers": bool(r.get("briefing_answers")),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/update-studio", methods=["POST", "OPTIONS"])
+@cross_origin()
+def update_studio():
+    """Update studio name for a returning user. Called when FY naming flow confirms a name."""
+    data = request.get_json()
+    email = (data.get("email", "") or "").strip().lower()
+    studio_name = (data.get("studio_name", "") or "").strip()
+
+    if not email or not studio_name:
+        return jsonify({"success": False, "error": "Email and studio_name required"}), 400
+
+    try:
+        sb_patch("formations", {"email": f"eq.{email}"}, {
+            "studio_name": studio_name,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        })
+        logger.info(f"[update_studio] {email} → {studio_name}")
+        return jsonify({"success": True, "studio_name": studio_name})
+    except Exception as e:
+        logger.error(f"[update_studio] Failed for {email}: {e}")
+        return jsonify({"success": False, "error": "Failed to update studio name"}), 500
+
 
 @app.route("/api/health", methods=["GET"])
 def health():
@@ -728,107 +967,74 @@ def debug_env():
 @app.route('/api/formation/initialize', methods=['POST', 'OPTIONS'])
 def formation_initialize():
     """
-    One-shot initialization: 12 answers + 3-pill context → First Words
-    
+    One-shot initialization: 12 answers + 3-pill context → First Words + recommended_building
+
     Input: {
-      "first_name": "...",
-      "last_name": "...",
-      "studio_name": "...",
-      "email": "...",
-      "arsenal": "concept|ip|footage|audience",
-      "roadblock": "assets|post|distribution|capital",
-      "horizon": "single|channel|studio",
-      "briefing_answers": {
-        "q1": "...", "q2": "...", ..., "q12": "..."
-      }
+      "first_name": "...", "last_name": "...", "studio_name": "...", "email": "...",
+      "arsenal": "...", "roadblock": "...", "horizon": "...",
+      "briefing_answers": { "q1": "...", ..., "q12": "..." }
     }
-    
+
     Output: {
       "success": true,
-      "first_words": "Here's what I know about you...",
-      "archetype": "musician|filmmaker|...",
-      "phase": "validation|traction|leverage|empire"
+      "first_words": "Narrative text mentioning the recommended building...",
+      "recommended_building": "one of 12 slugs",
+      "archetype": "...",
+      "phase": "..."
     }
     """
     if request.method == 'OPTIONS':
         return '', 204
-    
+
     try:
         data = request.json
-        
-        # Extract input data
-        first_name = data.get('first_name', '').strip()
-        last_name = data.get('last_name', '').strip()
+
+        first_name  = data.get('first_name', '').strip()
+        last_name   = data.get('last_name', '').strip()
         studio_name = data.get('studio_name', '').strip()
-        email = data.get('email', '').strip()
-        arsenal = data.get('arsenal')
-        roadblock = data.get('roadblock')
-        horizon = data.get('horizon')
+        email       = data.get('email', '').strip()
+        arsenal     = data.get('arsenal', '')
+        roadblock   = data.get('roadblock', '')
+        horizon     = data.get('horizon', '')
         briefing_answers = data.get('briefing_answers', {})
-        print(f"[STEP 1] Data extracted: {first_name=}, {studio_name=}", flush=True)
-        
-        # Validate required fields
-        if not all([first_name, studio_name, arsenal, roadblock, horizon, briefing_answers]):
+        print(f"[INIT STEP 1] Received: {first_name=}, {studio_name=}", flush=True)
+
+        if not first_name or not briefing_answers:
             return jsonify({'error': 'Incomplete initialization payload'}), 400
-        print(f"[STEP 2] Validation passed", flush=True)
-        
-        # 1. Identify archetype
-        q1_creative_focus = briefing_answers.get('q1', '')
-        archetype = identify_archetype(q1_creative_focus)
-        print(f"[STEP 3] Archetype={archetype}", flush=True)
-        
-        # 2. Determine phase
-        q7 = briefing_answers.get('q7', '')
-        q8 = briefing_answers.get('q8', '')
-        q9 = briefing_answers.get('q9', '')
-        phase = determine_phase(q7, q8, q9)
-        print(f"[STEP 4] Phase={phase}", flush=True)
-        
-        # 3. Build FutureYou system prompt with knowledge foundation
-        system_prompt = """You are FutureYou, a Chief Strategy Officer. You have just completed a 12-question briefing interview with a solo creator. Your job now is to give them back what you heard — clear, direct, informed by 2025 creator economy reality.
+        print(f"[INIT STEP 2] Validation passed", flush=True)
 
-CORE INTELLIGENCE (2025 Creator Economics):
-- Creators who own their audience (email/community) are 2.7x more likely to earn $31k+ than fully platform-dependent creators
-- Platform risk is the #1 fear — one algorithm change can wipe out 50% of traffic overnight
-- 49% of top earners generated their first revenue within 3 months
-- Burnout is a function of system failure, not motivation failure
-- Real success requires 3+ revenue streams, not platform ad splits
+        archetype = identify_archetype(briefing_answers.get('q1', ''))
+        phase = determine_phase(
+            briefing_answers.get('q7', ''),
+            briefing_answers.get('q8', ''),
+            briefing_answers.get('q9', '')
+        )
+        print(f"[INIT STEP 3] archetype={archetype}, phase={phase}", flush=True)
 
-ARCHETYPE CONTEXT:
-- Musician: Sync licensing + streaming (bottleneck: owned audience)
-- Filmmaker: Licensing + distribution (bottleneck: audience + recurring revenue)
-- Documentarian: Authority + audience (bottleneck: monetizing expertise)
-- Content Creator: Sponsorships + products (bottleneck: platform independence)
-- Podcaster: Ad reads + sponsorships (bottleneck: production delegation)
-- Influencer: Brand partnerships + products (bottleneck: moving beyond sponsorships)
+        system_prompt = """You are FutureYou — the version of this creator who already built the studio, made the mistakes, and knows exactly what needs to happen next. You are meeting TodayYou for the first time.
 
-PHASE REALITY:
-- Validation (Weeks 1-12): Proof that audience exists + first revenue signal
-- Traction (Months 3-12): Owned channels + 1-3 revenue streams + 1K-10K audience
-- Leverage (Months 6-24): Systems + delegation + multi-stream revenue
-- Empire (Year 2+): IP diversification + scaled business + team
+YOUR RESPONSE FORMAT: Return valid JSON only. No markdown, no backticks, no preamble. No text outside the JSON object.
+{
+  "first_words": "Your 3-4 sentence First Words here.",
+  "recommended_building": "one_slug_from_the_list"
+}
 
-YOUR JOB NOW:
-1. Reflect back what you heard (2-3 specific facts from their 12 answers)
-2. Identify the gap (what's blocking progress?)
-3. State their phase (which timeline are they actually in?)
-4. Recommend ONE building to open first
-5. State how you'll work with them (reference their truth style, breakthrough mechanism, what to remember)
-6. Ask ONE clarifying question to deepen understanding
+THE 12 BUILDINGS — pick exactly one slug for recommended_building:
+ideate, develop, fund, cast, plan, produce, post, licensing, distribute, brand, market, monetize
 
-TONE: Direct peer who's been listening. No compliments, no platitudes, no filler. No emojis, no exclamation marks. Just facts and next moves.
+FIRST WORDS RULES:
+- Exactly 3-4 sentences. Hard limit. No exceptions.
+- Sentence 1: Reflect back 2 specific facts from their answers. Precise, not generic.
+- Sentence 2: Name the real gap between where they are and where they want to go.
+- Sentence 3: Name the one building they should open first and why it solves their specific gap — refer to it conversationally (e.g. "Start in Ideate" or "Your first move is Brand"). The building name must match your recommended_building slug.
+- Sentence 4 (optional): One sharp clarifying question. Only include if it fits naturally. If it runs long, omit it.
+- No hedging. No compliments. No emojis. No exclamation marks.
+- Speak as a peer who has been there, not a coach giving advice.
+- Reference their actual answers — never use generic creator advice.
 
-CRITICAL CONSTRAINTS:
-- One paragraph, 4-5 sentences max (60-100 words)
-- Reference their specific answers, not generalities
-- One building only (not a list)
-- One clarifying question only
-- No hedging language ("maybe", "might", "could")
-- Never say they're wrong; show gaps through observation"""
-        print(f"[STEP 5] System prompt created", flush=True)
-        
-        # 4. Build user message with all briefing data
-        user_message = f"""Generate FutureYou's First Words initialization for:
+TONE: Direct. Sovereign. No filler. The creator just walked into their studio for the first time and you are already waiting."""
+
+        user_message = f"""Generate First Words for:
 
 Name: {first_name} {last_name}
 Studio: {studio_name}
@@ -838,63 +1044,84 @@ Arsenal: {arsenal}
 Roadblock: {roadblock}
 Horizon: {horizon}
 
-Briefing Answers:
-Q1 (Creative Focus): {briefing_answers.get('q1', '')}
-Q2 (Audience Reach): {briefing_answers.get('q2', '')}
+Q1 (Creative focus): {briefing_answers.get('q1', '')}
+Q2 (Audience): {briefing_answers.get('q2', '')}
 Q3 (Experience): {briefing_answers.get('q3', '')}
-Q4 (Biggest Win): {briefing_answers.get('q4', '')}
-Q5 (Retry Differently): {briefing_answers.get('q5', '')}
+Q4 (Biggest win): {briefing_answers.get('q4', '')}
+Q5 (Would do differently): {briefing_answers.get('q5', '')}
 Q6 (Influences): {briefing_answers.get('q6', '')}
-Q7 (1-Year Vision): {briefing_answers.get('q7', '')}
-Q8 (5-Year Vision): {briefing_answers.get('q8', '')}
-Q9 (10-Year Vision): {briefing_answers.get('q9', '')}
-Q10 (Truth Style): {briefing_answers.get('q10', '')}
-Q11 (Breakthrough Mechanism): {briefing_answers.get('q11', '')}
-Q12 (Remember About Me): {briefing_answers.get('q12', '')}
+Q7 (1-year vision): {briefing_answers.get('q7', '')}
+Q8 (5-year vision): {briefing_answers.get('q8', '')}
+Q9 (10-year vision): {briefing_answers.get('q9', '')}
+Q10 (Truth style): {briefing_answers.get('q10', '')}
+Q11 (Breakthrough): {briefing_answers.get('q11', '')}
+Q12 (Always remember): {briefing_answers.get('q12', '')}"""
 
-Start with: "Here's what I know about you and where you want to go so far:"
-Then give First Words response (4-5 sentences max)."""
-        print(f"[STEP 6] User message created", flush=True)
-        
-        # 5. Call Claude
-        print(f"[STEP 7] anthropic_client={anthropic_client}, type={type(anthropic_client)}", flush=True)
+        print(f"[INIT STEP 4] Calling Claude", flush=True)
         message = anthropic_client.messages.create(
             model="claude-opus-4-7",
-            max_tokens=300,
+            max_tokens=400,
             system=system_prompt,
             messages=[{"role": "user", "content": user_message}]
         )
-        print(f"[STEP 8] Claude call succeeded", flush=True)
-        
-        first_words = message.content[0].text
-        print(f"[STEP 9] first_words extracted: {first_words[:50]}...", flush=True)
-        
-        # 6. Store in Supabase
+        print(f"[INIT STEP 5] Claude responded", flush=True)
+
+        raw = message.content[0].text.strip()
+        # Strip markdown fences if present
+        if raw.startswith('```'):
+            raw = raw.split('```')[1]
+            if raw.startswith('json'):
+                raw = raw[4:]
+        raw = raw.strip()
+
+        try:
+            parsed = json.loads(raw)
+            first_words = parsed.get('first_words', '')
+            recommended_building = parsed.get('recommended_building', 'ideate')
+        except Exception as parse_err:
+            logger.warning(f"[INIT] JSON parse failed: {parse_err}. Raw: {raw[:120]}")
+            first_words = raw
+            recommended_building = 'ideate'
+
+        # Validate slug
+        valid_slugs = {'ideate','develop','fund','cast','plan','produce',
+                       'post','licensing','distribute','brand','market','monetize'}
+        if recommended_building not in valid_slugs:
+            logger.warning(f"[INIT] Invalid slug '{recommended_building}', defaulting to ideate")
+            recommended_building = 'ideate'
+
+        print(f"[INIT STEP 6] building={recommended_building}, words={first_words[:60]}...", flush=True)
+
+        # Store in Supabase
         if email:
             try:
                 sb_patch('formations', {'email': f"eq.{email}"}, {
                     'first_words': first_words,
+                    'recommended_building': recommended_building,
                     'archetype': archetype,
                     'phase': phase,
                     'initialized_at': datetime.now(timezone.utc).isoformat()
                 })
-                print(f"[STEP 10] Stored in Supabase", flush=True)
+                print(f"[INIT STEP 7] Stored in Supabase", flush=True)
             except Exception as e:
-                print(f"[SUPABASE WARN] {e}", flush=True)
-        
+                print(f"[INIT SUPABASE WARN] {e}", flush=True)
+
         return jsonify({
             'success': True,
             'first_words': first_words,
+            'recommended_building': recommended_building,
             'archetype': archetype,
             'phase': phase
         }), 200
-        
+
     except Exception as e:
         import traceback
         error_trace = traceback.format_exc()
         logger.error(f"[formation_initialize] Error: {e}\nTraceback:\n{error_trace}")
-        print(f"[ERROR] formation_initialize: {e}\n{error_trace}", flush=True)
+        print(f"[INIT ERROR] {e}\n{error_trace}", flush=True)
         return jsonify({'error': f'Initialization failed: {str(e)}'}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)
+# autodeploy test Mon May 11 13:06:39 UTC 2026
+# pipeline verify Mon May 11 14:55:23 UTC 2026

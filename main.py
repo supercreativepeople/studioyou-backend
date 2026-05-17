@@ -1121,7 +1121,6 @@ Q12 (Always remember): {briefing_answers.get('q12', '')}"""
         print(f"[INIT ERROR] {e}\n{error_trace}", flush=True)
         return jsonify({'error': f'Initialization failed: {str(e)}'}), 500
 
-if __name__ == "__main__":
 
 # ── TAVUS + LIVEKIT AVATAR ────────────────────────────────────────────────────
 
@@ -1162,14 +1161,10 @@ def avatar_upload():
         if upload_resp.status_code not in (200, 201):
             return jsonify({"error": "Photo upload failed", "detail": upload_resp.text}), 500
         photo_url = f"{SUPABASE_URL}/storage/v1/object/public/avatars/{filename}"
-        replica_payload = {
-            "train_video_url": photo_url,
-            "replica_name": f"FutureYou-{email}",
-        }
         tavus_resp = requests.post(
             "https://tavusapi.com/v2/replicas",
             headers=TAVUS_HEADERS,
-            json=replica_payload,
+            json={"train_video_url": photo_url, "replica_name": f"FutureYou-{email}"},
             timeout=30
         )
         if tavus_resp.status_code not in (200, 201):
@@ -1192,11 +1187,7 @@ def avatar_status(replica_id):
     try:
         if not TAVUS_API_KEY:
             return jsonify({"error": "Tavus not configured"}), 500
-        resp = requests.get(
-            f"https://tavusapi.com/v2/replicas/{replica_id}",
-            headers=TAVUS_HEADERS,
-            timeout=15
-        )
+        resp = requests.get(f"https://tavusapi.com/v2/replicas/{replica_id}", headers=TAVUS_HEADERS, timeout=15)
         if resp.status_code != 200:
             return jsonify({"error": "Status check failed", "detail": resp.text}), 500
         d = resp.json()
@@ -1220,7 +1211,7 @@ def avatar_conversation():
             return jsonify({"error": "Tavus not configured"}), 500
         formation_context = ""
         try:
-            rows = sb_get("formations", {"email": f"eq.{email}", "select": "first_words,archetype,studio_name,formation_data"})
+            rows = sb_get("formations", {"email": f"eq.{email}", "select": "first_words,archetype,studio_name"})
             if rows:
                 r = rows[0]
                 formation_context = (
@@ -1239,24 +1230,16 @@ def avatar_conversation():
         }
         if persona_id:
             conv_payload["persona_id"] = persona_id
-        tavus_resp = requests.post(
-            "https://tavusapi.com/v2/conversations",
-            headers=TAVUS_HEADERS,
-            json=conv_payload,
-            timeout=30
-        )
+        tavus_resp = requests.post("https://tavusapi.com/v2/conversations", headers=TAVUS_HEADERS, json=conv_payload, timeout=30)
         if tavus_resp.status_code not in (200, 201):
             return jsonify({"error": "Conversation creation failed", "detail": tavus_resp.text}), 500
         conv_data = tavus_resp.json()
-        return jsonify({
-            "success": True,
-            "conversation_id": conv_data.get("conversation_id"),
-            "conversation_url": conv_data.get("conversation_url"),
-        }), 200
+        return jsonify({"success": True, "conversation_id": conv_data.get("conversation_id"), "conversation_url": conv_data.get("conversation_url")}), 200
     except Exception as e:
         import traceback
         logger.error(f"[avatar_conversation] {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=False)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080, debug=False)

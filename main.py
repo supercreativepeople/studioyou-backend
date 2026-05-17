@@ -1150,7 +1150,7 @@ def avatar_upload():
         photo_bytes = base64.b64decode(photo_b64)
         ext = mime_type.split("/")[-1].replace("jpeg", "jpg")
         filename = f"{email.replace('@','_').replace('.','_')}.{ext}"
-        storage_url = f"{SUPABASE_URL}/storage/v1/object/avatars/{filename}"
+        storage_url = f"{SUPABASE_URL}/storage/v1/object/AVATARS/{filename}"
         storage_headers = {
             "apikey": SUPABASE_KEY,
             "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -1160,7 +1160,7 @@ def avatar_upload():
         upload_resp = requests.post(storage_url, headers=storage_headers, data=photo_bytes)
         if upload_resp.status_code not in (200, 201):
             return jsonify({"error": "Photo upload failed", "detail": upload_resp.text}), 500
-        photo_url = f"{SUPABASE_URL}/storage/v1/object/public/avatars/{filename}"
+        photo_url = f"{SUPABASE_URL}/storage/v1/object/public/AVATARS/{filename}"
         tavus_resp = requests.post(
             "https://tavusapi.com/v2/replicas",
             headers=TAVUS_HEADERS,

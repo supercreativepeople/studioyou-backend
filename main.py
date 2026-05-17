@@ -1246,7 +1246,7 @@ if __name__ == "__main__":
 
 # ── STOCK AVATAR — skip photo, use Raj replica + Interviewer persona ──────────
 STOCK_REPLICA_ID = "rf8f3aa4b33e"   # Raj - Home
-STOCK_PERSONA_ID = "pdac61133ac5"   # Interviewer
+STOCK_PERSONA_ID = "pdac61133ac5"   # Interviewer (fallback only)
 
 @app.route("/api/avatar/start", methods=["POST"])
 @cross_origin()
@@ -1288,7 +1288,7 @@ def avatar_start():
 
         conv_payload = {
             "replica_id": STOCK_REPLICA_ID,
-            "persona_id": STOCK_PERSONA_ID,
+            "persona_id": FUTUREYOU_PERSONA_ID or STOCK_PERSONA_ID,
             "conversation_name": f"FutureYou-{email or 'guest'}",
             "conversational_context": formation_context or "You are FutureYou, an AI advisor helping a creator build their studio. Be direct and specific.",
             "custom_greeting": f"I know what it took to get here, {first_name}. Let's get to work.",

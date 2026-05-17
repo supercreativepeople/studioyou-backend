@@ -1363,30 +1363,6 @@ def avatar_setup_persona():
         persona_payload = {
             "persona_name": "FutureYou",
             "system_prompt": FUTUREYOU_SYSTEM_PROMPT,
-            "context": "You are speaking with a creator inside StudioYou — a professional creator studio OS. You have access to their formation data and studio name.",
-            "layers": {
-                "llm": {
-                    "model": "tavus-gpt-4o",
-                    "base_url": None,
-                    "api_key": None,
-                    "tools": []
-                },
-                "tts": {
-                    "api_key": None,
-                    "tts_engine": "cartesia",
-                    "external_voice_id": None,
-                    "voice_settings": {}
-                },
-                "stt": {
-                    "engine": "tavus-advanced"
-                },
-                "perception": {
-                    "ambient_awareness_queries": [
-                        "Is the user looking distracted or uncertain?",
-                        "Does the user seem engaged or ready to work?"
-                    ]
-                }
-            }
         }
 
         resp = requests.post(

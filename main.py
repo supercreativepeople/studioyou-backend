@@ -1407,3 +1407,285 @@ def avatar_setup_persona():
         import traceback
         logger.error(f"[setup_persona] {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
+
+
+# ── SESSION CLOSER ────────────────────────────────────────────────────────────
+# Fires when FY has enough to generate an action plan.
+# Takes conversation messages, runs through Claude, stores to fy_* tables.
+
+SESSION_CLOSER_PROMPT = """You are analyzing a conversation between a creator and FutureYou (their AI creative director).
+
+Your job is to extract a structured action plan from this conversation.
+
+Return ONLY valid JSON in this exact format, no other text:
+{
+  "building_slug": "one of: ideate|develop|fund|cast|plan|produce|post|licensing|distribute|brand|market|monetize",
+  "platform": "primary platform mentioned or null",
+  "session_summary": "one sentence — what was decided in this session",
+  "first_deliverable": "the single most important first output the creator should produce",
+  "actions": [
+    {
+      "text": "specific action item",
+      "type": "task|open_building|chat",
+      "target_building": "building slug if type is open_building, else null"
+    }
+  ]
+}
+
+Rules:
+- actions array: minimum 3, maximum 6 items
+- Each action must be specific and executable, not generic
+- building_slug must reflect where the work actually happens
+- first_deliverable must be concrete — a document, a video, a deck, not a vague goal
+- session_summary must be one sentence, past tense, specific to this creator's situation"""
+
+
+def sb_insert(table, data):
+    """Insert a row into a Supabase table, return the created row."""
+    url = f"{SUPABASE_URL}/rest/v1/{table}"
+    resp = requests.post(url, headers=SUPABASE_HEADERS, json=data, timeout=15)
+    if resp.status_code not in (200, 201):
+        raise Exception(f"Supabase insert failed [{table}]: {resp.text}")
+    rows = resp.json()
+    return rows[0] if isinstance(rows, list) and rows else rows
+
+
+@app.route("/api/session/start", methods=["POST"])
+@cross_origin()
+def session_start():
+    """
+    Create a new fy_session record when a FY conversation begins.
+    POST { email, session_type, tavus_conv_id }
+    Returns { session_id }
+    """
+    try:
+        data = request.get_json()
+        email = data.get("email", "").strip().lower()
+        session_type = data.get("session_type", "avatar")
+        tavus_conv_id = data.get("tavus_conv_id")
+
+        if not email:
+            return jsonify({"error": "email required"}), 400
+
+        row = sb_insert("fy_sessions", {
+            "email": email,
+            "session_type": session_type,
+            "status": "active",
+            "tavus_conv_id": tavus_conv_id,
+            "exchange_count": 0,
+        })
+
+        return jsonify({"success": True, "session_id": row.get("id")}), 200
+
+    except Exception as e:
+        import traceback
+        logger.error(f"[session_start] {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/session/close", methods=["POST"])
+@cross_origin()
+def session_close():
+    """
+    Close a FY session, generate action plan via Claude, store to fy_* tables.
+    POST {
+      email,
+      session_id,
+      exchange_count,
+      messages: [ { role: 'user'|'assistant', content: '...' } ]
+    }
+    Returns { plan_id, building_slug, session_summary, first_deliverable, actions }
+    """
+    try:
+        data = request.get_json()
+        email = data.get("email", "").strip().lower()
+        session_id = data.get("session_id")
+        exchange_count = data.get("exchange_count", 0)
+        messages = data.get("messages", [])
+
+        if not email or not session_id:
+            return jsonify({"error": "email and session_id required"}), 400
+
+        if not messages:
+            return jsonify({"error": "messages required to generate plan"}), 400
+
+        # Get user's current phase from formations
+        phase = 1
+        try:
+            rows = sb_get("formations", {"email": f"eq.{email}", "select": "phase"})
+            if rows and rows[0].get("phase"):
+                phase_val = rows[0]["phase"]
+                phase = int(phase_val) if str(phase_val).isdigit() else 1
+        except Exception:
+            pass
+
+        # Build transcript for Claude
+        transcript = "\n".join([
+            f"{'Creator' if m['role'] == 'user' else 'FutureYou'}: {m['content']}"
+            for m in messages
+            if m.get("content")
+        ])
+
+        # Generate plan via Claude
+        claude_resp = anthropic_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            system=SESSION_CLOSER_PROMPT,
+            messages=[{
+                "role": "user",
+                "content": f"Here is the conversation transcript:\n\n{transcript}"
+            }]
+        )
+
+        raw = claude_resp.content[0].text.strip()
+        # Strip markdown fences if present
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        plan_data = json.loads(raw.strip())
+
+        building_slug = plan_data.get("building_slug", "ideate")
+        platform = plan_data.get("platform")
+        session_summary = plan_data.get("session_summary", "")
+        first_deliverable = plan_data.get("first_deliverable", "")
+        actions = plan_data.get("actions", [])
+
+        # 1. Update fy_session record
+        sb_patch("fy_sessions",
+            {"id": f"eq.{session_id}"},
+            {"status": "closed", "exchange_count": exchange_count, "closed_at": "now()"}
+        )
+
+        # 2. Insert fy_session_plan
+        plan_row = sb_insert("fy_session_plans", {
+            "session_id": session_id,
+            "email": email,
+            "building_slug": building_slug,
+            "platform": platform,
+            "session_summary": session_summary,
+            "first_deliverable": first_deliverable,
+            "phase": phase,
+        })
+        plan_id = plan_row.get("id")
+
+        # 3. Insert fy_session_actions
+        for i, action in enumerate(actions[:6]):
+            sb_insert("fy_session_actions", {
+                "session_id": session_id,
+                "plan_id": plan_id,
+                "email": email,
+                "action_text": action.get("text", ""),
+                "action_type": action.get("type", "task"),
+                "target_building": action.get("target_building"),
+                "sort_order": i,
+                "completed": False,
+                "clicked_count": 0,
+            })
+
+        return jsonify({
+            "success": True,
+            "plan_id": plan_id,
+            "building_slug": building_slug,
+            "platform": platform,
+            "session_summary": session_summary,
+            "first_deliverable": first_deliverable,
+            "actions": actions,
+        }), 200
+
+    except json.JSONDecodeError as e:
+        logger.error(f"[session_close] JSON parse error: {e} — raw: {raw}")
+        return jsonify({"error": "Plan generation failed — could not parse Claude response"}), 500
+    except Exception as e:
+        import traceback
+        logger.error(f"[session_close] {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/session/action/complete", methods=["POST"])
+@cross_origin()
+def session_action_complete():
+    """
+    Mark an action as completed or record a click.
+    POST { action_id, completed (bool), click (bool) }
+    """
+    try:
+        data = request.get_json()
+        action_id = data.get("action_id")
+        completed = data.get("completed")
+        click = data.get("click", False)
+
+        if not action_id:
+            return jsonify({"error": "action_id required"}), 400
+
+        update = {}
+        if completed is not None:
+            update["completed"] = completed
+            if completed:
+                update["completed_at"] = "now()"
+
+        url = f"{SUPABASE_URL}/rest/v1/fy_session_actions?id=eq.{action_id}"
+        if click:
+            # Increment click count via RPC-style update
+            click_resp = requests.post(
+                f"{SUPABASE_URL}/rest/v1/rpc/increment_action_click",
+                headers=SUPABASE_HEADERS,
+                json={"action_id": action_id},
+                timeout=10
+            )
+
+        if update:
+            resp = requests.patch(url, headers=SUPABASE_HEADERS, json=update, timeout=10)
+            if resp.status_code not in (200, 204):
+                return jsonify({"error": "Update failed"}), 500
+
+        return jsonify({"success": True}), 200
+
+    except Exception as e:
+        logger.error(f"[session_action_complete] {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/session/journey", methods=["GET"])
+@cross_origin()
+def session_journey():
+    """
+    Return the full Journey Engine record for a user.
+    GET /api/session/journey?email=...
+    Returns plans + actions in display order.
+    """
+    try:
+        email = request.args.get("email", "").strip().lower()
+        if not email:
+            return jsonify({"error": "email required"}), 400
+
+        # Get all plans for this user
+        plans_url = f"{SUPABASE_URL}/rest/v1/fy_session_plans?email=eq.{email}&order=created_at.desc"
+        plans_resp = requests.get(plans_url, headers=SUPABASE_HEADERS, timeout=15)
+        plans = plans_resp.json() if plans_resp.status_code == 200 else []
+
+        if not plans:
+            return jsonify({"success": True, "plans": []}), 200
+
+        # Get all actions for this user
+        actions_url = f"{SUPABASE_URL}/rest/v1/fy_session_actions?email=eq.{email}&order=sort_order.asc"
+        actions_resp = requests.get(actions_url, headers=SUPABASE_HEADERS, timeout=15)
+        actions = actions_resp.json() if actions_resp.status_code == 200 else []
+
+        # Group actions by plan_id
+        actions_by_plan = {}
+        for a in actions:
+            pid = a.get("plan_id")
+            if pid not in actions_by_plan:
+                actions_by_plan[pid] = []
+            actions_by_plan[pid].append(a)
+
+        # Attach actions to plans
+        for plan in plans:
+            plan["actions"] = actions_by_plan.get(plan["id"], [])
+
+        return jsonify({"success": True, "plans": plans}), 200
+
+    except Exception as e:
+        logger.error(f"[session_journey] {e}")
+        return jsonify({"error": str(e)}), 500

@@ -38,7 +38,7 @@ jobs:
             --project ${{ env.PROJECT_ID }} \
             --region ${{ env.REGION }} \
             --allow-unauthenticated \
-            --set-env-vars="ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }},SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_KEY=${{ secrets.SUPABASE_KEY }},RESEND_API_KEY=${{ secrets.RESEND_API_KEY }},SY_SECRET_KEY=${{ secrets.SECRET_KEY }},FRONTEND_URL=https://studioyou.app,REACTOR_API_KEY=${{ secrets.REACTOR_API_KEY }}"
+            --set-env-vars="ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }},SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_KEY=${{ secrets.SUPABASE_KEY }},RESEND_API_KEY=${{ secrets.RESEND_API_KEY }},SY_SECRET_KEY=${{ secrets.SECRET_KEY }},FRONTEND_URL=https://studioyou.app,REACTOR_API_KEY=${{ secrets.REACTOR_API_KEY }},FAL_API_KEY=${{ secrets.FAL_API_KEY }}"
 
       - name: Verify deployment
         run: |

@@ -1528,7 +1528,7 @@ def session_close():
 
         # Generate plan via Claude
         claude_resp = anthropic_client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=1024,
             system=SESSION_CLOSER_PROMPT,
             messages=[{
@@ -1689,3 +1689,204 @@ def session_journey():
     except Exception as e:
         logger.error(f"[session_journey] {e}")
         return jsonify({"error": str(e)}), 500
+
+# ── MODEL GATEWAY ─────────────────────────────────────────────────────────────
+# Unified model invocation endpoint. Canvas never calls providers directly.
+# Routing: partner-direct API → Fal.ai fallback
+# Response format is consistent regardless of provider.
+
+FAL_API_KEY = os.environ.get("FAL_API_KEY", "")
+
+# Partner-direct registry
+# Keys are task identifiers. Values define the direct route.
+# Tasks NOT in this registry fall through to Fal.ai.
+PARTNER_DIRECT_REGISTRY = {
+    # Seedance video generation — direct when enterprise terms apply
+    # "seedance_video": {"provider": "seedance", "endpoint": "TBD"},
+
+    # StyleFrame storyboard — direct when API confirmed
+    # "styleframe_storyboard": {"provider": "styleframe", "endpoint": "TBD"},
+
+    # Reactor environment — already wired via /api/reactor/token
+    # Routes through existing Reactor endpoints, not this gateway
+}
+
+# Fal.ai model routing table
+# Maps task identifiers to Fal.ai endpoint paths
+FAL_MODEL_REGISTRY = {
+    # Video generation
+    "video_generate":        "fal-ai/seedance-v1-lite",
+    "video_generate_pro":    "fal-ai/seedance-v1-pro",
+    "video_generate_kling":  "fal-ai/kling-video/v2/master/text-to-video",
+
+    # Image generation
+    "image_generate":        "fal-ai/flux/schnell",
+    "image_generate_pro":    "fal-ai/flux-pro/v1.1",
+    "image_storyboard":      "fal-ai/flux/dev",
+
+    # Audio / music
+    "music_generate":        "fal-ai/stable-audio",
+
+    # Upscale / enhance
+    "image_upscale":         "fal-ai/clarity-upscaler",
+    "video_upscale":         "fal-ai/video-upscaler",
+}
+
+def invoke_fal(endpoint_path, params):
+    """
+    POST to Fal.ai queue endpoint.
+    Returns the result dict or raises on failure.
+    """
+    if not FAL_API_KEY:
+        raise Exception("FAL_API_KEY not configured")
+
+    # Submit to queue
+    submit_url = f"https://queue.fal.run/{endpoint_path}"
+    submit_resp = requests.post(
+        submit_url,
+        headers={
+            "Authorization": f"Key {FAL_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json=params,
+        timeout=30,
+    )
+    if submit_resp.status_code not in (200, 201):
+        raise Exception(f"Fal.ai submit failed [{submit_resp.status_code}]: {submit_resp.text}")
+
+    submit_data = submit_resp.json()
+    request_id = submit_data.get("request_id")
+    status_url = submit_data.get("status_url") or f"https://queue.fal.run/{endpoint_path}/requests/{request_id}/status"
+    result_url = submit_data.get("response_url") or f"https://queue.fal.run/{endpoint_path}/requests/{request_id}"
+
+    # Poll status (max 120s, 3s interval)
+    import time
+    for _ in range(40):
+        time.sleep(3)
+        status_resp = requests.get(
+            status_url,
+            headers={"Authorization": f"Key {FAL_API_KEY}"},
+            timeout=15,
+        )
+        if status_resp.status_code != 200:
+            continue
+        status_data = status_resp.json()
+        status = status_data.get("status")
+        if status == "COMPLETED":
+            break
+        if status in ("FAILED", "CANCELLED"):
+            raise Exception(f"Fal.ai job {status}: {status_data}")
+    else:
+        raise Exception("Fal.ai job timed out after 120s")
+
+    # Fetch result
+    result_resp = requests.get(
+        result_url,
+        headers={"Authorization": f"Key {FAL_API_KEY}"},
+        timeout=30,
+    )
+    if result_resp.status_code != 200:
+        raise Exception(f"Fal.ai result fetch failed [{result_resp.status_code}]: {result_resp.text}")
+
+    return result_resp.json()
+
+
+@app.route("/api/model/invoke", methods=["POST", "OPTIONS"])
+@cross_origin()
+def model_invoke():
+    """
+    Unified model gateway. Called from studio.html canvas.
+
+    POST {
+      "task":     "video_generate" | "image_generate" | "image_storyboard" | ...,
+      "building": "produce" | "develop" | "post" | ...,
+      "tier":     "independent" | "player" | "operator",
+      "params":   { ...task-specific payload... },
+      "email":    "user@example.com"  (optional, for logging)
+    }
+
+    Returns {
+      "success": true,
+      "output":  { ...provider response... },
+      "provider": "fal" | "seedance" | "styleframe" | ...,
+      "model":   "fal-ai/seedance-v1-lite" | ...,
+      "task":    "video_generate"
+    }
+    """
+    if request.method == "OPTIONS":
+        return jsonify({"ok": True}), 200
+
+    data = request.get_json()
+    task     = (data.get("task") or "").strip()
+    building = (data.get("building") or "").strip()
+    tier     = (data.get("tier") or "independent").strip()
+    params   = data.get("params") or {}
+    email    = (data.get("email") or "").strip().lower()
+
+    if not task:
+        return jsonify({"success": False, "error": "task is required"}), 400
+
+    logger.info(f"[model_invoke] task={task} building={building} tier={tier} email={email}")
+
+    # Check partner-direct registry first
+    if task in PARTNER_DIRECT_REGISTRY:
+        route = PARTNER_DIRECT_REGISTRY[task]
+        # Partner-direct routes implemented per-partner as they come online
+        # For now return not-yet-wired so canvas can handle gracefully
+        return jsonify({
+            "success": False,
+            "error": f"Partner-direct route for '{task}' not yet wired",
+            "provider": route["provider"],
+        }), 501
+
+    # Resolve Fal.ai endpoint
+    fal_model = FAL_MODEL_REGISTRY.get(task)
+    if not fal_model:
+        return jsonify({
+            "success": False,
+            "error": f"Unknown task '{task}'. Check FAL_MODEL_REGISTRY.",
+        }), 400
+
+    # Tier gate: player-only tasks
+    player_only_tasks = {"video_generate_pro", "video_generate_kling"}
+    if task in player_only_tasks and tier not in ("player", "operator"):
+        return jsonify({
+            "success": False,
+            "error": "This generation type requires Player tier.",
+            "upgrade_required": True,
+        }), 403
+
+    try:
+        output = invoke_fal(fal_model, params)
+        logger.info(f"[model_invoke] SUCCESS task={task} model={fal_model}")
+        return jsonify({
+            "success":  True,
+            "output":   output,
+            "provider": "fal",
+            "model":    fal_model,
+            "task":     task,
+        }), 200
+
+    except Exception as e:
+        logger.error(f"[model_invoke] FAILED task={task} model={fal_model}: {e}")
+        return jsonify({
+            "success": False,
+            "error":   str(e),
+            "task":    task,
+            "model":   fal_model,
+        }), 500
+
+
+@app.route("/api/model/tasks", methods=["GET"])
+@cross_origin()
+def model_tasks():
+    """
+    Returns available tasks and their routing.
+    Used by canvas to know what's available before rendering action buttons.
+    """
+    return jsonify({
+        "success": True,
+        "fal_tasks": list(FAL_MODEL_REGISTRY.keys()),
+        "partner_direct_tasks": list(PARTNER_DIRECT_REGISTRY.keys()),
+        "fal_configured": bool(FAL_API_KEY),
+    }), 200

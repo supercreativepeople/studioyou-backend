@@ -676,24 +676,38 @@ def debug_formation():
 @app.route("/api/update-studio", methods=["POST", "OPTIONS"])
 @cross_origin()
 def update_studio():
-    """Update studio name for a returning user. Called when FY naming flow confirms a name."""
+    """Update studio name and/or brand_story for a user."""
     data = request.get_json()
     email = (data.get("email", "") or "").strip().lower()
     studio_name = (data.get("studio_name", "") or "").strip()
+    brand_story = (data.get("brand_story", "") or "").strip()
 
-    if not email or not studio_name:
-        return jsonify({"success": False, "error": "Email and studio_name required"}), 400
+    if not email or (not studio_name and not brand_story):
+        return jsonify({"success": False, "error": "Email and at least one field required"}), 400
 
     try:
-        sb_patch("formations", {"email": f"eq.{email}"}, {
-            "studio_name": studio_name,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        })
-        logger.info(f"[update_studio] {email} → {studio_name}")
-        return jsonify({"success": True, "studio_name": studio_name})
+        patch = {"updated_at": datetime.now(timezone.utc).isoformat()}
+        if studio_name:
+            patch["studio_name"] = studio_name
+
+        if brand_story:
+            # Merge brand_story into existing formation_data JSON blob
+            existing = sb_get("formations", {"email": f"eq.{email}"})
+            if existing:
+                fd_raw = existing[0].get("formation_data", "{}")
+                try:
+                    fd = json.loads(fd_raw) if isinstance(fd_raw, str) else (fd_raw or {})
+                except Exception:
+                    fd = {}
+                fd["brand_story"] = brand_story
+                patch["formation_data"] = json.dumps(fd)
+
+        sb_patch("formations", {"email": f"eq.{email}"}, patch)
+        logger.info(f"[update_studio] {email} → studio={studio_name or '(unchanged)'} brand_story={'yes' if brand_story else 'no'}")
+        return jsonify({"success": True})
     except Exception as e:
         logger.error(f"[update_studio] Failed for {email}: {e}")
-        return jsonify({"success": False, "error": "Failed to update studio name"}), 500
+        return jsonify({"success": False, "error": "Failed to update"}), 500
 
 
 @app.route("/api/health", methods=["GET"])

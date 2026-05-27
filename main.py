@@ -73,6 +73,7 @@ SUPABASE_KEY      = os.environ.get("SUPABASE_KEY", "")
 RESEND_API_KEY    = os.environ.get("RESEND_API_KEY", "")
 SECRET_KEY        = os.environ.get("SY_SECRET_KEY", "dev-secret-change-in-prod")
 FRONTEND_URL      = os.environ.get("FRONTEND_URL", "https://studioyou.app")
+ADMIN_KEY         = "SY-ADMIN-2026"
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 REACTOR_API_KEY   = os.environ.get("REACTOR_API_KEY", "")
 
@@ -89,6 +90,10 @@ SUPABASE_HEADERS = {
 TOKEN_EXPIRY_HOURS = 24
 
 # ── SUPABASE HELPERS ──────────────────────────────────────────────────────────
+
+def check_admin_key():
+    """Verify X-Admin-Key header on admin requests."""
+    return request.headers.get("X-Admin-Key") == ADMIN_KEY
 
 def sb_get(table, params=None):
     """Get rows from a Supabase table."""
@@ -473,6 +478,8 @@ def reactor_token():
 @cross_origin()
 def admin_list_users():
     """List all users in formations table."""
+    if not check_admin_key():
+        return jsonify({"success": False, "error": "Unauthorized"}), 403
     try:
         if not SUPABASE_URL or not SUPABASE_KEY:
             logger.error("Missing Supabase configuration")
@@ -488,6 +495,8 @@ def admin_list_users():
 @cross_origin()
 def admin_get_user(email):
     """Get full formation data for a user."""
+    if not check_admin_key():
+        return jsonify({"success": False, "error": "Unauthorized"}), 403
     try:
         formations = sb_get("formations", {"email": f"eq.{email}"})
         
@@ -503,6 +512,8 @@ def admin_get_user(email):
 @cross_origin()
 def admin_delete_user(email):
     """Delete a user and all their data."""
+    if not check_admin_key():
+        return jsonify({"success": False, "error": "Unauthorized"}), 403
     try:
         sb_patch("formations", {"email": f"eq.{email}"}, {"deleted_at": datetime.now(timezone.utc).isoformat()})
         return jsonify({"success": True, "message": f"User {email} deleted successfully"})

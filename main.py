@@ -521,7 +521,8 @@ def admin_delete_user():
     try:
         from urllib.parse import quote
         url = f"{SUPABASE_URL}/rest/v1/formations?email=eq.{quote(email, safe='')}"
-        r = requests.patch(url, headers=SUPABASE_HEADERS, json={"deleted_at": datetime.now(timezone.utc).isoformat()})
+        delete_headers = {**SUPABASE_HEADERS, "Prefer": "return=minimal"}
+        r = requests.patch(url, headers=delete_headers, json={"deleted_at": datetime.now(timezone.utc).isoformat()})
         r.raise_for_status()
         return jsonify({"success": True, "message": f"User {email} deleted successfully"})
     except Exception as e:

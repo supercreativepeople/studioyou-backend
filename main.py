@@ -523,7 +523,9 @@ def admin_delete_user():
         url = f"{SUPABASE_URL}/rest/v1/formations?email=eq.{quote(email, safe='')}"
         delete_headers = {**SUPABASE_HEADERS, "Prefer": "return=minimal"}
         r = requests.patch(url, headers=delete_headers, json={"deleted_at": datetime.now(timezone.utc).isoformat()})
-        r.raise_for_status()
+        logger.info(f"[admin_delete] status={r.status_code} body={r.text[:300]}")
+        if not r.ok:
+            return jsonify({"success": False, "error": f"Supabase {r.status_code}: {r.text[:200]}"}), 500
         return jsonify({"success": True, "message": f"User {email} deleted successfully"})
     except Exception as e:
         logger.error(f"Delete user error: {e}")

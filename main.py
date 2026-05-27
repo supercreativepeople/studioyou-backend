@@ -508,12 +508,16 @@ def admin_get_user(email):
         logger.error(f"Get user error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route("/api/admin/users/<email>", methods=["DELETE"])
+@app.route("/api/admin/users/delete", methods=["POST", "OPTIONS"])
 @cross_origin()
-def admin_delete_user(email):
+def admin_delete_user():
     """Delete a user and all their data."""
     if not check_admin_key():
         return jsonify({"success": False, "error": "Unauthorized"}), 403
+    data = request.get_json()
+    email = (data.get("email", "") or "").strip().lower()
+    if not email:
+        return jsonify({"success": False, "error": "Email required"}), 400
     try:
         sb_patch("formations", {"email": f"eq.{email}"}, {"deleted_at": datetime.now(timezone.utc).isoformat()})
         return jsonify({"success": True, "message": f"User {email} deleted successfully"})

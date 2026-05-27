@@ -519,7 +519,10 @@ def admin_delete_user():
     if not email:
         return jsonify({"success": False, "error": "Email required"}), 400
     try:
-        sb_patch("formations", {"email": f"eq.{email}"}, {"deleted_at": datetime.now(timezone.utc).isoformat()})
+        from urllib.parse import quote
+        url = f"{SUPABASE_URL}/rest/v1/formations?email=eq.{quote(email, safe='')}"
+        r = requests.patch(url, headers=SUPABASE_HEADERS, json={"deleted_at": datetime.now(timezone.utc).isoformat()})
+        r.raise_for_status()
         return jsonify({"success": True, "message": f"User {email} deleted successfully"})
     except Exception as e:
         logger.error(f"Delete user error: {e}")

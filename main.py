@@ -252,9 +252,9 @@ def formation_chat():
         for i, ans in enumerate(final_answers[:12]) if ans
     ])
 
-    arsenal  = briefing.get("arsenal",  "") if isinstance(briefing, dict) else ""
-    roadblock= briefing.get("roadblock","") if isinstance(briefing, dict) else ""
-    horizon  = briefing.get("horizon",  "") if isinstance(briefing, dict) else ""
+    arsenal      = briefing.get("arsenal",      "") if isinstance(briefing, dict) else ""
+    roadblock    = briefing.get("roadblock",    "") if isinstance(briefing, dict) else ""
+    creator_type = briefing.get("creator_type", "") if isinstance(briefing, dict) else ""
 
     system = """You are FutureYou — the version of this creator who already built the studio, made it, and knows the road. You just completed your first briefing with TodayYou.
 
@@ -275,7 +275,7 @@ RULES:
 
 Arsenal: {arsenal}
 Roadblock: {roadblock}
-Horizon: {horizon}"""
+Creator Type: {creator_type}"""
 
     try:
         response = anthropic_client.messages.create(
@@ -839,7 +839,7 @@ def formation_briefing():
       "studioName": "My Studio Name",
       "arsenal": "concept|ip|footage|audience",
       "roadblock": "assets|post|distribution|capital",
-      "horizon": "single|channel|studio"
+      "creator_type": ["YouTuber", "Short-Form Creator"]
     }
     """
     if request.method == 'OPTIONS':
@@ -850,9 +850,9 @@ def formation_briefing():
         studio_name = data.get('studioName', 'Your Studio').strip()
         arsenal = data.get('arsenal')
         roadblock = data.get('roadblock')
-        horizon = data.get('horizon')
+        creator_type = data.get('creator_type')
 
-        if not all([arsenal, roadblock, horizon]):
+        if not all([arsenal, roadblock, creator_type]):
             return jsonify({'error': 'Incomplete briefing payload'}), 400
 
         # Translate codes to readable text
@@ -869,12 +869,8 @@ def formation_briefing():
             'distribution': 'Distribution',
             'capital': 'Capital'
         }.get(roadblock, roadblock)
-        
-        horizon_text = {
-            'single': 'Single Project Launch',
-            'channel': 'Channel Growth',
-            'studio': 'Multi-Vertical Studio'
-        }.get(horizon, horizon)
+
+        creator_type_text = ', '.join(creator_type) if isinstance(creator_type, list) else creator_type
 
         # CSO System Prompt
         cso_system_prompt = f"""You are FutureYou, a Chief Strategy Officer. You are fast, precise, and sovereign. You are an anti-gatekeeper architect. You are NOT a therapist.
@@ -885,7 +881,7 @@ Briefing Summary:
 - Studio: {studio_name}
 - What we're weaponizing: {arsenal_text}
 - Biggest roadblock: {roadblock_text}
-- Scale of empire: {horizon_text}
+- Creator type: {creator_type_text}
 
 Generate a response that:
 1. Is 2-3 sentences max
@@ -917,7 +913,7 @@ CRITICAL: Do not use mothering language. Do not be soft. Be the CSO who sees the
             'briefing': {
                 'arsenal': arsenal,
                 'roadblock': roadblock,
-                'horizon': horizon
+                'creator_type': creator_type
             },
             'firstWords': first_words
         }), 200
@@ -926,24 +922,55 @@ CRITICAL: Do not use mothering language. Do not be soft. Be the CSO who sees the
         print(f"Briefing endpoint error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-def identify_archetype(q1_creative_focus):
+def identify_archetype(q1_creative_focus, creator_type_pill=None):
     """
-    Maps Q1 answer to one of 6 archetypes.
-    Returns: 'musician' | 'filmmaker' | 'documentarian' | 'content_creator' | 'podcaster' | 'influencer'
+    Maps creator type to archetype.
+    Priority: pill selection → Q1 keyword fallback.
+    Returns: 'musician' | 'live_action_filmmaker' | 'generative_filmmaker' | 'documentarian'
+           | 'youtube_creator' | 'short_form_creator' | 'podcaster' | 'streamer'
+           | 'content_creator' | 'influencer' | 'multi_format'
     """
+    # Priority 1: explicit pill selection
+    pill_map = {
+        'Live Action Filmmaker':      'live_action_filmmaker',
+        'Generative AI Filmmaker':    'generative_filmmaker',
+        'Documentary Filmmaker':      'documentarian',
+        'YouTuber':                   'youtube_creator',
+        'Short-Form Creator':         'short_form_creator',
+        'Musician':                   'musician',
+        'Podcaster':                  'podcaster',
+        'Streamer':                   'streamer',
+        'Content Creator':            'content_creator',
+        'Influencer':                 'influencer',
+        'I Do It All':                'multi_format',
+    }
+    if creator_type_pill:
+        # Support multi-select — use first selection as primary archetype
+        pills = creator_type_pill if isinstance(creator_type_pill, list) else [creator_type_pill]
+        for pill in pills:
+            if pill in pill_map:
+                return pill_map[pill]
+
+    # Priority 2: Q1 free-text keyword fallback
     q1_lower = q1_creative_focus.lower() if q1_creative_focus else ""
-    
+
     if any(word in q1_lower for word in ['music', 'song', 'beat', 'track', 'album', 'producer', 'audio production']):
         return 'musician'
-    elif any(word in q1_lower for word in ['film', 'cinema', 'short', 'feature', 'cinematic', 'video production']):
-        return 'filmmaker'
-    elif any(word in q1_lower for word in ['documentary', 'doc', 'investigation', 'research', 'investigative']):
+    elif any(word in q1_lower for word in ['generative', 'ai film', 'ai cinema', 'sora', 'runway', 'gen-2', 'kling']):
+        return 'generative_filmmaker'
+    elif any(word in q1_lower for word in ['documentary', 'doc', 'investigation', 'investigative']):
         return 'documentarian'
-    elif any(word in q1_lower for word in ['youtube', 'tiktok', 'short-form', 'vlog', 'instagram', 'reels']):
-        return 'content_creator'
-    elif any(word in q1_lower for word in ['podcast', 'audio', 'episode', 'series', 'interview', 'show']):
+    elif any(word in q1_lower for word in ['film', 'cinema', 'feature', 'cinematic', 'video production', 'live action']):
+        return 'live_action_filmmaker'
+    elif any(word in q1_lower for word in ['youtube', 'vlog', 'long-form', 'longform']):
+        return 'youtube_creator'
+    elif any(word in q1_lower for word in ['tiktok', 'short-form', 'reels', 'shorts', 'vertical']):
+        return 'short_form_creator'
+    elif any(word in q1_lower for word in ['podcast', 'audio', 'episode', 'interview', 'show']):
         return 'podcaster'
-    elif any(word in q1_lower for word in ['personal brand', 'influence', 'follower', 'audience', 'authority', 'brand']):
+    elif any(word in q1_lower for word in ['stream', 'twitch', 'live', 'gaming']):
+        return 'streamer'
+    elif any(word in q1_lower for word in ['personal brand', 'influence', 'follower', 'authority']):
         return 'influencer'
     else:
         return 'content_creator'
@@ -1003,7 +1030,7 @@ def formation_initialize():
 
     Input: {
       "first_name": "...", "last_name": "...", "studio_name": "...", "email": "...",
-      "arsenal": "...", "roadblock": "...", "horizon": "...",
+      "arsenal": "...", "roadblock": "...", "creator_type": ["..."],
       "briefing_answers": { "q1": "...", ..., "q12": "..." }
     }
 
@@ -1027,7 +1054,7 @@ def formation_initialize():
         email       = data.get('email', '').strip()
         arsenal     = data.get('arsenal', '')
         roadblock   = data.get('roadblock', '')
-        horizon     = data.get('horizon', '')
+        creator_type = data.get('creator_type', None)
         briefing_answers = data.get('briefing_answers', {})
         print(f"[INIT STEP 1] Received: {first_name=}, {studio_name=}", flush=True)
 
@@ -1035,7 +1062,7 @@ def formation_initialize():
             return jsonify({'error': 'Incomplete initialization payload'}), 400
         print(f"[INIT STEP 2] Validation passed", flush=True)
 
-        archetype = identify_archetype(briefing_answers.get('q1', ''))
+        archetype = identify_archetype(briefing_answers.get('q1', ''), creator_type)
         phase = determine_phase(
             briefing_answers.get('q7', ''),
             briefing_answers.get('q8', ''),
@@ -1074,7 +1101,7 @@ Archetype: {archetype}
 Phase: {phase}
 Arsenal: {arsenal}
 Roadblock: {roadblock}
-Horizon: {horizon}
+Creator Type: {creator_type}
 
 Q1 (Creative focus): {briefing_answers.get('q1', '')}
 Q2 (Audience): {briefing_answers.get('q2', '')}
@@ -1324,8 +1351,9 @@ def avatar_start():
                         briefing_lines += f"Arsenal (strengths): {briefing['arsenal']}\n"
                     if briefing.get("roadblock"):
                         briefing_lines += f"Roadblock: {briefing['roadblock']}\n"
-                    if briefing.get("horizon"):
-                        briefing_lines += f"Horizon (goal): {briefing['horizon']}\n"
+                    if briefing.get("creator_type"):
+                        ct = briefing['creator_type']
+                        briefing_lines += f"Creator Type: {', '.join(ct) if isinstance(ct, list) else ct}\n"
 
                 formation_context = (
                     f"You are FutureYou — the future version of {first_name}, "

@@ -1950,3 +1950,366 @@ def model_tasks():
         "partner_direct_tasks": list(PARTNER_DIRECT_REGISTRY.keys()),
         "fal_configured": bool(FAL_API_KEY),
     }), 200
+
+
+# ── PROJECT SYSTEM ────────────────────────────────────────────────────────────
+# Session M — June 3, 2026
+# Endpoints: create, list (+ auto-create), update, archive, delete, set-active
+
+TIER_LIMITS = {
+    "operator":    {"active": 10, "archive": 25},
+    "independent": {"active": 3,  "archive": 15},
+    "player":      {"active": 5,  "archive": 20},
+}
+
+# Default FY path per archetype — buildings FY considers required
+ARCHETYPE_FY_PATH = {
+    "live_action_filmmaker": ["ideate", "develop", "fund", "cast", "plan", "produce", "post", "licensing", "distribute"],
+    "generative_filmmaker":  ["ideate", "develop", "produce", "post", "distribute", "market"],
+    "documentarian":         ["ideate", "develop", "fund", "produce", "post", "licensing", "distribute"],
+    "musician":              ["ideate", "develop", "produce", "post", "licensing", "market", "monetize"],
+    "youtube_creator":       ["ideate", "develop", "produce", "post", "distribute", "market", "monetize"],
+    "short_form_creator":    ["ideate", "develop", "produce", "post", "market", "monetize"],
+    "podcaster":             ["ideate", "develop", "produce", "post", "distribute", "market"],
+    "streamer":              ["ideate", "develop", "produce", "market", "monetize"],
+    "content_creator":       ["ideate", "develop", "produce", "post", "market", "monetize"],
+    "influencer":            ["ideate", "develop", "brand", "market", "monetize"],
+    "multi_format":          ["ideate", "develop", "produce", "post", "distribute", "brand", "market", "monetize"],
+}
+
+ARCHETYPE_PROJECT_NAME = {
+    "live_action_filmmaker": "LIVE ACTION PROJECT",
+    "generative_filmmaker":  "GENAI PILOT",
+    "documentarian":         "DOCUMENTARY PROJECT",
+    "musician":              "MUSIC PROJECT",
+    "youtube_creator":       "YOUTUBE SERIES",
+    "short_form_creator":    "SHORT-FORM SERIES",
+    "podcaster":             "PODCAST SERIES",
+    "streamer":              "STREAMING PROJECT",
+    "content_creator":       "CONTENT PROJECT",
+    "influencer":            "BRAND PROJECT",
+    "multi_format":          "MULTI-FORMAT PROJECT",
+}
+
+EMPTY_BUILDINGS_STATE = {
+    b: {
+        "state": "untouched",
+        "fy_flag": None,
+        "sections_visited": [],
+        "steps_completed": {},
+        "completion_pct": 0.0,
+        "last_visited": None,
+    }
+    for b in ["ideate","develop","fund","cast","plan","produce","post","licensing","distribute","brand","market","monetize"]
+}
+
+def get_user_formation(email):
+    """Fetch formation row for email. Returns dict or None."""
+    try:
+        rows = sb_get("formations", {"email": f"eq.{email}", "limit": "1"})
+        return rows[0] if rows else None
+    except Exception:
+        return None
+
+def fy_name_project(formation_row):
+    """Generate a FY-named project from formation data."""
+    archetype = (formation_row or {}).get("archetype", "content_creator") or "content_creator"
+    return ARCHETYPE_PROJECT_NAME.get(archetype, "NEW PROJECT")
+
+def fy_path_for_archetype(archetype):
+    return ARCHETYPE_FY_PATH.get(archetype, ARCHETYPE_FY_PATH["content_creator"])
+
+def count_projects(email, status):
+    """Count projects by email and status."""
+    try:
+        rows = sb_get("fy_projects", {
+            "user_email": f"eq.{email}",
+            "status": f"eq.{status}",
+            "select": "id",
+        })
+        return len(rows) if rows else 0
+    except Exception:
+        return 0
+
+def compute_journey_progress(buildings_state, fy_path):
+    """Recompute journey_progress from building completion across fy_path buildings."""
+    if not fy_path:
+        return 0.0
+    totals = []
+    for slug in fy_path:
+        b = buildings_state.get(slug, {})
+        totals.append(float(b.get("completion_pct", 0.0)))
+    return round(sum(totals) / len(totals), 4) if totals else 0.0
+
+
+@app.route("/api/projects/list", methods=["GET", "OPTIONS"])
+@cross_origin()
+def projects_list():
+    """
+    List all projects for a user.
+    If no projects exist, auto-creates a default FY-named active project.
+    Query: ?email=
+    """
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    email = request.args.get("email", "").strip().lower()
+    if not email:
+        return jsonify({"success": False, "error": "email required"}), 400
+
+    try:
+        rows = sb_get("fy_projects", {
+            "user_email": f"eq.{email}",
+            "order": "last_accessed.desc",
+        })
+
+        # Auto-create default project on first dashboard load
+        if not rows:
+            formation = get_user_formation(email)
+            archetype = (formation or {}).get("archetype", "content_creator") or "content_creator"
+            name = fy_name_project(formation)
+            fy_path = fy_path_for_archetype(archetype)
+
+            new_project = {
+                "user_email": email,
+                "name": name,
+                "status": "active",
+                "fy_path": fy_path,
+                "buildings": EMPTY_BUILDINGS_STATE,
+                "journey_progress": 0.0,
+                "vault_count": 0,
+            }
+            created = sb_insert("fy_projects", new_project)
+            rows = [created] if created else []
+
+        return jsonify({"success": True, "projects": rows}), 200
+
+    except Exception as e:
+        logger.error(f"[projects_list] {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/projects/create", methods=["POST", "OPTIONS"])
+@cross_origin()
+def projects_create():
+    """
+    Create a new project. Enforces tier active limit.
+    Body: { email, name (optional), tier }
+    """
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    body = request.get_json(force=True) or {}
+    email = (body.get("email") or "").strip().lower()
+    tier = (body.get("tier") or "operator").strip().lower()
+    name = (body.get("name") or "").strip()
+
+    if not email:
+        return jsonify({"success": False, "error": "email required"}), 400
+
+    limits = TIER_LIMITS.get(tier, TIER_LIMITS["operator"])
+    active_count = count_projects(email, "active")
+
+    if active_count >= limits["active"]:
+        return jsonify({
+            "success": False,
+            "error": f"Active project limit reached ({limits['active']} for {tier} tier). Archive a project to create a new one.",
+            "limit_hit": True,
+        }), 400
+
+    formation = get_user_formation(email)
+    archetype = (formation or {}).get("archetype", "content_creator") or "content_creator"
+    if not name:
+        name = fy_name_project(formation)
+    fy_path = fy_path_for_archetype(archetype)
+
+    try:
+        project = {
+            "user_email": email,
+            "name": name,
+            "status": "active",
+            "fy_path": fy_path,
+            "buildings": EMPTY_BUILDINGS_STATE,
+            "journey_progress": 0.0,
+            "vault_count": 0,
+        }
+        created = sb_insert("fy_projects", project)
+        return jsonify({"success": True, "project": created}), 201
+
+    except Exception as e:
+        logger.error(f"[projects_create] {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/projects/update", methods=["POST", "OPTIONS"])
+@cross_origin()
+def projects_update():
+    """
+    Update building state and/or step completions for a project.
+    Recalculates journey_progress automatically.
+    Body: { project_id, building_slug, state (optional), sections_visited (optional),
+            steps_completed (optional), completion_pct (optional), name (optional) }
+    """
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    body = request.get_json(force=True) or {}
+    project_id = (body.get("project_id") or "").strip()
+    building_slug = (body.get("building_slug") or "").strip()
+
+    if not project_id:
+        return jsonify({"success": False, "error": "project_id required"}), 400
+
+    try:
+        # Fetch current project
+        rows = sb_get("fy_projects", {"id": f"eq.{project_id}", "limit": "1"})
+        if not rows:
+            return jsonify({"success": False, "error": "project not found"}), 404
+        project = rows[0]
+
+        buildings = project.get("buildings") or dict(EMPTY_BUILDINGS_STATE)
+        fy_path = project.get("fy_path") or []
+
+        # Apply building update if slug provided
+        if building_slug:
+            if building_slug not in buildings:
+                buildings[building_slug] = {
+                    "state": "untouched", "fy_flag": None,
+                    "sections_visited": [], "steps_completed": {},
+                    "completion_pct": 0.0, "last_visited": None,
+                }
+            b = buildings[building_slug]
+            if "state" in body:
+                b["state"] = body["state"]
+            if "sections_visited" in body:
+                b["sections_visited"] = body["sections_visited"]
+            if "steps_completed" in body:
+                b["steps_completed"] = body["steps_completed"]
+            if "completion_pct" in body:
+                b["completion_pct"] = float(body["completion_pct"])
+            b["last_visited"] = datetime.now(timezone.utc).isoformat()
+
+            # Auto-advance state: untouched → active when first visited
+            if b["state"] == "untouched" and (b["sections_visited"] or b["steps_completed"]):
+                b["state"] = "active"
+
+        journey_progress = compute_journey_progress(buildings, fy_path)
+
+        patch_data = {
+            "buildings": buildings,
+            "journey_progress": journey_progress,
+            "last_accessed": datetime.now(timezone.utc).isoformat(),
+        }
+        if "name" in body and body["name"].strip():
+            patch_data["name"] = body["name"].strip()
+
+        sb_patch("fy_projects", {"id": f"eq.{project_id}"}, patch_data)
+        return jsonify({
+            "success": True,
+            "journey_progress": journey_progress,
+            "building_state": buildings.get(building_slug) if building_slug else None,
+        }), 200
+
+    except Exception as e:
+        logger.error(f"[projects_update] {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/projects/archive", methods=["POST", "OPTIONS"])
+@cross_origin()
+def projects_archive():
+    """
+    Archive an active project. Enforces archive limit.
+    Body: { project_id, email, tier }
+    """
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    body = request.get_json(force=True) or {}
+    project_id = (body.get("project_id") or "").strip()
+    email = (body.get("email") or "").strip().lower()
+    tier = (body.get("tier") or "operator").strip().lower()
+
+    if not project_id or not email:
+        return jsonify({"success": False, "error": "project_id and email required"}), 400
+
+    limits = TIER_LIMITS.get(tier, TIER_LIMITS["operator"])
+    archive_count = count_projects(email, "archived")
+
+    if archive_count >= limits["archive"]:
+        return jsonify({
+            "success": False,
+            "error": f"Archive limit reached ({limits['archive']} for {tier} tier). Permanently delete an archived project to make room.",
+            "limit_hit": True,
+        }), 400
+
+    try:
+        sb_patch("fy_projects", {"id": f"eq.{project_id}"}, {
+            "status": "archived",
+            "last_accessed": datetime.now(timezone.utc).isoformat(),
+        })
+        return jsonify({"success": True}), 200
+
+    except Exception as e:
+        logger.error(f"[projects_archive] {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/projects/delete", methods=["DELETE", "OPTIONS"])
+@cross_origin()
+def projects_delete():
+    """
+    Permanently delete a project. Irreversible.
+    Body: { project_id, email }
+    """
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    body = request.get_json(force=True) or {}
+    project_id = (body.get("project_id") or "").strip()
+    email = (body.get("email") or "").strip().lower()
+
+    if not project_id or not email:
+        return jsonify({"success": False, "error": "project_id and email required"}), 400
+
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/fy_projects"
+        r = requests.delete(url, headers=SUPABASE_HEADERS, params={
+            "id": f"eq.{project_id}",
+            "user_email": f"eq.{email}",  # safety: only delete own projects
+        })
+        r.raise_for_status()
+        return jsonify({"success": True}), 200
+
+    except Exception as e:
+        logger.error(f"[projects_delete] {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/projects/set-active", methods=["POST", "OPTIONS"])
+@cross_origin()
+def projects_set_active():
+    """
+    Set a project as the active context (updates last_accessed).
+    Body: { project_id, email }
+    """
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    body = request.get_json(force=True) or {}
+    project_id = (body.get("project_id") or "").strip()
+    email = (body.get("email") or "").strip().lower()
+
+    if not project_id or not email:
+        return jsonify({"success": False, "error": "project_id and email required"}), 400
+
+    try:
+        sb_patch("fy_projects", {"id": f"eq.{project_id}"}, {
+            "last_accessed": datetime.now(timezone.utc).isoformat(),
+        })
+        return jsonify({"success": True}), 200
+
+    except Exception as e:
+        logger.error(f"[projects_set_active] {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+

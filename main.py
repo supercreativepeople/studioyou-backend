@@ -2064,23 +2064,34 @@ def projects_list():
         })
 
         # Auto-create default project on first dashboard load
+        # Double-check with a count query before inserting to prevent race-condition duplicates
         if not rows:
-            formation = get_user_formation(email)
-            archetype = (formation or {}).get("archetype", "content_creator") or "content_creator"
-            name = fy_name_project(formation)
-            fy_path = fy_path_for_archetype(archetype)
+            count_check = sb_get("fy_projects", {
+                "user_email": f"eq.{email}",
+                "select": "id",
+            })
+            if not count_check:
+                formation = get_user_formation(email)
+                archetype = (formation or {}).get("archetype", "content_creator") or "content_creator"
+                name = fy_name_project(formation)
+                fy_path = fy_path_for_archetype(archetype)
 
-            new_project = {
-                "user_email": email,
-                "name": name,
-                "status": "active",
-                "fy_path": fy_path,
-                "buildings": EMPTY_BUILDINGS_STATE,
-                "journey_progress": 0.0,
-                "vault_count": 0,
-            }
-            created = sb_insert("fy_projects", new_project)
-            rows = [created] if created else []
+                new_project = {
+                    "user_email": email,
+                    "name": name,
+                    "status": "active",
+                    "fy_path": fy_path,
+                    "buildings": EMPTY_BUILDINGS_STATE,
+                    "journey_progress": 0.0,
+                    "vault_count": 0,
+                }
+                created = sb_insert("fy_projects", new_project)
+                rows = [created] if created else []
+            else:
+                rows = sb_get("fy_projects", {
+                    "user_email": f"eq.{email}",
+                    "order": "last_accessed.desc",
+                })
 
         return jsonify({"success": True, "projects": rows}), 200
 

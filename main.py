@@ -121,11 +121,15 @@ def sb_delete(table, params):
     headers = {
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
-        "Content-Type": "application/json",
+        "Prefer": "return=representation",
     }
     r = requests.delete(url, headers=headers, params=params, timeout=15)
+    logger.info(f"[sb_delete] {table} status={r.status_code} body={r.text[:200]}")
     r.raise_for_status()
-    return True
+    deleted = r.json() if r.text else []
+    if not deleted:
+        raise Exception(f"No rows deleted from {table} — filter may not have matched")
+    return deleted
 
 # ── EMAIL HELPERS ─────────────────────────────────────────────────────────────
 
@@ -2295,14 +2299,16 @@ def projects_delete():
         return jsonify({"success": False, "error": "project_id and email required"}), 400
 
     try:
+        logger.info(f"[projects_delete] attempting — project_id={project_id} email={email}")
         sb_delete("fy_projects", {
             "id": f"eq.{project_id}",
-            "user_email": f"eq.{email}",  # safety: only delete own projects
+            "user_email": f"eq.{email}",
         })
+        logger.info(f"[projects_delete] success — project_id={project_id}")
         return jsonify({"success": True}), 200
 
     except Exception as e:
-        logger.error(f"[projects_delete] {e}")
+        logger.error(f"[projects_delete] FAILED — {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 

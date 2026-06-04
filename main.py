@@ -116,6 +116,17 @@ def sb_patch(table, match, data):
     r.raise_for_status()
     return r.json() if r.text else {}
 
+def sb_delete(table, params):
+    url = f"{SUPABASE_URL}/rest/v1/{table}"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+    }
+    r = requests.delete(url, headers=headers, params=params, timeout=15)
+    r.raise_for_status()
+    return True
+
 # ── EMAIL HELPERS ─────────────────────────────────────────────────────────────
 
 def validate_email(email):
@@ -2284,12 +2295,10 @@ def projects_delete():
         return jsonify({"success": False, "error": "project_id and email required"}), 400
 
     try:
-        url = f"{SUPABASE_URL}/rest/v1/fy_projects"
-        r = requests.delete(url, headers=SUPABASE_HEADERS, params={
+        sb_delete("fy_projects", {
             "id": f"eq.{project_id}",
             "user_email": f"eq.{email}",  # safety: only delete own projects
         })
-        r.raise_for_status()
         return jsonify({"success": True}), 200
 
     except Exception as e:

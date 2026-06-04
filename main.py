@@ -2266,7 +2266,7 @@ def projects_archive():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-@app.route("/api/projects/delete", methods=["DELETE", "OPTIONS"])
+@app.route("/api/projects/delete", methods=["DELETE", "POST", "OPTIONS"])
 @cross_origin()
 def projects_delete():
     """

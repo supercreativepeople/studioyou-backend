@@ -76,6 +76,11 @@ FRONTEND_URL      = os.environ.get("FRONTEND_URL", "https://studioyou.app")
 ADMIN_KEY         = "SY-ADMIN-2026"
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 REACTOR_API_KEY   = os.environ.get("REACTOR_API_KEY", "")
+ADOBE_EXPRESS_CLIENT_ID  = os.environ.get("ADOBE_EXPRESS_CLIENT_ID", "")
+FRAMEIO_CLIENT_ID        = os.environ.get("FRAMEIO_CLIENT_ID", "")
+FRAMEIO_CLIENT_SECRET    = os.environ.get("FRAMEIO_CLIENT_SECRET", "")
+ADOBE_PDF_CLIENT_ID      = os.environ.get("ADOBE_PDF_CLIENT_ID", "")
+ADOBE_PDF_CLIENT_SECRET  = os.environ.get("ADOBE_PDF_CLIENT_SECRET", "")
 
 # Initialize Anthropic SDK client
 anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
@@ -1965,6 +1970,122 @@ def model_tasks():
         "partner_direct_tasks": list(PARTNER_DIRECT_REGISTRY.keys()),
         "fal_configured": bool(FAL_API_KEY),
     }), 200
+
+
+# -- ADOBE / FRAME.IO / PDF SERVICES --
+# Session P - June 5, 2026
+
+
+@app.route("/api/integrations/adobe/config", methods=["GET", "OPTIONS"])
+@cross_origin()
+def adobe_config():
+    if request.method == "OPTIONS":
+        return jsonify({"ok": True}), 200
+    if not ADOBE_EXPRESS_CLIENT_ID:
+        return jsonify({"success": False, "error": "Adobe Express not configured"}), 503
+    return jsonify({"success": True, "client_id": ADOBE_EXPRESS_CLIENT_ID}), 200
+
+
+@app.route("/api/integrations/frameio/auth", methods=["GET", "OPTIONS"])
+@cross_origin()
+def frameio_auth():
+    if request.method == "OPTIONS":
+        return jsonify({"ok": True}), 200
+    if not FRAMEIO_CLIENT_ID:
+        return jsonify({"success": False, "error": "Frame.io not configured"}), 503
+    auth_url = (
+        "https://ims-na1.adobelogin.com/ims/authorize/v2"
+        f"?client_id={FRAMEIO_CLIENT_ID}"
+        "&scope=openid,AdobeID,frame.io.projects,frame.io.assets"
+        "&response_type=code"
+        "&redirect_uri=https://studioyou.app/auth/frameio/callback"
+    )
+    return jsonify({"success": True, "auth_url": auth_url}), 200
+
+
+@app.route("/api/integrations/frameio/callback", methods=["POST", "OPTIONS"])
+@cross_origin()
+def frameio_callback():
+    if request.method == "OPTIONS":
+        return jsonify({"ok": True}), 200
+    data = request.get_json()
+    code = (data.get("code") or "").strip()
+    if not code:
+        return jsonify({"success": False, "error": "code required"}), 400
+    if not FRAMEIO_CLIENT_ID or not FRAMEIO_CLIENT_SECRET:
+        return jsonify({"success": False, "error": "Frame.io not configured"}), 503
+    try:
+        resp = requests.post(
+            "https://ims-na1.adobelogin.com/ims/token/v3",
+            data={
+                "grant_type": "authorization_code",
+                "client_id": FRAMEIO_CLIENT_ID,
+                "client_secret": FRAMEIO_CLIENT_SECRET,
+                "code": code,
+                "redirect_uri": "https://studioyou.app/auth/frameio/callback",
+            },
+            timeout=15,
+        )
+        if resp.status_code != 200:
+            return jsonify({"success": False, "error": f"Token exchange failed: {resp.text}"}), 502
+        token_data = resp.json()
+        return jsonify({
+            "success": True,
+            "access_token": token_data.get("access_token"),
+            "expires_in": token_data.get("expires_in"),
+        }), 200
+    except Exception as e:
+        logger.error(f"[frameio_callback] {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/integrations/pdf/generate", methods=["POST", "OPTIONS"])
+@cross_origin()
+def pdf_generate():
+    if request.method == "OPTIONS":
+        return jsonify({"ok": True}), 200
+    if not ADOBE_PDF_CLIENT_ID or not ADOBE_PDF_CLIENT_SECRET:
+        return jsonify({"success": False, "error": "PDF Services not configured"}), 503
+    data = request.get_json()
+    html = (data.get("html") or "").strip()
+    filename = (data.get("filename") or "document.pdf").strip()
+    if not html:
+        return jsonify({"success": False, "error": "html content required"}), 400
+    try:
+        token_resp = requests.post(
+            "https://ims-na1.adobelogin.com/ims/token/v3",
+            data={
+                "grant_type": "client_credentials",
+                "client_id": ADOBE_PDF_CLIENT_ID,
+                "client_secret": ADOBE_PDF_CLIENT_SECRET,
+                "scope": "openid,AdobeID,DCAPI",
+            },
+            timeout=15,
+        )
+        if token_resp.status_code != 200:
+            return jsonify({"success": False, "error": f"Adobe auth failed: {token_resp.text}"}), 502
+        access_token = token_resp.json().get("access_token")
+        pdf_resp = requests.post(
+            "https://pdf-services-ue1.adobe.io/operation/htmltopdf",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "x-api-key": ADOBE_PDF_CLIENT_ID,
+                "Content-Type": "application/json",
+            },
+            json={"json": "{}", "htmlContent": html},
+            timeout=30,
+        )
+        if pdf_resp.status_code not in (200, 201):
+            return jsonify({"success": False, "error": f"PDF generation failed: {pdf_resp.text}"}), 502
+        pdf_data = pdf_resp.json()
+        return jsonify({
+            "success": True,
+            "download_url": pdf_data.get("downloadUri") or (pdf_data.get("asset") or {}).get("downloadUri"),
+            "filename": filename,
+        }), 200
+    except Exception as e:
+        logger.error(f"[pdf_generate] {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # ── PROJECT SYSTEM ────────────────────────────────────────────────────────────

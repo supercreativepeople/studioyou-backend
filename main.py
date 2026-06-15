@@ -1559,8 +1559,7 @@ def avatar_livekit_session():
 
     except Exception as e:
         import traceback
-        logger.error(f"[avatar_livekit_session] {e}
-{traceback.format_exc()}")
+        logger.error("[avatar_livekit_session] %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 # ── FUTUREYOU PERSONA SETUP — run once to create the persona, then hardcode ID ─

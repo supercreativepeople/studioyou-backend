@@ -56,6 +56,7 @@ import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
 from anthropic import Anthropic
+from livekit.api import LiveKitAPI, AccessToken, VideoGrants
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -1422,6 +1423,144 @@ def avatar_start():
     except Exception as e:
         import traceback
         logger.error(f"[avatar_start] {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+
+# ── LIVEKIT SESSION — new FY agent dispatch endpoint ──────────────────────────
+TAVUS_LIVEKIT_PERSONA_ID = os.environ.get("TAVUS_LIVEKIT_PERSONA_ID", "")
+
+@app.route("/api/avatar/livekit-session", methods=["POST"])
+@cross_origin()
+def avatar_livekit_session():
+    """
+    Create a LiveKit room, mint a frontend access token, dispatch the
+    FY agent with formation context as job metadata. Returns room_name
+    and token for the frontend LiveKit React client.
+
+    Replaces /api/avatar/start for the new LiveKit-based avatar surface.
+    """
+    try:
+        data = request.get_json()
+        email = data.get("email", "").strip().lower()
+
+        if not all([LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL]):
+            return jsonify({"error": "LiveKit not configured"}), 500
+
+        # ── Pull formation + active project from Supabase ─────────────────
+        formation_context = {}
+        try:
+            rows = sb_get("formations", {
+                "email": f"eq.{email}",
+                "select": "first_words,archetype,studio_name,first_name,formation_data,data"
+            })
+            if rows:
+                r = rows[0]
+                studio_name = r.get("studio_name") or ""
+                first_name = r.get("first_name") or ""
+                archetype = r.get("archetype") or ""
+                first_words = r.get("first_words") or ""
+                formation_data = r.get("formation_data") or []
+                briefing = (r.get("data") or {}).get("briefing") or {}
+
+                # Build briefing summary string
+                briefing_parts = []
+                if briefing.get("arsenal"):
+                    briefing_parts.append(f"Strengths: {briefing['arsenal']}")
+                if briefing.get("roadblock"):
+                    briefing_parts.append(f"Roadblock: {briefing['roadblock']}")
+                if briefing.get("creator_type"):
+                    ct = briefing["creator_type"]
+                    briefing_parts.append(f"Creator type: {', '.join(ct) if isinstance(ct, list) else ct}")
+                briefing_summary = " | ".join(briefing_parts)
+
+                formation_context = {
+                    "studio_name": studio_name,
+                    "archetype": archetype,
+                    "first_words": first_words,
+                    "briefing_summary": briefing_summary,
+                }
+
+            # Pull active project
+            proj_rows = sb_get("fy_projects", {
+                "user_email": f"eq.{email}",
+                "status": "eq.active",
+                "select": "id,name,buildings,journey_progress",
+                "limit": "1",
+                "order": "last_accessed.desc"
+            })
+            if proj_rows:
+                p = proj_rows[0]
+                buildings = p.get("buildings") or {}
+                # Find active building/section
+                active_building = None
+                active_section = None
+                sections = []
+                for bname, bdata in buildings.items():
+                    if isinstance(bdata, dict) and bdata.get("state") == "active":
+                        active_building = bname
+                        bsections = bdata.get("sections") or {}
+                        for sid, sdata in bsections.items():
+                            if isinstance(sdata, dict):
+                                sections.append({
+                                    "id": sid,
+                                    "title": sdata.get("title", sid),
+                                    "status": sdata.get("status", "open")
+                                })
+                                if sdata.get("state") == "active":
+                                    active_section = sdata.get("title", sid)
+                        break
+
+                formation_context["active_project"] = {
+                    "name": p.get("name"),
+                    "active_building": active_building,
+                    "active_section": active_section,
+                    "sections": sections,
+                }
+
+        except Exception as e:
+            logger.warning(f"[avatar_livekit_session] Formation load failed: {e}")
+
+        # Pull conversation thread from request (sent by frontend from localStorage)
+        conversation_thread = data.get("conversation_thread") or []
+        if conversation_thread:
+            formation_context["conversation_thread"] = conversation_thread[-10:]
+
+        # ── Create LiveKit room + mint access token ────────────────────────
+        import uuid
+        room_name = f"fy-{email.split('@')[0]}-{uuid.uuid4().hex[:8]}"
+
+        lk_url = LIVEKIT_URL.replace("wss://", "https://")
+        lk = LiveKitAPI(url=lk_url, api_key=LIVEKIT_API_KEY, api_secret=LIVEKIT_API_SECRET)
+
+        # Dispatch agent to the room with formation context as metadata
+        import asyncio
+        async def _dispatch():
+            await lk.agent.create_dispatch(
+                agent_name="",  # empty = any registered worker
+                room_name=room_name,
+                metadata=json.dumps(formation_context),
+            )
+        asyncio.run(_dispatch())
+
+        # Mint a frontend participant token
+        token = (
+            AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET)
+            .with_identity(email or "creator")
+            .with_name("Creator")
+            .with_grants(VideoGrants(room_join=True, room=room_name))
+            .to_jwt()
+        )
+
+        return jsonify({
+            "success": True,
+            "room_name": room_name,
+            "token": token,
+            "livekit_url": LIVEKIT_URL,
+        }), 200
+
+    except Exception as e:
+        import traceback
+        logger.error(f"[avatar_livekit_session] {e}
+{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
 
 # ── FUTUREYOU PERSONA SETUP — run once to create the persona, then hardcode ID ─

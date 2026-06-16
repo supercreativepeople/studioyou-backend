@@ -1534,17 +1534,18 @@ def avatar_livekit_session():
         # Dispatch agent to the room with formation context as metadata
         from livekit.protocol.agent_dispatch import CreateAgentDispatchRequest
         import asyncio, concurrent.futures
-        async def _dispatch():
-            req = CreateAgentDispatchRequest(
-                agent_name="",
-                room=room_name,
-                metadata=json.dumps(formation_context),
-            )
-            await lk.agent_dispatch.create_dispatch(req)
-            await lk.aclose()
+        def _run_dispatch():
+            async def _dispatch():
+                req = CreateAgentDispatchRequest(
+                    agent_name="",
+                    room=room_name,
+                    metadata=json.dumps(formation_context),
+                )
+                await lk.agent_dispatch.create_dispatch(req)
+                await lk.aclose()
+            asyncio.run(_dispatch())
         with concurrent.futures.ThreadPoolExecutor() as pool:
-            future = pool.submit(asyncio.run, _dispatch())
-            future.result()
+            pool.submit(_run_dispatch).result(timeout=30)
 
         # Mint a frontend participant token
         token = (

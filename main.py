@@ -1528,14 +1528,13 @@ def avatar_livekit_session():
         import uuid
         room_name = f"fy-{email.split('@')[0]}-{uuid.uuid4().hex[:8]}"
 
-        lk_url = LIVEKIT_URL.replace("wss://", "https://")
-        lk = LiveKitAPI(url=lk_url, api_key=LIVEKIT_API_KEY, api_secret=LIVEKIT_API_SECRET)
-
-        # Dispatch agent to the room with formation context as metadata
+        # Dispatch agent — run in thread to avoid asyncio event loop conflict with Flask
         from livekit.protocol.agent_dispatch import CreateAgentDispatchRequest
         import asyncio, concurrent.futures
+        lk_url = LIVEKIT_URL.replace("wss://", "https://")
         def _run_dispatch():
             async def _dispatch():
+                lk = LiveKitAPI(url=lk_url, api_key=LIVEKIT_API_KEY, api_secret=LIVEKIT_API_SECRET)
                 req = CreateAgentDispatchRequest(
                     agent_name="",
                     room=room_name,

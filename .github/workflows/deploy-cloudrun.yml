@@ -9,6 +9,7 @@ env:
   PROJECT_ID: neat-tangent-474222-m9
   REGION: us-east1
   SERVICE_NAME: studioyou-api
+  IMAGE: gcr.io/neat-tangent-474222-m9/studioyou-api
 
 jobs:
   deploy:
@@ -26,20 +27,43 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Install gcloud SDK
+      - name: Set up gcloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.PROJECT_ID }}
 
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker --quiet
 
-        - name: Deploy to Cloud Run
-          run: |
-            gcloud run deploy ${{ env.SERVICE_NAME }} \
-              --image=gcr.io/${{ env.PROJECT_ID }}/studioyou-api:latest \
-              --region ${{ env.REGION }} \
-              --platform managed \
-              --allow-unauthenticated \
-              --no-source
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${{ env.IMAGE }}:${{ github.sha }} -t ${{ env.IMAGE }}:latest .
+          docker push ${{ env.IMAGE }}:${{ github.sha }}
+          docker push ${{ env.IMAGE }}:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image=${{ env.IMAGE }}:${{ github.sha }} \
+            --region=${{ env.REGION }} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --set-env-vars="\
+          ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }},\
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }},\
+          SUPABASE_KEY=${{ secrets.SUPABASE_KEY }},\
+          RESEND_API_KEY=${{ secrets.RESEND_API_KEY }},\
+          RESEND_FROM_EMAIL=${{ secrets.RESEND_FROM_EMAIL }},\
+          SY_SECRET_KEY=${{ secrets.SECRET_KEY }},\
+          FRONTEND_URL=https://studioyou.app,\
+          REACTOR_API_KEY=${{ secrets.REACTOR_API_KEY }},\
+          FAL_API_KEY=${{ secrets.FAL_API_KEY }},\
+          TAVUS_API_KEY=${{ secrets.TAVUS_API_KEY }},\
+          FUTUREYOU_PERSONA_ID=p2dbadc2efc3,\
+          TAVUS_LIVEKIT_PERSONA_ID=pb0277f1cfc1,\
+          LIVEKIT_URL=${{ secrets.LIVEKIT_URL }},\
+          LIVEKIT_API_KEY=${{ secrets.LIVEKIT_API_KEY }},\
+          LIVEKIT_API_SECRET=${{ secrets.LIVEKIT_API_SECRET }}"
 
       - name: Verify deployment
         run: |

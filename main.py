@@ -1532,8 +1532,10 @@ def avatar_livekit_session():
         lk = LiveKitAPI(url=lk_url, api_key=LIVEKIT_API_KEY, api_secret=LIVEKIT_API_SECRET)
 
         # Dispatch agent to the room with formation context as metadata
-        import asyncio
         from livekit.protocol.agent_dispatch import CreateAgentDispatchRequest
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         async def _dispatch():
             req = CreateAgentDispatchRequest(
                 agent_name="",
@@ -1541,7 +1543,9 @@ def avatar_livekit_session():
                 metadata=json.dumps(formation_context),
             )
             await lk.agent_dispatch.create_dispatch(req)
-        asyncio.run(_dispatch())
+            await lk.aclose()
+        loop.run_until_complete(_dispatch())
+        loop.close()
 
         # Mint a frontend participant token
         token = (

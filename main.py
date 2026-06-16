@@ -1533,12 +1533,14 @@ def avatar_livekit_session():
 
         # Dispatch agent to the room with formation context as metadata
         import asyncio
+        from livekit.protocol.agent_dispatch import CreateAgentDispatchRequest
         async def _dispatch():
-            await lk.agent.create_dispatch(
-                agent_name="",  # empty = any registered worker
-                room_name=room_name,
+            req = CreateAgentDispatchRequest(
+                agent_name="",
+                room=room_name,
                 metadata=json.dumps(formation_context),
             )
+            await lk.agent_dispatch.create_dispatch(req)
         asyncio.run(_dispatch())
 
         # Mint a frontend participant token

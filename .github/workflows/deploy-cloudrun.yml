@@ -32,13 +32,14 @@ jobs:
           project_id: ${{ env.PROJECT_ID }}
 
       - name: Deploy to Cloud Run
-        run: |
-          gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --source . \
-            --project ${{ env.PROJECT_ID }} \
-            --region ${{ env.REGION }} \
-            --allow-unauthenticated \
-            --set-env-vars="ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }},SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_KEY=${{ secrets.SUPABASE_KEY }},RESEND_API_KEY=${{ secrets.RESEND_API_KEY }},SY_SECRET_KEY=${{ secrets.SECRET_KEY }},FRONTEND_URL=https://studioyou.app,REACTOR_API_KEY=${{ secrets.REACTOR_API_KEY }},FAL_API_KEY=${{ secrets.FAL_API_KEY }}"
+        - name: Deploy to Cloud Run
+          run: |
+            gcloud run deploy ${{ env.SERVICE_NAME }} \
+              --image=gcr.io/${{ env.PROJECT_ID }}/studioyou-api:latest \
+              --region ${{ env.REGION }} \
+              --platform managed \
+              --allow-unauthenticated \
+              --no-source
 
       - name: Verify deployment
         run: |

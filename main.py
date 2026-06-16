@@ -1533,9 +1533,7 @@ def avatar_livekit_session():
 
         # Dispatch agent to the room with formation context as metadata
         from livekit.protocol.agent_dispatch import CreateAgentDispatchRequest
-        import asyncio
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        import asyncio, concurrent.futures
         async def _dispatch():
             req = CreateAgentDispatchRequest(
                 agent_name="",
@@ -1544,8 +1542,9 @@ def avatar_livekit_session():
             )
             await lk.agent_dispatch.create_dispatch(req)
             await lk.aclose()
-        loop.run_until_complete(_dispatch())
-        loop.close()
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            future = pool.submit(asyncio.run, _dispatch())
+            future.result()
 
         # Mint a frontend participant token
         token = (

@@ -21,6 +21,7 @@ steps:
       - '--image=gcr.io/$PROJECT_ID/studioyou-api:$COMMIT_SHA'
       - '--region=us-east1'
       - '--platform=managed'
+      - '--no-source'
 
 images:
   - 'gcr.io/$PROJECT_ID/studioyou-api:$COMMIT_SHA'

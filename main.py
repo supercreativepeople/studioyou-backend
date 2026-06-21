@@ -1524,6 +1524,10 @@ def avatar_livekit_session():
         if conversation_thread:
             formation_context["conversation_thread"] = conversation_thread[-10:]
 
+        # Surface tells the agent which UI it is serving (dashboard vs studio)
+        surface = data.get("surface", "dashboard")
+        formation_context["surface"] = surface
+
         # ── Create LiveKit room + mint access token ────────────────────────
         import uuid
         room_name = f"fy-{email.split('@')[0]}-{uuid.uuid4().hex[:8]}"

@@ -1482,12 +1482,14 @@ def avatar_livekit_session():
                     briefing_parts.append(f"Creator type: {archetype}")
                 briefing_summary = " | ".join(briefing_parts)
 
+                tier = (r.get("data") or {}).get("tier", "independent")
                 formation_context = {
                     "studio_name": studio_name,
                     "first_name": first_name,
                     "archetype": archetype,
                     "briefing_summary": briefing_summary,
                     "formation_answers": answers,
+                    "tier": tier,
                 }
 
             # Pull active project

@@ -1450,33 +1450,44 @@ def avatar_livekit_session():
         try:
             rows = sb_get("formations", {
                 "email": f"eq.{email}",
-                "select": "first_words,archetype,studio_name,first_name,formation_data,data"
+                "select": "studio_name,first_name,formation_data,data"
             })
             if rows:
                 r = rows[0]
                 studio_name = r.get("studio_name") or ""
                 first_name = r.get("first_name") or ""
-                archetype = r.get("archetype") or ""
-                first_words = r.get("first_words") or ""
-                formation_data = r.get("formation_data") or []
-                briefing = (r.get("data") or {}).get("briefing") or {}
 
-                # Build briefing summary string
+                # formation_data is stored as a JSON string
+                formation_data_raw = r.get("formation_data") or "{}"
+                if isinstance(formation_data_raw, str):
+                    import json as _json
+                    formation_data = _json.loads(formation_data_raw)
+                else:
+                    formation_data = formation_data_raw or {}
+
+                briefing = formation_data.get("briefing") or {}
+                answers = formation_data.get("answers") or []
+
+                # Derive archetype from creator_type in briefing
+                ct = briefing.get("creator_type", [])
+                archetype = ct[0] if isinstance(ct, list) and ct else (ct if isinstance(ct, str) else "")
+
+                # Build briefing summary
                 briefing_parts = []
                 if briefing.get("arsenal"):
                     briefing_parts.append(f"Strengths: {briefing['arsenal']}")
                 if briefing.get("roadblock"):
                     briefing_parts.append(f"Roadblock: {briefing['roadblock']}")
-                if briefing.get("creator_type"):
-                    ct = briefing["creator_type"]
-                    briefing_parts.append(f"Creator type: {', '.join(ct) if isinstance(ct, list) else ct}")
+                if archetype:
+                    briefing_parts.append(f"Creator type: {archetype}")
                 briefing_summary = " | ".join(briefing_parts)
 
                 formation_context = {
                     "studio_name": studio_name,
+                    "first_name": first_name,
                     "archetype": archetype,
-                    "first_words": first_words,
                     "briefing_summary": briefing_summary,
+                    "formation_answers": answers,
                 }
 
             # Pull active project

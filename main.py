@@ -1551,7 +1551,10 @@ def avatar_livekit_session():
         lk_url = LIVEKIT_URL.replace("wss://", "https://")
         def _run_dispatch():
             async def _dispatch():
+                from livekit.protocol.room import CreateRoomRequest
                 lk = LiveKitAPI(url=lk_url, api_key=LIVEKIT_API_KEY, api_secret=LIVEKIT_API_SECRET)
+                # Room must exist before dispatch — agent won't join a phantom room
+                await lk.room.create_room(CreateRoomRequest(name=room_name))
                 req = CreateAgentDispatchRequest(
                     agent_name="",
                     room=room_name,

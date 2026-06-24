@@ -1556,7 +1556,7 @@ def avatar_livekit_session():
                 # Room must exist before dispatch — agent won't join a phantom room
                 await lk.room.create_room(CreateRoomRequest(name=room_name))
                 req = CreateAgentDispatchRequest(
-                    agent_name="fy-agent",
+                    agent_name="",
                     room=room_name,
                     metadata=json.dumps(formation_context),
                 )

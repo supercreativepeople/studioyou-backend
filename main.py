@@ -1663,6 +1663,8 @@ Your job is to extract a structured action plan from this conversation.
 Return ONLY valid JSON in this exact format, no other text:
 {
   "building_slug": "one of: ideate|develop|fund|cast|plan|produce|post|licensing|distribute|brand|market|monetize",
+  "section_name": "the exact section name from the building the creator should land in",
+  "step_title": "the exact step title from that section the creator should start on",
   "platform": "primary platform mentioned or null",
   "session_summary": "one sentence — what was decided in this session",
   "first_deliverable": "the single most important first output the creator should produce",
@@ -1675,7 +1677,23 @@ Return ONLY valid JSON in this exact format, no other text:
   ]
 }
 
+Building sections and steps (use exact strings):
+ideate: Raw Idea (What's the Feeling?, First Visual Instinct, One Sentence) | Gut Check (Does This Have Legs?, Is Now the Right Time?) | Hand-off (Let's Build on This, Let This Breathe)
+develop: Story & Structure (What's the Format?, What's the Premise?, Who's It For?) | Script & Content (Do You Have a Script Outline or Format Bible?, What's the Structure?, Characters & Voices) | Visual & Tonal Language (What Does This Look Like?, What Does This Sound Like?, Storyboard a Scene) | Proof of Concept (Build a Sample, Does This Work?) | Pitch Readiness (Can You Explain This to a Stranger?, What Do You Need Next?)
+fund: Capital Strategy (Target Budget, Funding Strategy, Outreach & Pitching)
+cast: Talent (Role Specs, Audition Management, Booking)
+plan: Pre-Production (Schedule & Timeline, Crew & Staffing, Gear & Equipment, Logistics & Permitting)
+produce: Production (Daily Prep & Call Sheets, Capture & Execution, Data Management)
+post: Post Production (Editorial, Visual Polish, Audio Post, Mastering & Export)
+licensing: Rights & Clearance (Clearances & Rights, Releases)
+distribute: Distribution (Platform Strategy, Asset Delivery)
+brand: Identity (Visual Identity, Positioning)
+market: Campaign (Campaign Strategy, Asset Creation)
+monetize: Revenue (Revenue Streams, Tracking & Analytics)
+
 Rules:
+- section_name and step_title must match the exact strings above — no paraphrasing
+- Pick the section and step that most directly matches where this creator should start work
 - actions array: minimum 3, maximum 6 items
 - Each action must be specific and executable, not generic
 - building_slug must reflect where the work actually happens
@@ -1789,6 +1807,8 @@ def session_close():
         plan_data = json.loads(raw.strip())
 
         building_slug = plan_data.get("building_slug", "ideate")
+        section_name = plan_data.get("section_name", "")
+        step_title = plan_data.get("step_title", "")
         platform = plan_data.get("platform")
         session_summary = plan_data.get("session_summary", "")
         first_deliverable = plan_data.get("first_deliverable", "")
@@ -1830,6 +1850,8 @@ def session_close():
             "success": True,
             "plan_id": plan_id,
             "building_slug": building_slug,
+            "section_name": section_name,
+            "step_title": step_title,
             "platform": platform,
             "session_summary": session_summary,
             "first_deliverable": first_deliverable,

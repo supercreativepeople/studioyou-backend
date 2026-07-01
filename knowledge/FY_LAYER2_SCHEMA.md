@@ -161,6 +161,67 @@ than Flux for this type of reference."]
 
 ---
 
+### SECTION 6.1: SUCCESS STATE AS DISPATCH TRIGGER (locked architecture — Session AA)
+
+This section governs how SUCCESS STATE functions across every step in every building.
+It is not optional guidance. It applies retroactively to DEVELOP and IDEATE (audit required)
+and is mandatory for every subsequent building spec, starting with PLAN.
+
+**SUCCESS STATE is a literal, checkable dispatch trigger — not narrative flavor.**
+
+It is not descriptive color for how FY should talk. It is the condition Tier 2
+evaluates against accumulated creator input to decide the moment a step is
+satisfied and a Tier 3 sub-agent call (or the next step) should fire.
+
+This is the same principle as the Session AA triage fix, applied at step granularity
+instead of a fixed exchange count: FY's trained creative-director instinct cannot be
+trusted to self-determine "I have enough." A model deciding when it's satisfied is
+unreliable by nature — verified directly in production (dashboard triage, Session AA).
+Success state removes that judgment call from the model and replaces it with a
+condition Tier 2 checks deterministically, the same way the frontend hard-counts
+exchanges instead of waiting for FY to signal readiness.
+
+**Why this is the correct call for StudioYou specifically, not a generic best practice:**
+
+The platform's core user is a prosumer with little to no production knowledge, and the
+left rail is built to function like a terminal window the creator can watch and learn
+from — a visible record of what's happening and why. That only works if there is a
+real, checkable moment to surface. "FY felt ready to move on" produces nothing to show
+the creator. A literal success-state condition produces an observable event: a field
+gets satisfied, the left rail marks it, dispatch fires. The creator watches the actual
+mechanism, not FY's mood.
+
+It also makes the platform's core differentiator — Layer 2 knowledge shaping FY's
+personality from real user responses and actions — usable data rather than transcript
+to be re-interpreted later. "This response satisfied this step's success state" is a
+fact that can be logged once. A vibes-based read on tone is not.
+
+**Authoring requirement — binding on every spec writer, including Lee:**
+
+Every SUCCESS STATE entry must be written as a checkable condition against creator
+input, not a mood or an impression. The existing schema instruction — "Specific.
+Behavioral. Not aspirational." — already pointed at this. This section makes explicit
+what that instruction was always in service of: the text must function as a trigger
+condition Tier 2 can evaluate, not just a tone note for FY.
+
+```
+SUCCESS STATE — authoring test:
+Can Tier 2 look at what the creator has provided so far and answer yes/no against
+this text, without needing to interpret intent or read tone? If the answer requires
+judgment beyond "is this specific piece of information present or absent," rewrite it.
+
+BAD  (aspirational, uncheckable): "Creator has a strong, clear sense of their concept."
+GOOD (checkable, behavioral):    "Creator has stated a single-sentence premise
+                                   containing a character, a want, and an obstacle."
+```
+
+**Action item, Session AA:** DEVELOP's existing SUCCESS STATE entries (N-1 through
+N-7, and the parallel entries across Music/Visual/Podcast/Brand tracks) were written
+before this rule was locked and require an audit pass to confirm each one is checkable
+as-written.
+
+---
+
 ### SECTION 7: MODEL SUCCESS CONTEXT
 
 This section is populated by Lee's real-world production testing data.
@@ -412,9 +473,24 @@ orchestrator_context = {
     "q2_answer": "[where in the process — raw idea | outline | script | further]"
   },
   "thread": "[last 10 FY exchanges as {role, text} array]",
-  "vault": "[locked assets by building — summary]"
+  "vault": "[locked assets by building — summary]",
+  "active_step_progress": {
+    "building": "[active building slug]",
+    "section": "[active section name]",
+    "step": "[active step title]",
+    "success_state_condition": "[the literal SUCCESS STATE text for this step, from the sub-agent spec]",
+    "satisfied": True | False,
+    "satisfied_by": "[which piece of creator input satisfied the condition, or null]"
+  }
 }
 ```
+
+Dispatch to a Tier 3 sub-agent (or advancement to the next step) fires when
+`satisfied: True` in `active_step_progress`, not on FY's independent judgment that
+the conversation feels complete. This is a deterministic check Tier 2 runs every
+turn, mirroring the frontend's hard exchange-count in triage — the mechanism
+differs, the principle is identical: remove self-termination from the conversational
+model, replace it with a condition an external layer checks. See Section 6.1.
 
 Dispatch format:
 ```python

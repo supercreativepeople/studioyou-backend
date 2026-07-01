@@ -185,8 +185,8 @@ PURPOSE: Compress the full narrative into one sentence containing character,
   in the script checks against it. But before the logline exists, FY opens with
   the foundational question: what has the creator already received that hasn't
   been answered yet?
-SUCCESS STATE: One sentence — specific character, specific want, specific obstacle.
-  Doesn't need to be polished. Needs to be specific and true.
+SUCCESS STATE: One sentence containing a named character, a stated want, and a
+  stated obstacle. Doesn't need to be polished.
 FAILURE STATE: Creator produces a theme statement instead of a story statement.
   Or a logline written toward what they think will sell instead of what they want to make.
 FY APPROACH: Opens with: "Before we write anything — what have you already heard,
@@ -275,7 +275,8 @@ PURPOSE: Individual scenes built from structure. Character voice found. Key scen
   This step is where production mode diverges the tool stack significantly.
   The Jimmy principle hits hardest here — write for yourself, not for an imagined
   audience. If the scene makes you laugh, cry, scared, or uncomfortable — it's working.
-SUCCESS STATE: 3-5 key scenes drafted. Character voice audible and specific.
+SUCCESS STATE: 3-5 key scenes drafted in full. Creator can point to at least one
+  line each major character would say that another character wouldn't.
   Storyboard reference exists for key sequences. Production mode determines whether
   storyboard panels are reference artifacts or production deliverables.
 FAILURE STATE: Scenes written toward what the creator thinks the audience wants.
@@ -405,8 +406,8 @@ PURPOSE: Draft becomes script. Systematic revision targeting one element per pas
   Is this scene moving the story forward? Is it revealing character?
   Is it funny, dramatic, scary — whatever it needs to be?
   If no to all three: cut it regardless of how much you love it.
-SUCCESS STATE: Creator can name what changed between versions and why. Each version
-  is a deliberate experiment. The script is getting tighter, not longer.
+SUCCESS STATE: Each revision pass has a stated target. Creator can name what
+  changed between the two most recent versions and why.
 FAILURE STATE: Revision is "make it better" with no specific target.
   Or creator brings in collaborators without knowing whose vision is now on the table.
 FY APPROACH: "What specifically isn't right about this draft?"
@@ -466,8 +467,8 @@ PURPOSE: The final version is named and locked. This document does not change.
   PLAN builds from it. The truth about locking: you never know with certainty
   when it's ready. Nobody does. What you have instead are the diagnostic questions,
   the genre calibration, and the gut sharpened by every revision pass.
-SUCCESS STATE: Creator says "this is it" from a place of process, not certainty.
-  Lock Card created. FinalBit handoff generated.
+SUCCESS STATE: Creator gives explicit lock confirmation. Lock Card created.
+  FinalBit handoff generated.
 FAILURE STATE: Creator chases certainty before locking and never gets there.
 FY APPROACH: "Before we lock — what's the one thing you haven't tried yet?"
   If nothing: calibration check before confirming:
@@ -540,7 +541,8 @@ LEFT RAIL NARRATION: None.
 STEP M-3: Arrangement Direction
 PURPOSE: The sonic blueprint. Instrumentation, tempo, key elements, structural
   shape. Not a demo — the producer's brief that makes generation precise.
-SUCCESS STATE: A producer could read this and know what to build.
+SUCCESS STATE: Tempo, key instrumentation, and structural shape each stated as
+  discrete named fields in the brief document.
 FAILURE STATE: "Something like X but more Y." Nothing pinned down.
 FY APPROACH: "Let's build the brief. Tempo first — give me a range or a feel."
   If uncertain: "What are we definitely not doing? Exclusion is sometimes faster."
@@ -626,7 +628,8 @@ LEFT RAIL NARRATION: None.
 STEP V-2: Reference Set
 PURPOSE: 4-8 visual references each annotated with one specific contribution.
   Composition, palette, texture, scale, emotional register, technique.
-SUCCESS STATE: Each reference has a labeled contribution. Creator can defend each one.
+SUCCESS STATE: Each reference has a labeled, specific contribution — not a
+  general mood descriptor.
 FAILURE STATE: Mood board with no specificity.
 FY APPROACH: "What's a piece of work that has one thing you want this to have?
   Just one thing — what is that thing?"
@@ -708,7 +711,8 @@ PURPOSE: The structural shape of the show. Not the topic — the container.
   the creator already heard, listened to, or experienced that they haven't
   responded to yet? The show that gets made from obsession is different from
   the show designed for an audience.
-SUCCESS STATE: Format is specific and committed. Creator can describe one episode.
+SUCCESS STATE: Creator has named the format (structure and container, not topic)
+  and can describe one full episode start to end.
 FAILURE STATE: Creator conflates topic with format. Or is building the show
   they think will get downloads instead of the show they need to make.
 FY APPROACH: Opens with: "What have you already heard — a show, a conversation,
@@ -740,7 +744,8 @@ LEFT RAIL NARRATION: None.
 STEP P-3: Pilot Outline
 PURPOSE: First episode outlined in full from architecture template. Every segment,
   beat, and transition named. Not scripted — outlined. Producible.
-SUCCESS STATE: Pilot outline complete enough that a producer could schedule it.
+SUCCESS STATE: Every segment of the pilot named with a one-line description.
+  No segment marked "we'll figure it out."
 FAILURE STATE: Pilot outline is a concept document, not an episode.
 FY APPROACH: "What happens in Episode 1? Specifically. Segment by segment."
   If creator resists: "If you had to record this tomorrow —
@@ -755,7 +760,8 @@ LEFT RAIL NARRATION: "Using Screenplayer — building pilot outline from archite
 STEP P-4: Pilot Draft / Episode Development
 PURPOSE: First episode from outline to developed content. Scripts written,
   interview questions built, narrative segments drafted.
-SUCCESS STATE: Pilot is producible. Creator knows what they sound like in this format.
+SUCCESS STATE: Every segment identified in the outline has drafted content —
+  script, question list, or narrative text. No segment left as a placeholder.
 FAILURE STATE: Key segments left as "we'll figure it out in the room."
 FY APPROACH: "What's the segment that carries the most weight? We start there."
   Creative block: "Go back to the show or conversation that made you want
@@ -770,6 +776,8 @@ LEFT RAIL NARRATION: "Drafting core segment first."
 
 STEP P-5: Revision Passes
 PURPOSE: Pilot refined. Format stress-tested. One target per pass.
+SUCCESS STATE: Named versions with specific targets. Creator can state which
+  pass addressed which format or content issue.
 FY APPROACH: "What specifically isn't right about this episode?"
   Format check: if pilot is changing the format document, decide which one wins.
   Same revision discipline as all tracks.
@@ -831,7 +839,9 @@ LEFT RAIL NARRATION: None.
 STEP B-3: First Pieces
 PURPOSE: Framework made real. 3-5 pieces — one per major pillar — to test whether
   voice and structure hold under execution.
-SUCCESS STATE: First pieces feel like the voice document. Creator has a production instinct.
+SUCCESS STATE: One piece exists per defined pillar (3-5 total). For each,
+  creator has explicitly stated whether it matches the voice document or
+  named what's off.
 FAILURE STATE: First pieces are polished and lifeless. Or creator skips test pieces.
 FY APPROACH: "One piece from each pillar. Not perfect — real."
   After each: "Does this sound like [voice document description]?"
@@ -860,6 +870,8 @@ LEFT RAIL NARRATION: "Your content system is taking shape."
 STEP B-5: Revision Passes
 PURPOSE: Individual pieces refined. Voice document updated if production revealed
   something original document missed.
+SUCCESS STATE: Named versions with specific targets. Creator has explicitly
+  stated whether the voice document still holds or needs updating.
 FY APPROACH: "What specifically isn't right?" Same discipline as all tracks.
   "Does the voice document still match who you are now that we've made things?"
 
@@ -867,7 +879,8 @@ FY APPROACH: "What specifically isn't right?" Same discipline as all tracks.
 
 STEP B-6: Framework Lock
 PURPOSE: Voice document, content framework, first pieces locked.
-SUCCESS STATE: Creator has a content system they can execute independently.
+SUCCESS STATE: Voice document, content framework, and first pieces all locked.
+  Creator gives explicit lock confirmation.
 FY APPROACH: Standard lock. Routes to MARKET or BRAND.
 CANVAS OUTPUT: Lock Card — "Content Framework Lock — [Creator / Brand Name]"
 

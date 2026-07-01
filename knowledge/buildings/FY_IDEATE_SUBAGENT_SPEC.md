@@ -101,7 +101,7 @@ Step C: Cull is continuous — FY guides the creator to find what ignites the mo
   to keep going. Not what sounds good. What makes the creator want to wake up
   tomorrow and work on this.
 
-Result: A Concept Line (one sentence, present tense) the creator recognizes as true.
+Result: A Concept Line (one sentence, present tense) the creator confirms when FY reflects it back.
 
 ---
 
@@ -111,7 +111,8 @@ Result: A Concept Line (one sentence, present tense) the creator recognizes as t
 
 STEP 1: What's the Feeling?
 PURPOSE: Captures emotional instinct before the idea has a shape.
-SUCCESS STATE: Creator expressed something true, even if incomplete.
+SUCCESS STATE: Creator has responded with a description of what they're feeling
+  or drawn to — any length, any form.
 FAILURE STATE: Creator jumps straight to concept or asks "is this a good idea?"
 FY APPROACH: Opens with "Tell me in your own words." Not "What's your idea?"
   Receives without evaluating — no "interesting," no "I like that."
@@ -123,7 +124,7 @@ LEFT RAIL NARRATION: None.
 
 STEP 2: First Visual Instinct
 PURPOSE: Collection phase. One anchor — image, sound, reference. Nothing killed.
-SUCCESS STATE: Creator has named 3-5 anchors with clear emotional pull.
+SUCCESS STATE: Creator has named 3-5 anchors — images, sounds, or references.
 FAILURE STATE: Creator culls too early — "that's been done," "too similar to X."
 FY APPROACH: "What does this remind you of? What's the first image, sound, or reference
   that comes to mind?" Receives each anchor. Surfaces more: "What else?"
@@ -156,7 +157,8 @@ LEFT RAIL NARRATION (example):
 
 STEP 3: One Sentence
 PURPOSE: First cull. Dinner table explanation. One sentence, true.
-SUCCESS STATE: One sentence the creator recognizes as true. Not polished — true.
+SUCCESS STATE: Creator has stated one sentence and confirmed it captures the
+  idea when FY reflects it back.
 FAILURE STATE: Creator tries to make the sentence sound good instead of true.
 FY APPROACH: "If you had to tell someone at dinner what you're working on — one sentence —
   what would you say?" If it sounds pitched: "Say it like you'd say it to someone
@@ -186,8 +188,7 @@ LEFT RAIL NARRATION: "Checking market landscape — looking at what's been made 
 
 STEP 5: Is Now the Right Time?
 PURPOSE: Readiness evaluation. Decision from information, not fear.
-SUCCESS STATE: Creator makes a clear decision — yes or not yet — from actual risk
-  assessment, not emotion.
+SUCCESS STATE: Creator states a clear decision — advance now, or not yet.
 FAILURE STATE: Creator mistakes a fear wall for a practical wall.
 
 FY APPROACH (Two-Level Risk Framework — Lee Brownstein method):
@@ -238,6 +239,9 @@ LEFT RAIL NARRATION: None.
 STEP 7: Not Yet
 PURPOSE: Wall recognition and mentorship. FY-identified, not creator-chosen.
   Two states: Practical wall (fixable) or Impostor syndrome (needs permission to continue).
+SUCCESS STATE: Creator has named which wall it is. Practical: a specific next
+  action is stated. Internal: creator confirms they're pausing here and will
+  return.
 FY APPROACH:
   First identify which kind: "What specifically is blocking you right now?"
   Practical: "Here's what we do about that. [Specific action.] When that's done,
@@ -256,7 +260,8 @@ LEFT RAIL NARRATION: None.
 STEP 8: Give It a Skeleton
 PURPOSE: Captures structured idea elements before DEVELOP opens.
   FY adapts prompts to what the creator is making, not to archetype label.
-SUCCESS STATE: Seed document exists with three structural answers — rough, honest, theirs.
+SUCCESS STATE: Seed document exists with all three structural answers filled
+  in — any length, any form.
 FAILURE STATE: Creator tries to build the full thing here.
   FY: "We're planting, not building yet."
 

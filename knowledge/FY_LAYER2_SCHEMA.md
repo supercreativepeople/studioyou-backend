@@ -215,10 +215,24 @@ GOOD (checkable, behavioral):    "Creator has stated a single-sentence premise
                                    containing a character, a want, and an obstacle."
 ```
 
-**Action item, Session AA:** DEVELOP's existing SUCCESS STATE entries (N-1 through
-N-7, and the parallel entries across Music/Visual/Podcast/Brand tracks) were written
-before this rule was locked and require an audit pass to confirm each one is checkable
-as-written.
+**The creator-facing litmus test — the one that actually matters more than the
+Tier 2 checkability test above:**
+
+Does the creator understand exactly what they're being asked, clearly enough that
+they never try to guess the "right" answer instead of giving their real one?
+
+There is no right or wrong answer at any step in any building. The creator is not
+being evaluated — they're building a structure. Every structure has a foundation,
+then floors, regardless of creative type: film, music, visual art, podcast, brand.
+A foundation is either poured or it isn't. A floor either exists or it doesn't.
+Neither is judged for quality — only for presence. If a SUCCESS STATE (or the FY
+question that leads to it) could cause a creator to wonder "is this what FY wants
+to hear," it has failed this test regardless of whether it also happens to be
+checkable by Tier 2. Structural presence, never performance.
+
+**Audit status, Session AA:** DEVELOP audited and complete — 13 of 31 SUCCESS STATE
+entries required fixes (2 missing fields filled, 11 rewritten to remove uncheckable
+or subjective language). IDEATE audit next, same session.
 
 ---
 

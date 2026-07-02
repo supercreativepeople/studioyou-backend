@@ -56,6 +56,8 @@ jobs:
           RESEND_FROM_EMAIL=${{ secrets.RESEND_FROM_EMAIL }},\
           SY_SECRET_KEY=${{ secrets.SECRET_KEY }},\
           FRONTEND_URL=https://studioyou.app,\
+          FY_ORCHESTRATION_MODEL=claude-fable-5,\
+          FY_SURFACE_MODEL=claude-sonnet-4-6,\
           REACTOR_API_KEY=${{ secrets.REACTOR_API_KEY }},\
           FAL_API_KEY=${{ secrets.FAL_API_KEY }},\
           TAVUS_API_KEY=${{ secrets.TAVUS_API_KEY }},\

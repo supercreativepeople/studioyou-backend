@@ -86,6 +86,14 @@ ADOBE_PDF_CLIENT_SECRET  = os.environ.get("ADOBE_PDF_CLIENT_SECRET", "")
 # Initialize Anthropic SDK client
 anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
+# ── FY Model Tiers (locked Session T architecture, implemented Session AB) ──
+# Tier 1 — conversational surface (/api/chat, REST fallback for voice loop)
+# Tier 2 — orchestration brain (routing, formation analysis) — Fable 5 via env var,
+#          Opus 4.8 fallback. Swap/rollback = change FY_ORCHESTRATION_MODEL in
+#          deploy-cloudrun.yml, push. No code change.
+SURFACE_MODEL       = os.environ.get("FY_SURFACE_MODEL", "claude-sonnet-4-6")
+ORCHESTRATION_MODEL = os.environ.get("FY_ORCHESTRATION_MODEL", "claude-opus-4-8")
+
 SUPABASE_HEADERS = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -300,7 +308,7 @@ Creator Type: {creator_type}"""
 
     try:
         response = anthropic_client.messages.create(
-            model="claude-opus-4-7",
+            model=ORCHESTRATION_MODEL,
             max_tokens=200,
             system=system,
             messages=[{"role": "user", "content": user_message}]
@@ -452,7 +460,7 @@ def chat():
 
     try:
         response = anthropic_client.messages.create(
-            model="claude-opus-4-7",
+            model=SURFACE_MODEL,
             max_tokens=1000,
             system=system if system else None,
             messages=messages,
@@ -773,7 +781,7 @@ def debug_claude_test():
     """Simple test: call Claude and return the raw response."""
     try:
         message = anthropic_client.messages.create(
-            model="claude-opus-4-7",
+            model=ORCHESTRATION_MODEL,
             max_tokens=100,
             messages=[{"role": "user", "content": "Say 'hello' in one word."}]
         )
@@ -826,7 +834,7 @@ Return ONLY the message text."""
 6: {responses[5] if responses[5] else '(no response)'}"""
         
         response = anthropic_client.messages.create(
-            model="claude-opus-4-7",
+            model=ORCHESTRATION_MODEL,
             max_tokens=100,
             system=system_prompt,
             messages=[{"role": "user", "content": user_message}]
@@ -915,7 +923,7 @@ CRITICAL: Do not use mothering language. Do not be soft. Be the CSO who sees the
 
         # Call Claude
         message = client.messages.create(
-            model="claude-opus-4-7",
+            model=ORCHESTRATION_MODEL,
             max_tokens=300,
             system=cso_system_prompt,
             messages=[
@@ -1139,7 +1147,7 @@ Q12 (Always remember): {briefing_answers.get('q12', '')}"""
 
         print(f"[INIT STEP 4] Calling Claude", flush=True)
         message = anthropic_client.messages.create(
-            model="claude-opus-4-7",
+            model=ORCHESTRATION_MODEL,
             max_tokens=400,
             system=system_prompt,
             messages=[{"role": "user", "content": user_message}]
@@ -1789,7 +1797,7 @@ def session_close():
 
         # Generate plan via Claude
         claude_resp = anthropic_client.messages.create(
-            model="claude-sonnet-4-6",
+            model=ORCHESTRATION_MODEL,
             max_tokens=1024,
             system=SESSION_CLOSER_PROMPT,
             messages=[{

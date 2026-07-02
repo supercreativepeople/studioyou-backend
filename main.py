@@ -94,6 +94,16 @@ anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
 SURFACE_MODEL       = os.environ.get("FY_SURFACE_MODEL", "claude-sonnet-4-6")
 ORCHESTRATION_MODEL = os.environ.get("FY_ORCHESTRATION_MODEL", "claude-opus-4-8")
 
+def claude_text(response):
+    """Extract the first text block from a Claude response. Reasoning-class models
+    (Fable 5) return thinking blocks before text, so the first content block is
+    not guaranteed to carry text."""
+    for block in response.content:
+        if getattr(block, "type", "") == "text" and getattr(block, "text", None):
+            return block.text
+    return ""
+
+
 SUPABASE_HEADERS = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -313,7 +323,7 @@ Creator Type: {creator_type}"""
             system=system,
             messages=[{"role": "user", "content": user_message}]
         )
-        message_text = response.content[0].text.strip()
+        message_text = claude_text(response).strip()
         return jsonify({"success": True, "message": message_text})
     except Exception as e:
         logger.error(f"[formation_chat] Error: {e}")
@@ -465,7 +475,7 @@ def chat():
             system=system if system else None,
             messages=messages,
         )
-        text = response.content[0].text
+        text = claude_text(response)
         return jsonify({"success": True, "message": text, "content": [{"type": "text", "text": text}]})
     except Exception as e:
         error_msg = str(e)
@@ -787,7 +797,7 @@ def debug_claude_test():
         )
         return jsonify({
             'success': True,
-            'response': message.content[0].text,
+            'response': claude_text(message),
             'model': message.model,
             'usage': {
                 'input_tokens': message.usage.input_tokens,
@@ -840,7 +850,7 @@ Return ONLY the message text."""
             messages=[{"role": "user", "content": user_message}]
         )
         
-        welcome_text = response.content[0].text.strip()
+        welcome_text = claude_text(response).strip()
         
         return jsonify({
             "success": True,
@@ -934,7 +944,7 @@ CRITICAL: Do not use mothering language. Do not be soft. Be the CSO who sees the
             ]
         )
 
-        first_words = message.content[0].text
+        first_words = claude_text(message)
 
         return jsonify({
             'success': True,
@@ -1154,7 +1164,7 @@ Q12 (Always remember): {briefing_answers.get('q12', '')}"""
         )
         print(f"[INIT STEP 5] Claude responded", flush=True)
 
-        raw = message.content[0].text.strip()
+        raw = claude_text(message).strip()
         # Strip markdown fences if present
         if raw.startswith('```'):
             raw = raw.split('```')[1]
@@ -1806,7 +1816,7 @@ def session_close():
             }]
         )
 
-        raw = claude_resp.content[0].text.strip()
+        raw = claude_text(claude_resp).strip()
         # Strip markdown fences if present
         if raw.startswith("```"):
             raw = raw.split("```")[1]

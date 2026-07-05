@@ -1763,6 +1763,99 @@ def session_start():
         return jsonify({"error": str(e)}), 500
 
 
+# ── VAULT ─────────────────────────────────────────────────────────────────────
+# Persists step answers FY has refined into something usable. Session AD —
+# closes the gap flagged since Session AC: no persistence existed for anything
+# a creator provides through conversation, only generated tool outputs
+# (images, video) ever made it into the Vault before this.
+
+@app.route("/api/vault/capture", methods=["POST"])
+@cross_origin()
+def vault_capture():
+    """
+    Persist a Vault entry when FY has refined a creator's answer to a step
+    into something concrete and usable. Called by studio.html on receiving a
+    fy_vault_capture data message from the agent's capture_vault_entry tool.
+
+    Body: { project_id, building_slug, section_name, step_title,
+            captured_answer, raw_thread (optional list of {role, content}) }
+    """
+    try:
+        body = request.get_json(force=True) or {}
+        project_id = (body.get("project_id") or "").strip()
+        building_slug = (body.get("building_slug") or "").strip()
+        section_name = (body.get("section_name") or "").strip()
+        step_title = (body.get("step_title") or "").strip()
+        captured_answer = (body.get("captured_answer") or "").strip()
+        raw_thread = body.get("raw_thread")
+
+        if not project_id or not building_slug or not section_name or not step_title or not captured_answer:
+            return jsonify({
+                "success": False,
+                "error": "project_id, building_slug, section_name, step_title, and captured_answer are required"
+            }), 400
+
+        # Mark any prior entry for this exact step as superseded, not deleted —
+        # full refinement history stays queryable rather than being overwritten.
+        sb_patch("fy_vault_entries", {
+            "project_id": f"eq.{project_id}",
+            "building_slug": f"eq.{building_slug}",
+            "section_name": f"eq.{section_name}",
+            "step_title": f"eq.{step_title}",
+            "superseded": "eq.false",
+        }, {"superseded": True})
+
+        entry = {
+            "project_id": project_id,
+            "building_slug": building_slug,
+            "section_name": section_name,
+            "step_title": step_title,
+            "captured_answer": captured_answer,
+            "raw_thread": raw_thread,
+        }
+        created = sb_post("fy_vault_entries", entry)
+        row = created[0] if isinstance(created, list) and created else created
+        return jsonify({"success": True, "entry": row}), 200
+
+    except Exception as e:
+        import traceback
+        logger.error(f"[vault_capture] {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/vault/list", methods=["GET"])
+@cross_origin()
+def vault_list():
+    """
+    List current (non-superseded) Vault entries for a project, optionally
+    filtered to one building. Used to populate the Vault panel on load.
+
+    Query params: project_id (required), building_slug (optional)
+    """
+    try:
+        project_id = (request.args.get("project_id") or "").strip()
+        building_slug = (request.args.get("building_slug") or "").strip()
+
+        if not project_id:
+            return jsonify({"success": False, "error": "project_id required"}), 400
+
+        params = {
+            "project_id": f"eq.{project_id}",
+            "superseded": "eq.false",
+            "order": "captured_at.asc",
+        }
+        if building_slug:
+            params["building_slug"] = f"eq.{building_slug}"
+
+        rows = sb_get("fy_vault_entries", params)
+        return jsonify({"success": True, "entries": rows}), 200
+
+    except Exception as e:
+        import traceback
+        logger.error(f"[vault_list] {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/session/close", methods=["POST"])
 @cross_origin()
 def session_close():

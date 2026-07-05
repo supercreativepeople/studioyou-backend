@@ -1712,6 +1712,7 @@ monetize: Revenue (Revenue Streams, Tracking & Analytics)
 Rules:
 - section_name and step_title must match the exact strings above — no paraphrasing
 - Pick the section and step that most directly matches where this creator should start work
+- The triage conversation already captured a content-maturity type (idea/treatment/script) and a one-sentence description of the idea. Never route to a step whose core question is asking for that same thing again — specifically, ideate's "One Sentence" step and develop's "What's the Premise?" step both ask for the one-sentence logline. If the creator already gave it in this conversation, treat that step as already answered and route to the next step in the same section instead
 - actions array: minimum 3, maximum 6 items
 - Each action must be specific and executable, not generic
 - building_slug must reflect where the work actually happens

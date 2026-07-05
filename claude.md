@@ -99,7 +99,7 @@ Unverified: whether `runway.AvatarSession.aclose()` actually exists on this plug
 Agent recreated for this code change: `CA_hJH2hG3UdrR3` deleted → `CA_gHcpYouSmW6Y` created, region us-east. Confirmed build succeeded, deploy completed.
 
 **Session AC, second recreate (commit `8b37e1f`):** Live-test surfaced the handoff line not being spoken in full. Root cause: `speakLine()` in dashboard.html asked the LLM to comply with a `[SPOKEN LINE] Say this exact line and nothing else: "..."` text convention via `session.generate_reply(user_input=text)` — the model's system prompt had zero awareness of that convention, so it would truncate or paraphrase instead of reciting verbatim. Fixed by adding a `fy_say_verbatim` message type in agent.py that calls `session.say(text, allow_interruptions=False)` directly — bypasses the LLM turn entirely, guaranteed verbatim. dashboard.html's `speakLine()` now publishes `fy_say_verbatim` instead of the old `fy_chat` wrapper hack.
-Agent recreated again: `CA_gHcpYouSmW6Y` deleted → `CA_HLJDfBDvSj8E` created, region us-east. Session AD: `CA_HLJDfBDvSj8E` deleted → **`CA_VyEg7PNceKBc`** created, region us-east — avatar rotation fix (`dae3ea8`).
+Agent recreated again: `CA_gHcpYouSmW6Y` deleted → `CA_HLJDfBDvSj8E` created, region us-east. Session AD: `CA_HLJDfBDvSj8E` deleted → `CA_VyEg7PNceKBc` created, region us-east — avatar rotation fix (`dae3ea8`). Session AD (second recreate): `CA_VyEg7PNceKBc` deleted → **`CA_2P82mL8o4yn5`** created, region us-east — pronunciation dict wiring, sonic-3.5 + Jameson voice switch, acronym-spacing prompt rule (`1c52654`).
 
 **Session AC finding, not yet fixed — root cause of the "avatar dropped randomly" reports (occurred twice, live tests both times):** Runway's Characters API hard-caps every realtime session at a maximum of 5 minutes, platform-side (confirmed via Runway's own docs — this is a Session concept boundary, not something `max_duration` can extend past, only shorten). `agent.py` never set `max_duration` and has no rotation/renewal logic — so any conversation running past ~5 minutes since the avatar joined WILL drop it, deterministically, every time, with zero auto-recovery in either the old code or the Session AC changes. Not random. Queued for Session AD: build proactive rotation (close + reopen the `AvatarSession` a few seconds before the 5-minute mark) so it never dies mid-conversation. Will cause a brief visible respawn on rotation — worth deciding whether to try to hide it or treat it as an expected beat, same design question as the dashboard→studio handoff respawn.
 
@@ -138,8 +138,8 @@ ORCHESTRATION_MODEL = os.environ.get("FY_ORCHESTRATION_MODEL", "claude-opus-4-8"
 
 ### FY Agent — LiveKit Cloud Deploy
 
-**Agent ID:** `CA_VyEg7PNceKBc` — RUNNING, us-east (LiveKit Cloud). **Changed Session AD** — proactive avatar rotation fix (`dae3ea8`). Was `CA_HLJDfBDvSj8E` (changed Session AC twice — avatar-billing-stop fix, then the say-verbatim handoff-line fix), before that `CA_gHcpYouSmW6Y`, before that `CA_hJH2hG3UdrR3` (Session AA before that: `CA_eESBzjexFe9C`, deleted and recreated for the Runway swap).
-**Update command:** `lk agent update CA_VyEg7PNceKBc` — for config-only changes.
+**Agent ID:** `CA_2P82mL8o4yn5` — RUNNING, us-east (LiveKit Cloud). **Changed Session AD (second recreate)** — Cartesia pronunciation dict wired (`CARTESIA_PRONUNCIATION_DICT_ID=pdict_EFg3YUoQfZfzyupNVwiFL9`, 27-term FY vocabulary dict), model switched sonic-3 → sonic-3.5, voice switched Parker → Jameson (`a5136bf9-224c-4d76-b823-52bd5efcffcc`), acronym-spacing rule added to FY_OPERATIONAL_RULES (`1c52654`). CARTESIA_TTS_SPEED env var wired but currently a no-op — speed/volume temporarily disabled on sonic-3.5 per Cartesia. Was `CA_VyEg7PNceKBc` (avatar rotation fix, `dae3ea8`), before that `CA_HLJDfBDvSj8E` (Session AC twice — avatar-billing-stop fix, then the say-verbatim handoff-line fix), before that `CA_gHcpYouSmW6Y`, before that `CA_hJH2hG3UdrR3` (Session AA before that: `CA_eESBzjexFe9C`, deleted and recreated for the Runway swap).
+**Update command:** `lk agent update CA_2P82mL8o4yn5` — for config-only changes.
 **CONFIRMED Session W, reconfirmed Session AA:** `lk agent update` does NOT trigger a real rebuild. To deploy new agent code: `lk agent delete --id <ID> && lk agent create`. Agent ID changes on recreate — update claude.md.
 
 ### Dashboard→Studio Handoff
@@ -292,7 +292,7 @@ Rules applying to all backend work:
 
 ## LiveKit / FY Agent Reference
 
-**Agent ID:** `CA_VyEg7PNceKBc` — RUNNING, us-east (LiveKit Cloud). Changed Session AD — avatar rotation fix. Was `CA_HLJDfBDvSj8E` (Session AC twice), before that `CA_gHcpYouSmW6Y`, before that `CA_hJH2hG3UdrR3` (Session AA before that: `CA_eESBzjexFe9C`).
+**Agent ID:** `CA_2P82mL8o4yn5` — RUNNING, us-east (LiveKit Cloud). Changed Session AD (second recreate) — pronunciation dict, sonic-3.5 + Jameson voice, acronym-spacing rule. Was `CA_VyEg7PNceKBc` (avatar rotation fix), before that `CA_HLJDfBDvSj8E` (Session AC twice), before that `CA_gHcpYouSmW6Y`, before that `CA_hJH2hG3UdrR3` (Session AA before that: `CA_eESBzjexFe9C`).
 **Local run (debug only):**
 ```bash
 cd /Users/supercreativepeople/Projects/studioyou-fy-agent

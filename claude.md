@@ -14,7 +14,7 @@ At the close of every session (or whenever Lee asks for a handoff), Claude produ
 3. **Updated claude.md** — header (Last Updated / Next Session), Current Build State entries for any files touched, any new locked decisions or corrections, consolidated open-items list for the next session, and a new Notion Reference row for this session's handoff. Presented via `present_files`.
 
 ---
-**Last Updated:** July 3, 2026 — Session AC
+**Last Updated:** July 6, 2026 — Session AD
 **Next Session:** Session AE opens with the integrated canvas/vault/details architecture Lee spec'd at Session AD close — currently these are three disconnected mechanisms that need to become one synchronized action off a single `fy_vault_capture` event:
 1. **Project creation as a first-class flow** — either user or FY can create a project; Independent tier caps at 3 active (Operator 10, Player 5, confirmed in `TIER_ACTIVE_LIMITS`).
 2. **Vault stops being a manual open/close panel.** Currently `vaultOpen` state, click-to-expand (`studio.html` ~line 1541). Lee wants it dynamically visible in the left rail as items are added — user never opens or closes it, it just reflects state.
@@ -495,7 +495,9 @@ Building replacement archetype background videos directly (see Reactor Partnersh
 | Resource | ID |
 |---|---|
 | StudioYou Project Playbook | `34bb963047e581f99956e07953a9d1da` |
+| SY Architecture — Living Principles | `395b963047e581a684f5c0cd689b8658` |
 | Handoff Docs folder | `366b963047e5801795d0ec513406ac55` |
+| Session AD Handoff | `395b963047e581488eb8e69aa1864ade` |
 | Session AC Handoff | `393b963047e58186b307f381ae3d4282` |
 | Session AB Handoff | `391b963047e581abb36fc93821363566` |
 | Session AA Handoff | `391b963047e58141974dfa70adb93024` |

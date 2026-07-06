@@ -15,7 +15,14 @@ At the close of every session (or whenever Lee asks for a handoff), Claude produ
 
 ---
 **Last Updated:** July 3, 2026 — Session AC
-**Next Session:** Session AD — Avatar session rotation (Runway hard-caps every Characters session at 5 minutes; nothing renews it, so any conversation running past ~5 min drops the avatar with no recovery — root cause of the "random" drops, confirmed via Runway docs). Voice/pronunciation work alongside it (Cartesia pronunciation dictionary + speed tuning — already on sonic-3, `pronunciation_dict_id` just unused). Then Vault/metadata-capture spec — new, scoped as its own spec like PLAN (see Session AC Open Items). Then PLAN sub-agent spec. Then Tier 2 orchestrator spec. Then wire IDEATE into live agent. Then Super Somebody benchmark.
+**Next Session:** Session AE opens with the integrated canvas/vault/details architecture Lee spec'd at Session AD close — currently these are three disconnected mechanisms that need to become one synchronized action off a single `fy_vault_capture` event:
+1. **Project creation as a first-class flow** — either user or FY can create a project; Independent tier caps at 3 active (Operator 10, Player 5, confirmed in `TIER_ACTIVE_LIMITS`).
+2. **Vault stops being a manual open/close panel.** Currently `vaultOpen` state, click-to-expand (`studio.html` ~line 1541). Lee wants it dynamically visible in the left rail as items are added — user never opens or closes it, it just reflects state.
+3. **On-canvas sticky (net new, not built at all).** When a step is answered and captured, a sticky should appear directly on the canvas where the step lives, not tucked in the side Vault panel only. Open design questions from Session AD close, still need answers: does it replace the step's instruction text or sit alongside it; does it persist permanently or fade to confirmation once acknowledged (Vault as the permanent home); does Canvas Details get a matching new event type for this, and what should it look like.
+4. **Canvas Details reframed as a learning terminal, not just a tool-call log.** Checked the code: `sectionEvents`/`_cdState.events` currently ONLY logs generative tool-call progress (image/video gen, "generating"/"complete"), zero connection to step/section Q&A completions. Lee's spec: this should read like a running terminal a novice can follow — what FY is building, with what tool, how, why, toward what goal — with links out to learn more, since the creator is on a dual mission (build first, learn second), not a delivery schedule.
+5. **Canvas should show FY actively building, not sit on a placeholder.** Right now IDEATE's center canvas just shows a static lightbulb + "select a section" text regardless of what's happening in the FY rail conversation. Lee wants the canvas to visibly reflect FY's live work, this is the gamified engagement layer the whole build is oriented around.
+
+After this: PLAN sub-agent spec, Tier 2 orchestrator spec, wire IDEATE into live agent, Super Somebody benchmark.
 
 ---
 

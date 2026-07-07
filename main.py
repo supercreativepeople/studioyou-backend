@@ -1227,6 +1227,35 @@ LIVEKIT_API_KEY    = os.environ.get("LIVEKIT_API_KEY", "")
 LIVEKIT_API_SECRET = os.environ.get("LIVEKIT_API_SECRET", "")
 LIVEKIT_URL        = os.environ.get("LIVEKIT_URL", "")
 
+# Building slug -> knowledge/buildings/*.md spec file. Only buildings with a
+# completed spec go here. Add an entry the day a building's spec ships —
+# until then that building runs on section titles alone (current behavior
+# for every building except ideate).
+BUILDING_SPEC_FILES = {
+    "ideate": "FY_IDEATE_SUBAGENT_SPEC.md",
+}
+
+def _fetch_building_spec(building_slug):
+    """
+    Pulls the authoritative step schema for the active building from the
+    knowledge base so the live agent actually has the section/step
+    structure to follow, instead of improvising its own question line
+    with only a section title to go on. Best-effort — returns None on any
+    failure so a knowledge-base outage never blocks a session from
+    starting.
+    """
+    fname = BUILDING_SPEC_FILES.get(building_slug)
+    if not fname:
+        return None
+    url = f"https://raw.githubusercontent.com/supercreativepeople/studioyou-backend/main/knowledge/buildings/{fname}"
+    try:
+        r = requests.get(url, timeout=5)
+        if r.status_code == 200:
+            return r.text
+    except Exception as e:
+        logger.warning("[_fetch_building_spec] failed for %s: %s", building_slug, e)
+    return None
+
 TAVUS_HEADERS = {
     "x-api-key": TAVUS_API_KEY,
     "Content-Type": "application/json",
@@ -1546,6 +1575,10 @@ def avatar_livekit_session():
                     "active_section": active_section,
                     "sections": sections,
                 }
+                if active_building:
+                    building_spec = _fetch_building_spec(active_building)
+                    if building_spec:
+                        formation_context["active_project"]["building_spec"] = building_spec
 
         except Exception as e:
             logger.warning(f"[avatar_livekit_session] Formation load failed: {e}")

@@ -1233,6 +1233,7 @@ LIVEKIT_URL        = os.environ.get("LIVEKIT_URL", "")
 # for every building except ideate).
 BUILDING_SPEC_FILES = {
     "ideate": "FY_IDEATE_SUBAGENT_SPEC.md",
+    "develop": "FY_DEVELOP_SUBAGENT_SPEC.md",
 }
 
 def _fetch_building_spec(building_slug):

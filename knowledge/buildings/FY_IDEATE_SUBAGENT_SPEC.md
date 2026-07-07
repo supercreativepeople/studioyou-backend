@@ -236,7 +236,7 @@ LEFT RAIL NARRATION: None.
 
 ---
 
-STEP 7: Not Yet
+STEP 7: Let This Breathe
 PURPOSE: Wall recognition and mentorship. FY-identified, not creator-chosen.
   Two states: Practical wall (fixable) or Impostor syndrome (needs permission to continue).
 SUCCESS STATE: Creator has named which wall it is. Practical: a specific next

@@ -1605,6 +1605,51 @@ def avatar_livekit_session():
         logger.error("[avatar_livekit_session] %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/avatar/end-session", methods=["POST"])
+@cross_origin()
+def avatar_end_session():
+    """
+    Explicitly closes a LiveKit room server-side. Called by the frontend
+    before it requests a new session (page reset, toggle, error recovery)
+    so a stale room's agent, avatar, and TTS pipeline actually stop rather
+    than lingering until LiveKit's own idle timeout — the mechanism behind
+    the multi-room credit drain found in Session AE (three concurrent
+    rooms in one browser session, each independently billing Runway and
+    Cartesia). Best-effort: if the room is already gone, that's success,
+    not an error — the frontend should never block a new session on this.
+    """
+    try:
+        data = request.get_json() or {}
+        room_name = (data.get("room_name") or "").strip()
+        if not room_name:
+            return jsonify({"success": True, "note": "no room_name given"}), 200
+        if not all([LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL]):
+            return jsonify({"error": "LiveKit not configured"}), 500
+
+        from livekit.protocol.room import DeleteRoomRequest
+        import asyncio, concurrent.futures
+        lk_url = LIVEKIT_URL.replace("wss://", "https://")
+
+        def _run_delete():
+            async def _delete():
+                lk = LiveKitAPI(url=lk_url, api_key=LIVEKIT_API_KEY, api_secret=LIVEKIT_API_SECRET)
+                try:
+                    await lk.room.delete_room(DeleteRoomRequest(room=room_name))
+                finally:
+                    await lk.aclose()
+            asyncio.run(_delete())
+
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            pool.submit(_run_delete).result(timeout=15)
+
+        return jsonify({"success": True, "room_name": room_name}), 200
+
+    except Exception as e:
+        # Deleting an already-gone room throws too — log and report success
+        # anyway so the frontend's reset flow is never blocked by this call.
+        logger.warning("[avatar_end_session] delete_room for %s: %s", locals().get('room_name', '?'), e)
+        return jsonify({"success": True, "note": str(e)}), 200
+
 # ── FUTUREYOU PERSONA SETUP — run once to create the persona, then hardcode ID ─
 FUTUREYOU_PERSONA_ID = os.environ.get("FUTUREYOU_PERSONA_ID", "")  # set after first run
 

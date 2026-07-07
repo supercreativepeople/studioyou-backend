@@ -4,6 +4,7 @@
 Every session begins by reading both uploaded files in full before any strategy or code:
 1. The handoff doc (HANDOFF_SESSION_[X]_[DATE].md)
 2. claude.md — ALWAYS read the uploaded claude.md from Lee. Never read the project copy at /mnt/project/claude.md — it is stale.
+3. The Sprint Tracker — read current sprint status before any work: https://www.notion.so/a5ff3efa50c24545b07eb1a7c6763438. The session queue comes from the tracker's In Sprint items, not from memory.
 
 No exceptions. Do not strategize, do not touch code until both are read.
 
@@ -12,9 +13,33 @@ At the close of every session (or whenever Lee asks for a handoff), Claude produ
 1. **Handoff doc** — `HANDOFF_SESSION_[X]_[DATE].md`, covering what happened, files changed, bugs found/fixed, open items, and a Session [X+1] agenda. Presented via `present_files`.
 2. **Notion log** — the handoff doc content created as a new page under the Handoff Docs folder (`366b963047e5801795d0ec513406ac55`), titled "Session [X] Handoff."
 3. **Updated claude.md** — header (Last Updated / Next Session), Current Build State entries for any files touched, any new locked decisions or corrections, consolidated open-items list for the next session, and a new Notion Reference row for this session's handoff. Presented via `present_files`.
+4. **Tracker update** — set Status on every task touched this session (In Progress / Done / Blocked), and move any new live-test findings into the tracker as Backlog rows instead of leaving them only in the handoff doc.
+
+## Sprint System (adopted July 6, 2026 — governs Sessions AE through alpha close)
+
+**Canonical docs:** [Sprint Summary](https://www.notion.so/395b963047e581159658c0731fe1a608) | [Sprint Tracker](https://www.notion.so/a5ff3efa50c24545b07eb1a7c6763438) (38 tasks, 6 sprints)
+
+**Schedule:** S1 Canvas/Vault/Details (Jul 6–12) → S2 Orchestration Core (Jul 13–19) → S3 Building Specs (Jul 20–26) → S4 Tier 3 Live (Jul 27–Aug 2) → S5 Integration & Polish (Aug 3–9) → S6 Hardening & Benchmark (Aug 10–16). 15–19 sessions total. Alpha close target: week of Aug 10, ceiling Aug 21.
+
+**Model allocation (per session, non-negotiable):**
+- Fable 5 — spec/architecture sessions only (S2 orchestrator spec, all S3 building specs). Schedule first block after the weekly usage reset.
+- Sonnet 4.6 — all implementation, integration, live-test sessions, and all SCREENBot sessions.
+- Opus 4.8 — S6 hardening and cross-system debugging.
+
+**Cadence:** ~4 StudioYou sessions/week while SCREENBot runs 2–3/week from the same shared weekly usage pool; SCREENBot sessions scheduled late in the weekly cycle. Rises to 5–6/week after SCREENBot's sprint closes.
+
+**Process rules (from Session AA–AD data):**
+1. **Displacement cap** — locked session queues. Live-test findings go into the tracker as Backlog, not fixed inline, unless they block the current queue item. (Session AD lost its entire back half to inline fixes.)
+2. **One agent recreate per session** where possible — batch voice/config experiments into a single `lk agent delete && create` cycle. (Session AD ran seven.)
+
+**Business track (separate from S1–S6, does not displace dev sessions):**
+- Session B1 (Sonnet) queue: IP inventory + destination map → Anthology brief → technical appendix → SCREENBot case study → SCP Anthropic-exclusive commitment statement → demo video script outline → SCP Build Methodology doc (doubles as Anthology exhibit).
+- Anthropic pipeline: Partner Network investment lane via partner manager (in motion); standalone Startup Program credits DEAD for SCP Inc. (2019 incorporation fails 4-year window); Anthology Fund is primary — submit after S2 with demo video.
+- Entity: SCP formalizes as venture studio; StudioYou Inc. (Delaware C-corp) formed before Anthology application (late July, counsel engaged by Lee); all IP currently vests in Lee personally (no assignments exist anywhere), assigned directly at formation; SCP retained stake teens-to-low-20s, Lee holds founder shares personally.
+- Full record: [Session Log July 6, 2026](https://www.notion.so/396b963047e581cc866ec819e878d456)
 
 ---
-**Last Updated:** July 6, 2026 — Session AD
+**Last Updated:** July 6, 2026 — Session AE
 **Next Session:** Session AE opens with the integrated canvas/vault/details architecture Lee spec'd at Session AD close — currently these are three disconnected mechanisms that need to become one synchronized action off a single `fy_vault_capture` event:
 1. **Project creation as a first-class flow** — either user or FY can create a project; Independent tier caps at 3 active (Operator 10, Player 5, confirmed in `TIER_ACTIVE_LIMITS`).
 2. **Vault stops being a manual open/close panel.** Currently `vaultOpen` state, click-to-expand (`studio.html` ~line 1541). Lee wants it dynamically visible in the left rail as items are added — user never opens or closes it, it just reflects state.

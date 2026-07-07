@@ -1571,6 +1571,7 @@ def avatar_livekit_session():
                         break
 
                 formation_context["active_project"] = {
+                    "id": p.get("id"),
                     "name": p.get("name"),
                     "active_building": active_building,
                     "active_section": active_section,
@@ -1580,6 +1581,35 @@ def avatar_livekit_session():
                     building_spec = _fetch_building_spec(active_building)
                     if building_spec:
                         formation_context["active_project"]["building_spec"] = building_spec
+
+                    # Surface what's already in Vault for this building so FY
+                    # actually knows what's been answered, instead of only
+                    # seeing section-level open/in_progress/complete status.
+                    # Without this, FY has no way to honor its own "don't
+                    # re-ask an already-covered step" instruction — the vault
+                    # write happens, but nothing ever reads it back into the
+                    # live agent's context. Root cause of the "I answered
+                    # this already" / "I don't have that" disconnect between
+                    # dashboard triage and the studio building session.
+                    try:
+                        vault_rows = sb_get("fy_vault_entries", {
+                            "project_id": f"eq.{p.get('id')}",
+                            "building_slug": f"eq.{active_building}",
+                            "superseded": "eq.false",
+                            "order": "captured_at.asc",
+                            "select": "section_name,step_title,captured_answer",
+                        })
+                        if vault_rows:
+                            formation_context["active_project"]["captured_steps"] = [
+                                {
+                                    "section_name": r.get("section_name"),
+                                    "step_title": r.get("step_title"),
+                                    "captured_answer": r.get("captured_answer"),
+                                }
+                                for r in vault_rows
+                            ]
+                    except Exception as e:
+                        logger.warning(f"[avatar_livekit_session] Vault fetch failed: {e}")
 
         except Exception as e:
             logger.warning(f"[avatar_livekit_session] Formation load failed: {e}")
@@ -1765,6 +1795,9 @@ Return ONLY valid JSON in this exact format, no other text:
   "platform": "primary platform mentioned or null",
   "session_summary": "one sentence — what was decided in this session",
   "first_deliverable": "the single most important first output the creator should produce",
+  "captured_section_name": "the exact section name (within building_slug) whose step this transcript already answers, e.g. Raw Idea — or empty string if nothing in the transcript rises to a real answer",
+  "captured_step_title": "the exact step title within captured_section_name that's already answered, e.g. One Sentence — or empty string",
+  "captured_step_answer": "your own distilled, synthesized version of the creator's actual answer to that step, in your words, not a verbatim quote — or empty string if captured_step_title is empty",
   "actions": [
     {
       "text": "specific action item",
@@ -1792,6 +1825,7 @@ Rules:
 - section_name and step_title must match the exact strings above — no paraphrasing
 - Pick the section and step that most directly matches where this creator should start work
 - The triage conversation already captured a content-maturity type (idea/treatment/script) and a one-sentence description of the idea. Never route to a step whose core question is asking for that same thing again — specifically, ideate's "One Sentence" step and develop's "What's the Premise?" step both ask for the one-sentence logline. If the creator already gave it in this conversation, treat that step as already answered and route to the next step in the same section instead
+- When you skip a step because its answer was already given in this transcript, you MUST fill captured_section_name/captured_step_title/captured_step_answer with that step's exact section/title (ideate: Raw Idea/One Sentence — develop: Story & Structure/What's the Premise?) and your distilled version of the answer. This is what actually saves the answer — routing past a step without filling these fields loses the creator's answer entirely. Leave all three empty only if no step is genuinely already answered
 - actions array: minimum 3, maximum 6 items
 - Each action must be specific and executable, not generic
 - building_slug must reflect where the work actually happens
@@ -1848,6 +1882,34 @@ def session_start():
 # a creator provides through conversation, only generated tool outputs
 # (images, video) ever made it into the Vault before this.
 
+def _write_vault_entry(project_id, building_slug, section_name, step_title, captured_answer, raw_thread=None):
+    """
+    Shared vault-write path — supersede any prior entry for this exact step,
+    then insert the new one. Used by both the /api/vault/capture endpoint
+    (agent-driven, mid-building captures) and session_close (triage-driven
+    backfill, so a logline given during dashboard routing doesn't vanish
+    the moment the creator lands in the destination building).
+    """
+    sb_patch("fy_vault_entries", {
+        "project_id": f"eq.{project_id}",
+        "building_slug": f"eq.{building_slug}",
+        "section_name": f"eq.{section_name}",
+        "step_title": f"eq.{step_title}",
+        "superseded": "eq.false",
+    }, {"superseded": True})
+
+    entry = {
+        "project_id": project_id,
+        "building_slug": building_slug,
+        "section_name": section_name,
+        "step_title": step_title,
+        "captured_answer": captured_answer,
+        "raw_thread": raw_thread,
+    }
+    created = sb_post("fy_vault_entries", entry)
+    return created[0] if isinstance(created, list) and created else created
+
+
 @app.route("/api/vault/capture", methods=["POST"])
 @cross_origin()
 def vault_capture():
@@ -1874,26 +1936,7 @@ def vault_capture():
                 "error": "project_id, building_slug, section_name, step_title, and captured_answer are required"
             }), 400
 
-        # Mark any prior entry for this exact step as superseded, not deleted —
-        # full refinement history stays queryable rather than being overwritten.
-        sb_patch("fy_vault_entries", {
-            "project_id": f"eq.{project_id}",
-            "building_slug": f"eq.{building_slug}",
-            "section_name": f"eq.{section_name}",
-            "step_title": f"eq.{step_title}",
-            "superseded": "eq.false",
-        }, {"superseded": True})
-
-        entry = {
-            "project_id": project_id,
-            "building_slug": building_slug,
-            "section_name": section_name,
-            "step_title": step_title,
-            "captured_answer": captured_answer,
-            "raw_thread": raw_thread,
-        }
-        created = sb_post("fy_vault_entries", entry)
-        row = created[0] if isinstance(created, list) and created else created
+        row = _write_vault_entry(project_id, building_slug, section_name, step_title, captured_answer, raw_thread)
         return jsonify({"success": True, "entry": row}), 200
 
     except Exception as e:
@@ -1954,6 +1997,7 @@ def session_close():
         session_id = data.get("session_id")
         exchange_count = data.get("exchange_count", 0)
         messages = data.get("messages", [])
+        project_id = (data.get("project_id") or "").strip()
 
         if not email or not session_id:
             return jsonify({"error": "email and session_id required"}), 400
@@ -2004,6 +2048,26 @@ def session_close():
         session_summary = plan_data.get("session_summary", "")
         first_deliverable = plan_data.get("first_deliverable", "")
         actions = plan_data.get("actions", [])
+        captured_section_name = (plan_data.get("captured_section_name") or "").strip()
+        captured_step_title = (plan_data.get("captured_step_title") or "").strip()
+        captured_step_answer = (plan_data.get("captured_step_answer") or "").strip()
+
+        # Backfill: the triage conversation (dashboard) already answered a
+        # step in the destination building (e.g. ideate's "One Sentence"
+        # logline) but that answer previously vanished the moment routing
+        # completed — nothing ever wrote it to Vault, so the studio agent
+        # had no way to know it existed and re-asked from scratch. Write it
+        # now, same path as a normal capture_vault_entry call, so it's
+        # already there by the time the building session loads.
+        if project_id and captured_section_name and captured_step_title and captured_step_answer:
+            try:
+                _write_vault_entry(
+                    project_id, building_slug, captured_section_name,
+                    captured_step_title, captured_step_answer,
+                    raw_thread=messages,
+                )
+            except Exception as e:
+                logger.warning(f"[session_close] Vault backfill failed: {e}")
 
         # 1. Update fy_session record
         sb_patch("fy_sessions",

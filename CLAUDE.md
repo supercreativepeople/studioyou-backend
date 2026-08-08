@@ -1,6 +1,8 @@
 # StudioYou — Claude Session Reference
 
-## Session Start Protocol (non-negotiable)
+> **2026-08-07 protocol update:** this repo is now on the `dev-session-protocol` skill. The git copy of this file (and `handoffs/`) is now the source of truth, not a chat upload — the "never read the project copy, it's stale" instruction below predates that and is superseded. See `SERVICES.md` for this repo's external dependencies and `handoffs/2026-08-07-protocol-bootstrap.md` for what changed today. This file is long (~580 lines) and due for a split into `handoffs/` per the new protocol's guidance — not done this session.
+
+## Session Start Protocol (non-negotiable, legacy — see note above)
 Every session begins by reading both uploaded files in full before any strategy or code:
 1. The handoff doc (HANDOFF_SESSION_[X]_[DATE].md)
 2. claude.md — ALWAYS read the uploaded claude.md from Lee. Never read the project copy at /mnt/project/claude.md — it is stale.

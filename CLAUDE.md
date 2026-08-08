@@ -43,16 +43,18 @@ At the close of every session (or whenever Lee asks for a handoff), Claude produ
 - Full record: [Session Log July 6, 2026](https://www.notion.so/396b963047e581cc866ec819e878d456)
 
 ---
-**Last Updated:** July 7, 2026 — Session AE close
-**Next Session:** Session AF opens with retest and hardening, not new build. Priority order:
-1. **Full IDEATE retest against the new step schema** (agent `CA_Mnhkjj3mUr7T`, deployed this session but not yet run through a complete building end to end). Confirm FY walks all 8 steps in order — Raw Idea (What's the Feeling / First Visual Instinct / One Sentence), Gut Check (Does This Have Legs / Is Now the Right Time), Hand-off (Let's Build on This / Not Yet), Seed Development (Give It a Skeleton) — one `capture_vault_entry` per step, no skipping, no re-asking something already answered. Then confirm the section/building-complete handoff line actually fires ("X is complete, dropping into Vault, now we move to Y, ready?") and that FY handles a non-yes reply without breaking the pattern.
-2. **Naming mismatch, found not fixed:** `FY_IDEATE_SUBAGENT_SPEC.md` Step 7 is titled "Not Yet" — `BUILDING_TASKS['ideate']` in studio.html has "Let This Breathe" for the same slot. Now that the spec is actually being read at runtime, this WILL cause a title-match failure (FY will call `capture_vault_entry` with `step_title: "Not Yet"`, which won't match anything in the frontend's own step list). Fix one side to match the other before it surfaces as a live bug.
-3. **Other buildings still have no step schema.** Only `ideate` is wired into `BUILDING_SPEC_FILES` in main.py. DEVELOP has a complete spec (`FY_DEVELOP_SUBAGENT_SPEC.md`, v1.2) that could be added to the map now — same one-line change as ideate's. Every other building still runs on section titles alone until specs exist and get added.
-4. **Canvas whiteboard rework** (logged as Backlog in the Notion tracker) — current step-answer stickies are a fixed grid, correct data model but no spatial placement, no drag, no user-created stickies. Lee's framing: this should read as a writers'-room whiteboard, not a form. Bigger scope than a single session, needs its own design pass.
-5. **Generated-asset persistence** (logged as Backlog) — only answer-type Vault entries persist to Supabase; locked image/video canvas cards are still session-only, gone on reload.
-6. **Docker sandbox exploration** (logged as Backlog, low priority) — Lee met with the Docker team at AIEWF SF, they now have a sandbox + dev tools that might consolidate tooling currently split across other software. Not scoped, just flagged for a future look.
+**Last Updated:** August 8, 2026 — doc sync (header had drifted a month behind actual commits; see below)
+**Next Session:** Priority order:
+1. **Full IDEATE retest against the step schema — still not independently confirmed live.** Session AF (2026-07-07, commits `bdc196f`/`f7a507b`) fixed the naming mismatch and wired DEVELOP's schema, but nobody has run a complete IDEATE building end-to-end since. Confirm FY walks all 8 steps in order — Raw Idea (What's the Feeling / First Visual Instinct / One Sentence), Gut Check (Does This Have Legs / Is Now the Right Time), Hand-off (Let's Build on This / Let This Breathe), Seed Development (Give It a Skeleton) — one `capture_vault_entry` per step, no skipping, no re-asking something already answered. Then confirm the section/building-complete handoff line fires and FY handles a non-yes reply without breaking the pattern. Code-level check (2026-08-08) confirms the spec and frontend now agree on step titles and DEVELOP is wired into `BUILDING_SPEC_FILES` — but that's static verification, not a live run, and needs Lee actually in a session.
+2. ~~Naming mismatch~~ — fixed Session AF, confirmed still fixed as of 2026-08-08 (spec and `studio.html` both say "Let This Breathe" for Step 7).
+3. ~~DEVELOP step schema wiring~~ — done Session AF, confirmed still in place as of 2026-08-08. Every other building still runs on section titles alone until specs exist and get added.
+4. **Canvas whiteboard rework** (Backlog) — current step-answer stickies are a fixed grid, correct data model but no spatial placement, no drag, no user-created stickies. Lee's framing: should read as a writers'-room whiteboard, not a form. Bigger scope than a single session, needs its own design pass.
+5. **Generated-asset persistence** (Backlog) — only answer-type Vault entries persist to Supabase; locked image/video canvas cards are still session-only, gone on reload.
+6. **Docker sandbox exploration** (Backlog, low priority) — Lee met with the Docker team at AIEWF SF; not scoped, just flagged for a future look.
 
-After the retest confirms Session AE's fixes hold: Project creation as a first-class flow (still untouched — Independent tier caps at 3 active), then PLAN sub-agent spec, Tier 2 orchestrator spec, Super Somebody benchmark.
+**Gap flag:** last real feature work was Session AF (2026-07-07); everything between then and 2026-08-07/08 was dev-session-protocol hygiene (repo cleanup, no build work). Sprint plan targets alpha close the week of 2026-08-10 — worth confirming with Lee whether that still holds given the ~1 month gap.
+
+After a live retest confirms Session AF's fixes hold: Project creation as a first-class flow (still untouched — Independent tier caps at 3 active), then PLAN sub-agent spec, Tier 2 orchestrator spec, Super Somebody benchmark.
 
 ---
 

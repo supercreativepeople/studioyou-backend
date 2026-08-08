@@ -1,6 +1,8 @@
 # StudioYou — Claude Session Reference
 
 > **2026-08-07 protocol update:** this repo is now on the `dev-session-protocol` skill. The git copy of this file (and `handoffs/`) is now the source of truth, not a chat upload — the "never read the project copy, it's stale" instruction below predates that and is superseded. See `SERVICES.md` for this repo's external dependencies and `handoffs/2026-08-07-protocol-bootstrap.md` for what changed today. This file is long (~580 lines) and due for a split into `handoffs/` per the new protocol's guidance — not done this session.
+>
+> **2026-08-07 close:** the three loose experiment files (`main.py.good`, `main.py.new`, `main.py.tavus`) plus `.DS_Store` are now in `.gitignore` per Lee's decision to keep them on disk without tracking them in git. Repo is clean and fully pushed to GitHub as of session close.
 
 ## Session Start Protocol (non-negotiable, legacy — see note above)
 Every session begins by reading both uploaded files in full before any strategy or code:

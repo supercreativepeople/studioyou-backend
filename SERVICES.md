@@ -10,6 +10,39 @@ Rows marked "(shared)" are used across the StudioYou family, see `studioyou-fy-a
 
 **Every billing instance is to be established through Frisson Digital, Inc.**
 
+### How to read the Billing Entity column (corrected 2026-08-09)
+
+An earlier version of this section treated `Lee (personal)` as a defect on every row. That was too broad and has been corrected.
+
+**Lee operates as an independent builder.** His personal accounts and cards fund his own activities and have never been commingled with SCP Inc. or any other company. His personal tooling account is exactly that: a personal account used for strategy, product, and material builds that feed whichever entity he is working with. SCP Inc. is a client like any other, with no structural, billing, or naming connection to it. Personal tooling on a personal card is correct and stays that way.
+
+The real question is not commingling. It is **asset control**: which accounts does a Frisson-owned product *depend on to operate*, while being held in Lee's personal name. Those are marked `Company-dependent` in the `Asset Class` column. Everything else drops out of the finding.
+
+- **`Company-dependent`** — StudioYou cannot run without it. Frisson owns the product; the account is personal. These need an answer.
+- **`Personal tooling`** — Lee's own working accounts. Correct as-is, no action.
+- **`Prospective`** — not yet opened. Open under Frisson Digital, Inc. from day one.
+- **`Unclassified`** — pending the load-bearing walkthrough.
+
+The IP assignment moved StudioYou and SCREENBot to Frisson. It did **not** move the accounts those products run on: domain registrations, platform accounts, API keys. That is a completeness gap in the assignment, not a hygiene failure, and the standard fix is an asset schedule with either transfer or license. Attorney and accountant question, not a dev task, and nothing here is legal or tax advice.
+
+### The SuperCreativePeople naming problem (found 2026-08-09)
+
+Every software and platform account was signed up via `supercreativepeople@gmail.com` **with the company name listed as "SuperCreativePeople."** Name only: no EIN, no entity linkage, all accounts tied to Lee personally.
+
+This matters because SCP Inc. is a real corporation whose founding date sits outside the Anthropic four-year and Google five-year eligibility windows, and it was deliberately kept out of every program application. Meanwhile the vendor accounts running StudioYou's infrastructure name it as the operator. Reviewers and diligence read what is written, not the legal substance.
+
+**Decision (2026-08-09): remove the SuperCreativePeople name from vendor accounts. Do not replace it with Frisson yet.** Blank or Lee's own name is the only value that matches reality today. Renaming to Frisson before Frisson has a bank account and payment instrument recreates the same mismatch pointed the other way, and that version is harder to explain. Move the name and the payment instrument together, at switchover.
+
+**On the login email (decided 2026-08-09).** Every account also logs in under `supercreativepeople@gmail.com`, which is itself an SCP reference. Lee holds a neutral personal address, `nyclaabq@gmail.com`, and proposed switching globally. Agreed in principle, but split by asset class rather than done globally:
+
+- **Personal tooling** → move to `nyclaabq@gmail.com`. One hop, correct final destination.
+- **Company-dependent** → do **not** route through a second personal gmail. These are going to `lee@frisson.digital` at switchover; two migrations doubles the chance of breaking an API key or OAuth grant. Blank the company-name field now, move the login once, later.
+- **Anything used as a contact address on a live application** → leave alone until that application resolves. Five are in review and Alibaba notifies on or around 2026-08-10.
+
+Calibration: a personally-owned gmail address is a weaker signal than a field that reads "Company: SuperCreativePeople." The field edit is the high-value, low-risk move. The email migration is optional cleanup.
+
+**Carve-out, time-sensitive:** do **not** touch GCP billing account `019309-BEB782-398472`. The Google for Startups Start tier application is pending against it, that program has domain-matching requirements across website, email, and billing account, and `lee@frisson.digital` was added as billing admin specifically for it. Leave it until Google responds, then handle it with everything else.
+
 ### Where things actually stand (confirmed by Lee 2026-08-09)
 
 - **Every paid resource is personally funded by Lee on personal cards.** Not one platform account bills to a company instrument today. The `Billing Entity` column below reads `Lee (personal)` throughout because that is the fact, not because it is unverified.
@@ -88,10 +121,36 @@ Lee's console org shows **$212.62**, of which **$200 is the Claude Impact Lab ha
 
 Note also that these are **API credits**, so they cannot pay for Claude Code / Cowork build sessions (those run on the Max subscription). The only StudioYou activity that draws them down is the product itself calling Claude.
 
+## Company-dependent assets: the actual finding (2026-08-09)
+
+These are the accounts a Frisson-owned product cannot operate without, currently held in Lee's personal name. This is the list that needs an answer. Everything else in the table above is either Lee's own tooling (correct as-is) or not yet opened.
+
+| Asset | Why it's company-dependent | Named company on account | Action |
+|---|---|---|---|
+| LiveKit Cloud | FY agent runtime | SuperCreativePeople | Remove SCP name. **$50 due.** |
+| Runway | Avatar rendering | SuperCreativePeople | Remove SCP name. **Credits exhausted.** |
+| Fal.ai | Live video generation | SuperCreativePeople | Remove SCP name. Verify standing. |
+| Reactor / Helios | Live world generation | SuperCreativePeople | Remove SCP name, or retire the service entirely. |
+| Deepgram | FY speech-to-text | SuperCreativePeople | Remove SCP name. Verify standing. |
+| Cartesia | FY text-to-speech | SuperCreativePeople | Remove SCP name. Verify standing. |
+| Supabase | Vault data + magic-link auth | SuperCreativePeople | Remove SCP name. |
+| Netlify | Frontend host | SuperCreativePeople | Remove SCP name. |
+| Resend | Magic-link sign-in email | SuperCreativePeople | Remove SCP name. |
+| GCP / Cloud Run | Backend runtime | SuperCreativePeople | **DO NOT TOUCH** until Google for Startups responds. |
+| Domain studioyou.app | Primary product domain | unknown | Identify registrar first. |
+| Domain studioyou.studio | **Live sign-in path** | unknown | Identify registrar first. Highest exposure on this list. |
+| Anthropic API key | Product runtime calls Claude | n/a | Rotate to the Frisson Console org. |
+
+Adobe Express, Adobe PDF Services, and Frame.io are deliberately **not** on this list. They may belong here or may be abandoned experiments; the load-bearing walkthrough decides.
+
 ## Open items
 
-- [ ] **Load-bearing walkthrough.** Lee to go service by service and mark each as load-bearing versus an experiment that was never removed. Adobe Express, Adobe PDF Services, and Frame.io are the three where this is least clear from the code. Until that is done, "Needs Verification" on those rows means genuinely unknown, not merely unchecked.
-- [ ] **Move billing to Frisson Digital, Inc.** Every account currently bills to Lee's personal cards. Frisson owns the StudioYou IP. Closing that gap needs a Frisson payment instrument and a decision on how prior spend is treated. Counsel and accountant question, not a dev task.
+- [ ] **Strip the "SuperCreativePeople" company name from every vendor account** except GCP. Cheap, low risk, and removes a false association with the one entity deliberately excluded from every program application.
+- [ ] **Identify the registrar and renewal date for both domains.** `studioyou.studio` is in the live sign-in path with an unknown holder and unknown expiry. That is the single largest operational exposure on the list.
+- [ ] **Rotate the production Anthropic key to the Frisson Console org** (UUID `5fbbfc0c-01c1-4466-926c-81041be7a0a8`, `lee@frisson.digital`), which is the applicant of record for Claude for Startups. Product runtime is the entity's cost, and any granted credits land in that org. Lee's personal Console org stays personal, correctly, and keeps the hackathon credit.
+- [ ] **Load-bearing walkthrough.** Lee to go service by service and mark each as load-bearing versus an experiment never removed. Adobe Express, Adobe PDF Services, and Frame.io are least clear from the code. Until then, "Unclassified" means genuinely unknown, not merely unchecked.
+- [ ] **Asset schedule for the company-dependent list.** The IP assignment moved the products to Frisson; it did not move the accounts they run on. Standard fix is a schedule with transfer or license. Attorney question.
+- [ ] **Expense treatment for prior spend.** Reimbursement, shareholder loan, or capital contribution. Accountant question. Cheap to paper as you go, expensive to reconstruct later.
 - [ ] **Decide the world-generation path** (pre-rendered archetype videos vs. a new model partner). See the Reactor section above. This is an alpha scope decision.
 - [ ] Confirm registrar, renewal date, and billing owner for both domains. `studioyou.studio` is in the sign-in path, so a lapse breaks login, not just a redirect.
 - [ ] Strip the dead Tavus code paths from `main.py`, and decide whether to close the Tavus account.

@@ -75,7 +75,7 @@ Four columns added this session: `Billing Entity`, `Account Standing`, `Cost / B
 | Frame.io | Storage/Database | OAuth via Adobe IMS, callback `https://studioyou.app/auth/frameio/callback`. Route `/api/integrations/frameio/auth` | Lee (personal) | Unconfirmed | unconfirmed | no | - | https://frame.io | unconfirmed | n/a | FRAMEIO_CLIENT_ID / FRAMEIO_CLIENT_SECRET in Cloud Run env | Needs Verification | 2026-08-09 (added) |
 | Supabase (shared) | Storage/Database | `fy_vault_entries` table (creator answer capture) | Lee (personal) | Unconfirmed | unconfirmed | no | unconfirmed project ref | app.supabase.com | unconfirmed | n/a | SUPABASE_URL / SUPABASE_KEY in .env and Cloud Run env | Active | not independently re-verified |
 | Resend (shared) | Email | Transactional email (`api.resend.com`). Primary owner is studioyou-site; backend also holds a key | Lee (personal) | Unconfirmed | unconfirmed | no | - | resend.com | unconfirmed | n/a | RESEND_API_KEY in Cloud Run env | Needs Verification | 2026-08-09 |
-| LiveKit Cloud (shared) | Hosting | Backend mints room tokens for the FY agent. Runtime owner is studioyou-fy-agent | Lee (personal) | **Balance due** | **$50 owed, account still LIVE** | no | studioyou-futureyou-avatar-749nqz32.livekit.cloud | cloud.livekit.io | unconfirmed tier | n/a | LIVEKIT_URL / LIVEKIT_API_KEY / LIVEKIT_API_SECRET | Active | 2026-08-09 |
+| LiveKit Cloud (shared) | Hosting | Backend mints room tokens for the FY agent. Runtime owner is studioyou-fy-agent | Lee (personal) | Paid / current | **$50/mo recurring (Ship plan)** | no | studioyou-futureyou-avatar-749nqz32.livekit.cloud | cloud.livekit.io | unconfirmed tier | n/a | LIVEKIT_URL / LIVEKIT_API_KEY / LIVEKIT_API_SECRET | Active | 2026-08-09 |
 | Netlify - studioyou.app (shared) | Distribution/Deploy | Frontend host (studioyou-app repo) | Lee (personal) | Unconfirmed | unconfirmed | no | app.netlify.com | app.netlify.com | unconfirmed tier | n/a | Netlify login | Active | not independently re-verified |
 | Domain - studioyou.app | Domain/DNS | Primary product domain | Lee (personal) | Unconfirmed | unconfirmed | no | - | - | unconfirmed | **unknown** | registrar login | Needs Verification | 2026-08-09 (added) |
 | Domain - studioyou.studio | Domain/DNS | **LIVE. Part of the livelink user sign-in engine.** Also in backend CORS/allowed origins | Lee (personal) | Unconfirmed | unconfirmed | **YES** | - | - | unconfirmed | **unknown** | registrar login | Active | 2026-08-09 |
@@ -127,7 +127,7 @@ These are the accounts a Frisson-owned product cannot operate without, currently
 
 | Asset | Why it's company-dependent | Named company on account | Action |
 |---|---|---|---|
-| LiveKit Cloud | FY agent runtime | SuperCreativePeople | Remove SCP name. $50 owed, **account still live**. Partnership track pending. |
+| LiveKit Cloud | FY agent runtime | SuperCreativePeople | Remove SCP name. **$50/mo subscription, current, not arrears.** Partnership track pending. |
 | Runway | Avatar rendering | SuperCreativePeople | Remove SCP name. **Credits exhausted.** |
 | Fal.ai | Live video generation | SuperCreativePeople | Remove SCP name. Verify standing. |
 | Reactor / Helios | Live world generation | SuperCreativePeople | Remove SCP name, or retire the service entirely. |
@@ -161,11 +161,24 @@ Note (2026-08-07, still open): existing `CLAUDE.md` in this repo is long (~590 l
 
 ## Verified against live APIs, 2026-08-09
 
-### LiveKit is not a blocker (correction)
+### LiveKit: corrected twice, now verified from the billing console
 
-An earlier entry in this file called LiveKit an alpha blocker alongside Runway. That was wrong. Lee confirmed the account is **still live**, so the $50 is a balance owed, not a suspension. **Runway is the sole hard blocker** on the live IDEATE retest.
+This row was first recorded as an alpha blocker, then as a $50 balance due. Both were wrong. Verified against the live LiveKit billing console 2026-08-09:
 
-LiveKit is also first on Lee's AIEWF follow-up list and may yield a partnership track that removes the $50 entirely. If that does not land, Lee renews 2026-08-10.
+**It is a $50/month recurring subscription on the Ship plan.** Next billing cycle Sept 1, 2026. Nothing is overdue and nothing is suspended. **Runway is the sole hard blocker** on the live IDEATE retest.
+
+Project `p_3abx9tkixic` (StudioYou-FutureYou-Avatar). Ship plan includes 5,000 agent session minutes, 150,000 WebRTC participant minutes, and 250GB downstream, with overage at $0.12/GB.
+
+| Period | Agent session min | Participant min | Downstream | Total |
+|---|---|---|---|---|
+| July 2026 | 2,645 of 5,000 | 5,865 of 150,000 | 8 GB of 250 | $50.00 |
+| August 2026 to date | — | — | **0 GB** | $50.00 |
+
+**Idle spend flag.** August usage is zero. The product has not run this month, which tracks with no feature work since Session AF (2026-07-07) and Runway being out of credits. That is $50/month buying capacity nobody is using while alpha is stalled.
+
+Do **not** downgrade before the partnership conversation. LiveKit is first on Lee's AIEWF follow-up list and a partnership track could change the economics entirely. But if that conversation does not land and alpha stays stalled, this is a live candidate for a lower tier.
+
+**This is also the first hard monthly operating cost confirmed for StudioYou**, and the starting point for the run-cost number the incubator and fund conversations will need.
 
 ### Domain inventory: Porkbun
 

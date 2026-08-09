@@ -137,8 +137,8 @@ These are the accounts a Frisson-owned product cannot operate without, currently
 | Netlify (team) | Hosts all 12 sites, both products | **Team is NAMED SuperCreativePeople** | Not a field edit. Slug is in every admin URL. Handle deliberately. |
 | Resend | Magic-link sign-in email | SuperCreativePeople | Remove SCP name. |
 | GCP / Cloud Run | Backend runtime | SuperCreativePeople | **DO NOT TOUCH** until Google for Startups responds. |
-| Domain studioyou.app | Primary product domain | Porkbun, SCP as company | Remove SCP name. Get renewal date. |
-| Domain studioyou.studio | **Live sign-in path** | Porkbun, SCP as company | Remove SCP name. **Get renewal date** — highest exposure on this list. |
+| Domain studioyou.app | Primary product domain | Porkbun, SCP as company | Remove SCP name. Renews 2027-03-27, auto-renew on. |
+| Domain studioyou.studio | **Live sign-in path** | Porkbun, SCP as company | Remove SCP name. Renews 2027-03-27, auto-renew on. |
 | Anthropic API key | Product runtime calls Claude | n/a | Rotate to the Frisson Console org. |
 
 Adobe Express, Adobe PDF Services, and Frame.io are deliberately **not** on this list. They may belong here or may be abandoned experiments; the load-bearing walkthrough decides.
@@ -180,9 +180,31 @@ Do **not** downgrade before the partnership conversation. LiveKit is first on Le
 
 **This is also the first hard monthly operating cost confirmed for StudioYou**, and the starting point for the run-cost number the incubator and fund conversations will need.
 
-### Domain inventory: Porkbun
+### Domain inventory: Porkbun, 11 domains, verified 2026-08-09
 
-Both domains are registered at **Porkbun**, in Lee's name, with SCP as the company name and the SCP google email. Company name removal is straightforward per Lee. `studioyou.app` and `studioyou.studio` are the key IP in the domain inventory. **Renewal dates remain unknown** and that is the outstanding exposure, particularly for `studioyou.studio`, which is in the live sign-in path.
+Pulled from the live Porkbun account. **All 11 have auto-renew ON, registrar lock ON, and WHOIS privacy ON.**
+
+| Domain | Expires | Days out | Note |
+|---|---|---|---|
+| frisson.music | 2027-03-05 | 207 | defensive, unused |
+| frisson.photography | 2027-03-05 | 207 | defensive, unused |
+| frisson.technology | 2027-03-05 | 207 | defensive, unused |
+| frisson.band | 2027-03-05 | 207 | defensive, unused |
+| **frisson.digital** | 2027-03-05 | 207 | **LIVE** — program-application website |
+| **screenbot.app** | 2027-03-25 | 228 | **LIVE** |
+| **studioyou.app** | 2027-03-27 | 229 | **LIVE**, tagged StudioYou |
+| **studioyou.studio** | 2027-03-27 | 229 | **LIVE**, sign-in path, tagged StudioYou |
+| supercreativepeople.com | 2027-06-13 | 307 | live on Netlify |
+| leebrownstein.com | 2027-06-20 | 314 | personal |
+| leebrownstein.me | 2027-06-20 | 314 | personal |
+
+**Expiry risk retracted.** Earlier entries in this file called the unknown domain renewal dates the single largest operational exposure on the company-dependent list, on the assumption a lapse could silently break sign-in. Every domain auto-renews, is locked, and is more than 200 days out. That is not a live risk and the flag was wrong.
+
+**The real item is ownership, not expiry.** `screenbot.app`, `studioyou.app`, and `studioyou.studio` are Frisson product IP registered in Lee's personal name. The five `frisson.*` domains are literally named for the company and also sit personally. All belong on the asset schedule.
+
+**One efficiency:** the SCP company name is set at the Porkbun *account* level, so removing it there covers all 11 domains in a single edit rather than eleven.
+
+**Minor cost note:** four `frisson.*` registrations (music, photography, technology, band) are defensive and unused. Small recurring cost with no current purpose. Worth a keep-or-drop decision when the run-cost number gets built.
 
 ### Netlify: one team, twelve sites, and a bigger naming problem
 

@@ -268,3 +268,45 @@ fal.ai is promoting "Seedance 2.5 in fal Agent," and Runway ships Seedance 2.5 n
 ### Updated cost picture
 
 First hard numbers for StudioYou's monthly operating cost: LiveKit $50/month (Ship plan, currently zero usage), fal.ai ~$20/month, Runway Dev pay-as-you-go at roughly $20 per 2,000 credits. Plus the Porkbun portfolio annually. Still missing: GCP, Supabase, Netlify, Resend, Deepgram, Cartesia.
+
+## Creative platform portfolio, verified 2026-08-09
+
+Seven retail generative platforms Lee holds for research and partnership development. All `Personal tooling` under the asset-class split, all on `supercreativepeople@gmail.com`. **They matter to StudioYou architecture for a reason that isn't obvious from the billing:** almost all of them ship MCP connectors, and several sell exactly the capabilities StudioYou currently buys expensively elsewhere.
+
+| Platform | Plan / cost | Balance | MCP | Renews |
+|---|---|---|---|---|
+| Adobe Creative Cloud Pro | $69.99/mo | n/a | no | 2026-09-02 |
+| Adobe Firefly 7,000 Credits | $29.99/mo | 9,725 / 11,000 | no | 2026-08-23 |
+| Luma Labs (Plus) | $30/mo | **0 / 10,000 used** | yes | 2026-09-04 |
+| Midjourney (Basic) | $10/mo | 3h20m / 3h20m unused | no | 2026-09-01 |
+| OpenArt (Pro) | price TBC | 24,000 credits | **yes** | TBC |
+| ImagineArt | price TBC | 30,891 credits | **yes** | TBC |
+| Runway Platform | Upgrade prompt shown | 684 credits | no | TBC |
+| FilmPro.ai | partner credits | available | **no API at all** | n/a |
+
+**Confirmed floor: ~$140/month** across Adobe, Luma, and Midjourney alone. OpenArt, ImagineArt, and Runway Platform prices are not yet captured, so the real number is higher.
+
+### Corrections
+
+**Adobe is two subscriptions, not one.** Firefly credits are a standalone $29.99/mo plan, separate from the $69.99 Creative Cloud Pro. Both on the same Visa. Adobe total is **$99.98/month**, not the ~$70 originally recalled.
+
+**Firefly's unlimited-generations promo expires.** Qualifying credit plans get unlimited generations on select models for one year from plan start, then revert to consuming credits. Worth pinning the start date so the reversion isn't a surprise.
+
+### Why this is an architecture asset, not just spend
+
+StudioYou has two unresolved model-routing questions: replacing Reactor/Helios for world generation, and whether to go direct to Seedance rather than through fal.ai. This portfolio speaks to both.
+
+- **Seedance is now available four ways.** fal.ai (current production path), Runway 2.5, ImagineArt, and a hypothetical direct ByteDance relationship. Three of the four require no new commercial agreement. That materially weakens the case for opening a direct partner negotiation as a first move.
+- **OpenArt ships explicit World and Character generation modes.** That is the same capability StudioYou buys from Reactor at a per-call cost Lee has assessed as unsustainable. Worth evaluating as a Reactor replacement before starting a partner search.
+- **ImagineArt ships "Imagine Computer"** (agents, automation, skills, connectors), which is architecturally adjacent to StudioYou. Useful prior art.
+- **The MCP connectors are a free integration test bed.** Luma, OpenArt, and ImagineArt all push MCP. StudioYou's agent will eventually need to drive external generation tools, and this is already-paid-for surface to prototype that routing and control logic against, before committing to any one provider.
+
+**FilmPro is the exception:** partner credits but no MCP and no API, so integration needs an intermediary like Twin. Lowest-priority target despite the free credits, given six MCP-native alternatives.
+
+### Idle capacity
+
+Luma is at 0 of 10,000 consumed, Firefly 9,725 of 11,000, Midjourney's fast hours entirely untouched, OpenArt 24,000, ImagineArt 30,891. Most of this portfolio is paid for and unused. That is either a cost-reduction candidate or an argument to actually run the routing experiments above, but it should be a deliberate choice rather than a default.
+
+### One hygiene item worth copying
+
+Luma has an **additional-spend cap enabled at $10**. Runway Dev, by contrast, had no card and no autobilling, which is how it hit zero silently. A spend cap on the platforms that allow one is the same control applied from the other direction.

@@ -234,3 +234,37 @@ Three findings:
 3. **Two orphan projects** (`thriving-conkies-31dad5`, `profound-gaufre-d7e81d`) carry default Netlify names, are deployed and ready, and appear in no documentation. Purpose unknown. Add them to the load-bearing walkthrough. `ground-ai-blueprint`, `universal-briefing`, and `seedance-briefing` are also live and undocumented here.
 
 Also missing until now: `studioyou-site`'s `SERVICES.md` had no hosting row at all, despite Netlify project `studioyou` being what actually serves `studioyou.studio`.
+
+## Console verification round 2, 2026-08-09
+
+### The alpha blocker has a price: about $20
+
+**Runway Dev** (`dev.runwayml.com`, org `4b2afb94-a345-4b8a-a2cd-7376a2a4d2dc`) is at **0 credits**. Payment history: Jun 23 2026 $24.00 bought 3,000 credits, Jul 5 2026 $20.00 bought 2,000 credits. That is roughly **$0.0088 per credit**, so a **~$20 top-up restores ~2,000 credits** and the avatar renders again. Total spent to date: $44 for 5,000 credits, all consumed.
+
+**Root cause of the silent failure:** autobilling is disabled and no card is saved. The balance reached zero with no warning and stays there. Enabling autobilling with a threshold prevents a repeat.
+
+### Runway is two platforms, and only one of them matters here
+
+| | Runway Dev | Runway Platform |
+|---|---|---|
+| URL | dev.runwayml.com | app.runwayml.com |
+| What it is | The API | The creative application |
+| Balance | **0 credits** | 684 credits |
+| Used by | `studioyou-fy-agent` via `RUNWAYML_API_SECRET` | Lee, directly |
+| Asset class | Company-dependent | Personal tooling |
+
+The 684 credits on Platform **do not unblock the avatar.** Anyone reading "Runway has credits" and concluding the product works would be wrong. This is a clean instance of the asset-class split: Platform is Lee's creative workstation, Dev is the company's product runtime.
+
+### Fal.ai is fine, but it is the hardest SCP removal on the list
+
+**$19.99 available, current, ~$20/month, "no recent usage."** Video generation is not blocked. Zero recent usage is consistent with no product activity since Session AF.
+
+The naming problem is worse here than anywhere else. SuperCreative People appears as **display name, full name, and username** (`supercreativepeople`), on a personal account under `supercreativepeople@gmail.com`. The account page states that changing full name or email requires contacting support, and the username may not be changeable at all. **This one cannot be handled in the quick field-edit pass.** It likely needs a support ticket, and worst case a fresh account under Frisson.
+
+### Three routes to Seedance now
+
+fal.ai is promoting "Seedance 2.5 in fal Agent," and Runway ships Seedance 2.5 natively. So the options are fal (current), Runway, or a direct ByteDance relationship. Worth weighing all three before opening a direct partner conversation, since two of them require no new commercial relationship at all.
+
+### Updated cost picture
+
+First hard numbers for StudioYou's monthly operating cost: LiveKit $50/month (Ship plan, currently zero usage), fal.ai ~$20/month, Runway Dev pay-as-you-go at roughly $20 per 2,000 credits. Plus the Porkbun portfolio annually. Still missing: GCP, Supabase, Netlify, Resend, Deepgram, Cartesia.

@@ -86,3 +86,53 @@ Registry schema extended with the same four columns. StudioYou rows went from 11
 3. **Move `studioyou-app` and `studioyou-site` out of `~/Downloads` into `~/Projects`.** The protocol classifies Downloads as an untrusted staging tier; two of four repos living there is how the 92-file uncommitted checkpoint went unnoticed.
 4. **Split `CLAUDE.md`.** 594 lines, carrying sprint system, funding pipeline, and entity structure, none of it backend-specific. That is exactly why the entity info went stale where nobody would look.
 5. **Build a monthly run-cost number.** Nothing anywhere answers what StudioYou costs to operate. Needed for incubator and fund conversations, and now buildable for the first time since the full service list exists.
+
+---
+
+# Session close addendum, 2026-08-09
+
+The session continued well past the original tracker build-out into a full live-systems verification pass. Everything below was verified against running code, live APIs, or billing consoles, not documentation.
+
+## Headline: alpha is blocked on roughly $20
+
+**Runway Dev is the only hard blocker.** Zero credits, no card saved, autobilling disabled. Payment history prices the fix: $24 bought 3,000 credits, $20 bought 2,000, so ~$0.0088/credit. **A ~$20 top-up restores the avatar.**
+
+Everything else in the stack is current.
+
+## Corrections made to my own earlier findings
+
+Recorded plainly, because several were wrong and the pattern matters:
+
+1. **LiveKit, corrected three times.** First recorded as an alpha blocker, then as $50 arrears. Neither was right. It is a **$50/month Ship-plan subscription**, current, next cycle Sept 1. August usage is **0 GB** — the plan includes 5,000 agent minutes going entirely unused. July ran 2,645 agent minutes and 5,865 participant minutes, all inside limits.
+2. **Domain expiry risk, retracted.** Flagged as the largest operational exposure on the assumption renewals were unknown and possibly imminent. All 11 Porkbun domains auto-renew, are locked, and are 200+ days out. Not a risk.
+3. **Reactor, corrected.** Implied depleted and near-dead. It holds **688,987 credits**. Not an alpha blocker.
+4. **Anthropic Startup Program framing.** My web-search-derived take was worse than the research already in Lee's July records. Program membership is open regardless of VC backing; institutional funding gates only the higher credit tiers. And the application was already submitted 2026-08-05 under a dedicated Frisson Console org.
+5. **Adobe cost.** Not one ~$70 subscription. Two: Creative Cloud Pro $69.99 and a standalone Firefly 7,000 Credits plan $29.99. **$99.98/month.**
+
+What held up without exception: findings derived from grepping the actual code and querying actual APIs.
+
+## Verified inventory
+
+**Registry grew from 8 tracked services to 33.** Thirteen were invisible while actively costing money.
+
+- **Porkbun:** 11 domains, all auto-renew/locked/private. `studioyou.app` and `studioyou.studio` renew 2027-03-27. SCP company name is set at **account level**, so one edit clears all 11. Four `frisson.*` registrations are defensive and unused.
+- **Netlify:** one team hosting 12 sites across both products. **The team itself is named SuperCreativePeople**, slug embedded in every admin URL — not a quick field edit. `frisson.digital` confirmed live on Pro. Two orphan projects (`thriving-conkies-31dad5`, `profound-gaufre-d7e81d`) plus `ground-ai-blueprint`, `universal-briefing`, `seedance-briefing` are live and undocumented.
+- **Creative portfolio:** 7 platforms, ~$140/month confirmed floor, mostly idle capacity.
+
+## Strategic consequences
+
+**The direct-partner case weakened substantially.** Seedance is reachable four ways (fal.ai in production, Runway 2.5, ImagineArt, direct). World generation is reachable three ways (Reactor with 688,987 credits including Alibaba's model, OpenArt's World/Character modes with 24,000 credits, pre-rendered archetypes). **The Alibaba prospective-partner row collapses into Reactor** — same capability, already accessible, no new agreement.
+
+**Corporate structure recorded.** Frisson Digital, Inc. owns StudioYou and SCREENBot via executed IP assignment. SCP Inc. owns nothing. All infrastructure runs on Lee's personal cards. The finding is **asset control, not commingling**: the assignment moved the products but not the accounts they run on.
+
+**The SCP naming problem, scoped.** Every vendor account carries "SuperCreativePeople" as company name. Decision: strip now, do not replace with Frisson until Frisson has a payment instrument. Three exceptions: GCP billing account `019309-BEB782-398472` is ringfenced while the Google for Startups application is under review; the Netlify team slug needs deliberate handling; and **fal.ai has SCP embedded in display name, full name, and username**, requiring a support ticket rather than a field edit.
+
+## Next session opens with
+
+1. **Top up Runway Dev (~$20).** Unblocks the live IDEATE retest, which gates alpha.
+2. **Alibaba CoCreate finalists notified on or around 2026-08-10.** If selected, live LA pitch Sept 9-10 — the avatar needs to work by then.
+3. **Google for Startups response due** (submitted 08-05, 3-5 business day window).
+4. **Load-bearing walkthrough**, now including the 5 undocumented Netlify sites.
+5. **Rebuild the sprint schedule.** Per Lee, billing constraints and the SCREENBot focus shift set it back; rebuild once hygiene lands.
+6. **Strip the SCP name** from vendor accounts, minus the three exceptions.
+7. Test OpenArt World/Character modes as a Reactor production alternative — zero marginal cost, 24,000 credits already paid for.

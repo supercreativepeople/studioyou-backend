@@ -69,7 +69,7 @@ Four columns added this session: `Billing Entity`, `Account Standing`, `Cost / B
 | GitHub Actions (shared) | CI/CD | Push to main, build Docker, push GCR, deploy Cloud Run | Free / no billing | Free tier | $0 | no | supercreativepeople/studioyou-backend | github.com/supercreativepeople/studioyou-backend/actions | free | n/a | GitHub Secrets | Active | not independently re-verified |
 | Anthropic API (shared) | AI/API | Claude, FY session logic and chat. `FY_ORCHESTRATION_MODEL` / `FY_SURFACE_MODEL` | Lee (personal) | Unconfirmed | $212.62 credit balance on Lee's console org as of 2026-08-09 | no | see note below | platform.claude.com | pay-as-you-go | n/a | ANTHROPIC_API_KEY in Cloud Run env | Active | 2026-08-09 |
 | Fal.ai | AI/API | **Live video generation.** `video_generate` to `fal-ai/seedance-v1-lite`, `video_generate_pro` to `fal-ai/seedance-v1-pro`, `video_generate_kling` to `fal-ai/kling-video/v2/master` | Lee (personal) | Unconfirmed | usage-based, per generation | unknown | - | https://fal.ai | usage-based | n/a | FAL_API_KEY in Cloud Run env | Needs Verification | 2026-08-09 (added) |
-| Reactor (Helios world model) | AI/API | **Live world generation.** FutureYou selects an archetype during onboarding/briefing; Helios generates the world from it. Backend exchanges the key for a short-lived JWT at `/api/reactor/token` | Lee (personal) | Free tier (dev credits) | **token burn rate unsustainable for live calls** | see note | - | https://api.reactor.inc | dev credits, relationship cold | n/a | REACTOR_API_KEY in Cloud Run env | Needs Verification | 2026-08-09 |
+| Reactor (world models) | AI/API | **Live world generation.** FutureYou selects an archetype during onboarding/briefing; a world model generates from it. Backend exchanges the key for a short-lived JWT at `/api/reactor/token` | Lee (personal) | Free tier (dev credits) | **688,987 credits available.** Burn rate uneconomic at production scale only | no | - | https://api.reactor.inc | dev credits, relationship cold | n/a | REACTOR_API_KEY in Cloud Run env | Needs Verification | 2026-08-09 |
 | Adobe Express (embed SDK) | Design | Client ID served to the frontend at `/api/integrations/adobe/config` | Lee (personal) | Unconfirmed | unconfirmed | no | - | developer.adobe.com/express | unconfirmed | n/a | ADOBE_EXPRESS_CLIENT_ID in Cloud Run env | Needs Verification | 2026-08-09 (added) |
 | Adobe PDF Services | AI/API | PDF generation/conversion via `pdf-services-ue1.adobe.io` | Lee (personal) | Unconfirmed | unconfirmed | no | - | developer.adobe.com/document-services | unconfirmed | n/a | ADOBE_PDF_CLIENT_ID / ADOBE_PDF_CLIENT_SECRET in Cloud Run env | Needs Verification | 2026-08-09 (added) |
 | Frame.io | Storage/Database | OAuth via Adobe IMS, callback `https://studioyou.app/auth/frameio/callback`. Route `/api/integrations/frameio/auth` | Lee (personal) | Unconfirmed | unconfirmed | no | - | https://frame.io | unconfirmed | n/a | FRAMEIO_CLIENT_ID / FRAMEIO_CLIENT_SECRET in Cloud Run env | Needs Verification | 2026-08-09 (added) |
@@ -130,7 +130,7 @@ These are the accounts a Frisson-owned product cannot operate without, currently
 | LiveKit Cloud | FY agent runtime | SuperCreativePeople | Remove SCP name. **$50/mo subscription, current, not arrears.** Partnership track pending. |
 | Runway | Avatar rendering | SuperCreativePeople | Remove SCP name. **Credits exhausted.** |
 | Fal.ai | Live video generation | SuperCreativePeople | Remove SCP name. Verify standing. |
-| Reactor / Helios | Live world generation | SuperCreativePeople | Remove SCP name, or retire the service entirely. |
+| Reactor (world models) | Live world generation | SuperCreativePeople | Remove SCP name. 688,987 credits, alpha not blocked. |
 | Deepgram | FY speech-to-text | SuperCreativePeople | Remove SCP name. Verify standing. |
 | Cartesia | FY text-to-speech | SuperCreativePeople | Remove SCP name. Verify standing. |
 | Supabase | Vault data + magic-link auth | SuperCreativePeople | Remove SCP name. |
@@ -310,3 +310,17 @@ Luma is at 0 of 10,000 consumed, Firefly 9,725 of 11,000, Midjourney's fast hour
 ### One hygiene item worth copying
 
 Luma has an **additional-spend cap enabled at $10**. Runway Dev, by contrast, had no card and no autobilling, which is how it hit zero silently. A spend cap on the platforms that allow one is the same control applied from the other direction.
+
+## Reactor corrected, 2026-08-09 (verified from the dashboard)
+
+Earlier sections of this file implied Reactor was a depleted, near-dead relationship. **The account holds 688,987 credits.** Development and testing are not blocked, and this is not an alpha blocker.
+
+**The reseller read is confirmed by their own product surface.** The Reactor dashboard features three world models: **"Real-Time World Model by Alibaba"** (Happy Oyster), **LINGBOT WORLD 2** (Next-Gen World Generation), and **X2** (Streaming Video Editing). Reactor aggregates other companies' world models rather than building its own, exactly as Lee revised his read to say.
+
+**This collapses one of the prospective-partner rows.** "Alibaba" was recorded as a partner account to open for world generation. That capability is **already reachable today**, through an account with 688,987 credits, requiring no new commercial relationship. The Alibaba-direct conversation and the Reactor relationship are the same capability reached two ways. Reconsider before pursuing Alibaba direct.
+
+**The cold relationship is not a viability signal.** Reactor announced a $59M raise "to power the World Model era." They are scaling, not folding. Private beta, with an API, docs, and a sample app on GitHub.
+
+**The real problem is narrower than recorded.** Per-call token burn makes live world generation uneconomic **at production scale**. Credits are ample for alpha. So this is a unit-economics question for launch, not a blocker for the retest. The pre-rendered-archetype option remains the likely production answer, but it does not need deciding before alpha.
+
+Combined with the creative-platform findings above, world generation is now reachable at least three ways: Reactor (688,987 credits, Alibaba and LINGBOT models), OpenArt (24,000 credits, explicit World and Character modes), and pre-rendered video per archetype. None requires a new partner agreement.

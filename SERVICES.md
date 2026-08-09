@@ -75,7 +75,7 @@ Four columns added this session: `Billing Entity`, `Account Standing`, `Cost / B
 | Frame.io | Storage/Database | OAuth via Adobe IMS, callback `https://studioyou.app/auth/frameio/callback`. Route `/api/integrations/frameio/auth` | Lee (personal) | Unconfirmed | unconfirmed | no | - | https://frame.io | unconfirmed | n/a | FRAMEIO_CLIENT_ID / FRAMEIO_CLIENT_SECRET in Cloud Run env | Needs Verification | 2026-08-09 (added) |
 | Supabase (shared) | Storage/Database | `fy_vault_entries` table (creator answer capture) | Lee (personal) | Unconfirmed | unconfirmed | no | unconfirmed project ref | app.supabase.com | unconfirmed | n/a | SUPABASE_URL / SUPABASE_KEY in .env and Cloud Run env | Active | not independently re-verified |
 | Resend (shared) | Email | Transactional email (`api.resend.com`). Primary owner is studioyou-site; backend also holds a key | Lee (personal) | Unconfirmed | unconfirmed | no | - | resend.com | unconfirmed | n/a | RESEND_API_KEY in Cloud Run env | Needs Verification | 2026-08-09 |
-| LiveKit Cloud (shared) | Hosting | Backend mints room tokens for the FY agent. Runtime owner is studioyou-fy-agent | Lee (personal) | **Balance due** | **$50 outstanding, unpaid** | **YES** | studioyou-futureyou-avatar-749nqz32.livekit.cloud | cloud.livekit.io | unconfirmed tier | n/a | LIVEKIT_URL / LIVEKIT_API_KEY / LIVEKIT_API_SECRET | Active | 2026-08-09 |
+| LiveKit Cloud (shared) | Hosting | Backend mints room tokens for the FY agent. Runtime owner is studioyou-fy-agent | Lee (personal) | **Balance due** | **$50 owed, account still LIVE** | no | studioyou-futureyou-avatar-749nqz32.livekit.cloud | cloud.livekit.io | unconfirmed tier | n/a | LIVEKIT_URL / LIVEKIT_API_KEY / LIVEKIT_API_SECRET | Active | 2026-08-09 |
 | Netlify - studioyou.app (shared) | Distribution/Deploy | Frontend host (studioyou-app repo) | Lee (personal) | Unconfirmed | unconfirmed | no | app.netlify.com | app.netlify.com | unconfirmed tier | n/a | Netlify login | Active | not independently re-verified |
 | Domain - studioyou.app | Domain/DNS | Primary product domain | Lee (personal) | Unconfirmed | unconfirmed | no | - | - | unconfirmed | **unknown** | registrar login | Needs Verification | 2026-08-09 (added) |
 | Domain - studioyou.studio | Domain/DNS | **LIVE. Part of the livelink user sign-in engine.** Also in backend CORS/allowed origins | Lee (personal) | Unconfirmed | unconfirmed | **YES** | - | - | unconfirmed | **unknown** | registrar login | Active | 2026-08-09 |
@@ -127,18 +127,18 @@ These are the accounts a Frisson-owned product cannot operate without, currently
 
 | Asset | Why it's company-dependent | Named company on account | Action |
 |---|---|---|---|
-| LiveKit Cloud | FY agent runtime | SuperCreativePeople | Remove SCP name. **$50 due.** |
+| LiveKit Cloud | FY agent runtime | SuperCreativePeople | Remove SCP name. $50 owed, **account still live**. Partnership track pending. |
 | Runway | Avatar rendering | SuperCreativePeople | Remove SCP name. **Credits exhausted.** |
 | Fal.ai | Live video generation | SuperCreativePeople | Remove SCP name. Verify standing. |
 | Reactor / Helios | Live world generation | SuperCreativePeople | Remove SCP name, or retire the service entirely. |
 | Deepgram | FY speech-to-text | SuperCreativePeople | Remove SCP name. Verify standing. |
 | Cartesia | FY text-to-speech | SuperCreativePeople | Remove SCP name. Verify standing. |
 | Supabase | Vault data + magic-link auth | SuperCreativePeople | Remove SCP name. |
-| Netlify | Frontend host | SuperCreativePeople | Remove SCP name. |
+| Netlify (team) | Hosts all 12 sites, both products | **Team is NAMED SuperCreativePeople** | Not a field edit. Slug is in every admin URL. Handle deliberately. |
 | Resend | Magic-link sign-in email | SuperCreativePeople | Remove SCP name. |
 | GCP / Cloud Run | Backend runtime | SuperCreativePeople | **DO NOT TOUCH** until Google for Startups responds. |
-| Domain studioyou.app | Primary product domain | unknown | Identify registrar first. |
-| Domain studioyou.studio | **Live sign-in path** | unknown | Identify registrar first. Highest exposure on this list. |
+| Domain studioyou.app | Primary product domain | Porkbun, SCP as company | Remove SCP name. Get renewal date. |
+| Domain studioyou.studio | **Live sign-in path** | Porkbun, SCP as company | Remove SCP name. **Get renewal date** — highest exposure on this list. |
 | Anthropic API key | Product runtime calls Claude | n/a | Rotate to the Frisson Console org. |
 
 Adobe Express, Adobe PDF Services, and Frame.io are deliberately **not** on this list. They may belong here or may be abandoned experiments; the load-bearing walkthrough decides.
@@ -158,3 +158,44 @@ Adobe Express, Adobe PDF Services, and Frame.io are deliberately **not** on this
 - [ ] Re-verify every row still marked "not independently re-verified" against its live console.
 
 Note (2026-08-07, still open): existing `CLAUDE.md` in this repo is long (~590 lines) and predates the protocol's "keep it under ~200 lines" guidance. Not restructured yet.
+
+## Verified against live APIs, 2026-08-09
+
+### LiveKit is not a blocker (correction)
+
+An earlier entry in this file called LiveKit an alpha blocker alongside Runway. That was wrong. Lee confirmed the account is **still live**, so the $50 is a balance owed, not a suspension. **Runway is the sole hard blocker** on the live IDEATE retest.
+
+LiveKit is also first on Lee's AIEWF follow-up list and may yield a partnership track that removes the $50 entirely. If that does not land, Lee renews 2026-08-10.
+
+### Domain inventory: Porkbun
+
+Both domains are registered at **Porkbun**, in Lee's name, with SCP as the company name and the SCP google email. Company name removal is straightforward per Lee. `studioyou.app` and `studioyou.studio` are the key IP in the domain inventory. **Renewal dates remain unknown** and that is the outstanding exposure, particularly for `studioyou.studio`, which is in the live sign-in path.
+
+### Netlify: one team, twelve sites, and a bigger naming problem
+
+Pulled live from the Netlify API rather than taken from docs. A single team hosts everything across both products.
+
+**Team:** slug `supercreativepeople`, id `6961b4975f419aae0d9ba3dc`, Pro plan, 1 member, created 2026-01-10.
+
+| Project | Primary URL | Plan |
+|---|---|---|
+| studioyou | https://studioyou.studio | dev |
+| studioyou-app | https://studioyou.app | dev |
+| frisson-digital | https://frisson.digital | pro |
+| screenbot | https://screenbot.app | dev |
+| screenbot-beta | screenbot-beta.netlify.app | pro |
+| screenbot-assets | screenbot-assets.netlify.app | pro |
+| supercreativepeople | https://supercreativepeople.com | dev (forms enabled) |
+| ground-ai-blueprint | ground-ai-blueprint.netlify.app | pro |
+| universal-briefing | universal-briefing.netlify.app | pro |
+| seedance-briefing | seedance-briefing.netlify.app | pro |
+| thriving-conkies-31dad5 | default netlify.app | dev |
+| profound-gaufre-d7e81d | default netlify.app | dev |
+
+Three findings:
+
+1. **The Netlify team is itself named "SuperCreativePeople."** This is an account-level name, not a company-name field, and the slug is embedded in every project admin URL. It is the largest single SCP surface found so far and it is **not** part of the quick field-edit pass. Renaming a team slug can break links and integrations, so handle it deliberately and separately.
+2. **`frisson.digital` is live and deploying independently, on a Pro plan.** That confirms the program-application website claim rather than taking it on trust.
+3. **Two orphan projects** (`thriving-conkies-31dad5`, `profound-gaufre-d7e81d`) carry default Netlify names, are deployed and ready, and appear in no documentation. Purpose unknown. Add them to the load-bearing walkthrough. `ground-ai-blueprint`, `universal-briefing`, and `seedance-briefing` are also live and undocumented here.
+
+Also missing until now: `studioyou-site`'s `SERVICES.md` had no hosting row at all, despite Netlify project `studioyou` being what actually serves `studioyou.studio`.

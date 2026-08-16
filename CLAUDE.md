@@ -2,6 +2,11 @@
 
 > This file is the project bible. Same sections every session, same order. No agenda items, no carry-forwards — those live in the handoff doc. Read this to understand what StudioYou is and how to work on it.
 
+**Changelog (most recent 3-5, older entries live in git history):**
+- **2026-08-16:** Frontend workflow retired (Lee confirmed manual handoff no longer applies — see Locked Decisions and How to Deploy). Supabase pause resolved (was `INACTIVE`, restored by Lee, confirmed `ACTIVE_HEALTHY`). Netlify confirmed as full read/write interface, no CLI needed. Google Drive documentation split into cloud Google Drive vs. physical G-DRIVE SSD. `lee@frisson.digital` confirmed reachable via the existing Fastmail/Zapier connection (alias on the same account, no new connection needed) — see `dev-session-protocol` skill.
+- **2026-08-15:** Runway topped up (fy-agent), Tavus dead code stripped from `main.py` (commit `5172736`).
+- **2026-08-09:** Full 8-section CLAUDE.md rebuild (session AH). GCP/Cloud Run, Google Drive, Fastmail documented. Partnership tracker integrated.
+
 ---
 
 ## 1. What This Is
@@ -91,8 +96,8 @@ Code edit → `git commit` on Mac → `git push` → GitHub Actions → Cloud Ru
 **FY Agent (agent.py, prompts.py):**
 Code edit → `git commit && git push` (for record) → `lk agent delete [ID] && lk agent create` from Mac Terminal. Deploy runs off local disk. `lk agent update` does NOT force a Docker rebuild — only `delete && create` produces a fresh image. Update Live State with new agent ID immediately after recreate.
 
-**Frontend (dashboard.html, studio.html, etc.):**
-Lee provides file → Claude modifies → Claude presents via `present_files` → Lee deploys via Netlify drag-and-drop. Claude never fetches these from GitHub.
+**Frontend (dashboard.html, studio.html, etc.) — corrected 2026-08-16:**
+Code edit via Desktop Commander → `git commit` → `git push` → Netlify auto-deploys from `studioyou-app`/`studioyou-site` repos, same pipeline as backend. The old manual "Lee provides → Claude modifies → Claude presents → Lee drag-and-drops into Netlify" flow is retired — see Locked Decisions.
 
 **Knowledge base (knowledge/*.md):**
 Edit file → `git commit && git push` to studioyou-backend. Files are read at agent runtime via raw GitHub URL. No Cloud Run redeploy needed.

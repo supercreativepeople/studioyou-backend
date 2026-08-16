@@ -27,10 +27,10 @@ StudioYou (studioyou.app) is a creator studio OS powered by FutureYou (FY), an A
 |---|---|---|---|
 | studioyou-backend | /Users/supercreativepeople/Projects/studioyou-backend | github.com/supercreativepeople/studioyou-backend | Flask backend, CLAUDE.md, SERVICES.md, handoffs/, knowledge/ |
 | studioyou-fy-agent | /Users/supercreativepeople/Projects/studioyou-fy-agent | github.com/supercreativepeople/studioyou-fy-agent | LiveKit agent service |
-| studioyou-app | ~/Downloads/studioyou-app | unconfirmed | Frontend client (dashboard.html, studio.html) |
-| studioyou-site | ~/Downloads/studioyou-site | unconfirmed | Marketing site |
+| studioyou-app | ~/Downloads/studioyou-app | github.com/supercreativepeople/studioyou-app | Frontend client (dashboard.html, studio.html). Confirmed 2026-08-16: real git repo, clean, in sync — see Locked Decisions, frontend now goes through git like every other repo. |
+| studioyou-site | ~/Downloads/studioyou-site | github.com/supercreativepeople/studioyou-site | Marketing site. Confirmed 2026-08-16: real git repo, clean, in sync. |
 
-All repos are private. Credentials via macOS Keychain (`osxkeychain`). Push access from sandboxed sessions is unreliable — commit locally, attempt push, note if it fails (see dev-session-protocol skill).
+All repos are private. Credentials via macOS Keychain (`osxkeychain`). Push via Desktop Commander is reliable (corrected 2026-08-16 — a prior finding that push "fails inconsistently from sandboxed sessions" was actually a wrong-tool bug, not a real limitation; see dev-session-protocol skill's "Push works" section).
 
 **File access priority:** filesystem MCP → Desktop Commander → git clone (last resort, may fail auth)
 
@@ -38,7 +38,7 @@ All repos are private. Credentials via macOS Keychain (`osxkeychain`). Push acce
 
 ## 3. Tech Stack & Architecture
 
-**Frontend:** Netlify (studioyou.app), drag-and-drop deploy. Files: dashboard.html, studio.html, index.html, subscribe.html. Lee provides files → Claude modifies → Claude presents via `present_files`. Never fetch from GitHub. Never assume current.
+**Frontend:** Netlify (`studioyou-app` project, serves studioyou.app) and a second Netlify project (`studioyou`, serves studioyou.studio — the live sign-in path, see SERVICES.md). Deploy via GitHub Actions on push to main, same as backend (corrected 2026-08-16 — retired the old manual-file-handoff workflow, see Locked Decisions). Files: dashboard.html, studio.html, index.html, subscribe.html.
 
 **Backend:** Flask on Google Cloud Run (`studioyou-api`, project `neat-tangent-474222-m9`, `us-east1`). Endpoint: `studioyou-api-198959034459.us-east1.run.app`. Deploy via GitHub Actions on push to main.
 
@@ -120,7 +120,7 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 - **Runway and Reactor are independent credit pools.** Never infer one from the other. (P0 confirmed Session AG.)
 - **`lk agent update` does not rebuild.** Only `delete && create` produces a fresh image. Agent ID changes every recreate.
 - **`--update-env-vars`** for manual Cloud Run CLI updates, not `--set-env-vars`.
-- **Frontend file workflow:** Lee provides → Claude modifies → Claude presents. Never fetch from GitHub.
+- **Frontend file workflow (corrected 2026-08-16):** the manual "Lee provides → Claude modifies → Claude presents" flow is retired. It predates the dev-session-protocol and had a real problem: files only ever lived on Lee's local Mac with no running record of session activity once delivered. `studioyou-app` and `studioyou-site` are live git repos (confirmed 2026-08-16, both clean and in sync with origin/main) — frontend work now goes through the same git workflow as backend/agent: edit via Desktop Commander, commit, push. Never present-and-wait-for-manual-deploy as the default path.
 - **Claude owns the full deployment pipeline.** Lee does not push.
 - **GCP billing account 019309-BEB782-398472:** do not touch while Google for Startups application is pending.
 - **Anthropic program applications** filed under Frisson Digital, Inc. Credits non-transferable between Console orgs.

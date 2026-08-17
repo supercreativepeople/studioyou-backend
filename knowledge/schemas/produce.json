@@ -1,0 +1,74 @@
+{
+  "building_id": "produce",
+  "building_name": "PRODUCE",
+  "spec_level": "stub",
+  "philosophy": null,
+  "prime_directive": null,
+  "failure_patterns_raw": null,
+  "ignition_sequence_raw": null,
+  "model_success_context_notes": null,
+  "output_format_raw": null,
+  "tracks": [
+    {
+      "track_id": "default",
+      "track_name": null,
+      "sections": [
+        {
+          "section_name": "Production",
+          "steps": [
+            {
+              "step_id": "1",
+              "title": "Daily Prep & Call Sheets",
+              "creator_prompt": "Does everyone know where they need to be and what they are doing today?",
+              "fy_rationale": "Aligns the daily workforce. Provides the roadmap for cast and crew with call times and scenes.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "2",
+              "title": "Capture & Execution",
+              "creator_prompt": "Are we recording the video, audio, or generative assets?",
+              "fy_rationale": "The execution phase where the project is recorded \u2014 physical set, vocal booth, or digital generation.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "3",
+              "title": "Data Management",
+              "creator_prompt": "Are the files safely backed up and organized?",
+              "fy_rationale": "Protects the project's assets. Establishes the workflow for offloading, duplicating, and storing raw media.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "handoff": {
+    "handoff_to": null,
+    "fy_handoff_line": null,
+    "raw": null
+  }
+}

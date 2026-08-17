@@ -1,0 +1,74 @@
+{
+  "building_id": "cast",
+  "building_name": "CAST",
+  "spec_level": "stub",
+  "philosophy": null,
+  "prime_directive": null,
+  "failure_patterns_raw": null,
+  "ignition_sequence_raw": null,
+  "model_success_context_notes": null,
+  "output_format_raw": null,
+  "tracks": [
+    {
+      "track_id": "default",
+      "track_name": null,
+      "sections": [
+        {
+          "section_name": "Talent",
+          "steps": [
+            {
+              "step_id": "1",
+              "title": "Role Specs",
+              "creator_prompt": "What roles need to be filled?",
+              "fy_rationale": "Builds the casting breakdown from character development in DEVELOP.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "2",
+              "title": "Audition Management",
+              "creator_prompt": "How are submissions being tracked and reviewed?",
+              "fy_rationale": "Organizes the audition pipeline \u2014 submissions, notes, callbacks, director approval.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "3",
+              "title": "Booking",
+              "creator_prompt": "Is the offer out and the deal signed?",
+              "fy_rationale": "Closes the loop from talent identified to deal memos executed.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "handoff": {
+    "handoff_to": null,
+    "fy_handoff_line": null,
+    "raw": null
+  }
+}

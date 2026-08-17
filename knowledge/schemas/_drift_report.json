@@ -1,0 +1,230 @@
+{
+  "generated_from": "build_schema.py",
+  "findings": [
+    {
+      "building_id": "ideate",
+      "only_in_frontend": [],
+      "only_in_md": [
+        {
+          "track": null,
+          "section": "SEED DEVELOPMENT (universal \u2014 all creator types)",
+          "title": "Give It a Skeleton"
+        }
+      ]
+    },
+    {
+      "building_id": "develop",
+      "only_in_frontend": [
+        {
+          "section": "Story & Structure",
+          "title": "What's the Format?"
+        },
+        {
+          "section": "Story & Structure",
+          "title": "What's the Premise?"
+        },
+        {
+          "section": "Story & Structure",
+          "title": "Who's It For?"
+        },
+        {
+          "section": "Script & Content",
+          "title": "Do You Have a Script, Outline, or Format Bible?"
+        },
+        {
+          "section": "Script & Content",
+          "title": "What's the Structure?"
+        },
+        {
+          "section": "Script & Content",
+          "title": "Characters & Voices"
+        },
+        {
+          "section": "Visual & Tonal Language",
+          "title": "What Does This Look Like?"
+        },
+        {
+          "section": "Visual & Tonal Language",
+          "title": "What Does This Sound Like?"
+        },
+        {
+          "section": "Visual & Tonal Language",
+          "title": "Storyboard a Scene"
+        },
+        {
+          "section": "Proof of Concept",
+          "title": "Build a Sample"
+        },
+        {
+          "section": "Proof of Concept",
+          "title": "Does This Work?"
+        },
+        {
+          "section": "Pitch Readiness",
+          "title": "Can You Explain This to a Stranger?"
+        },
+        {
+          "section": "Pitch Readiness",
+          "title": "What Do You Need Next?"
+        }
+      ],
+      "only_in_md": [
+        {
+          "track": "NARRATIVE / SCRIPT TRACK",
+          "section": null,
+          "title": "Logline"
+        },
+        {
+          "track": "NARRATIVE / SCRIPT TRACK",
+          "section": null,
+          "title": "Outline"
+        },
+        {
+          "track": "NARRATIVE / SCRIPT TRACK",
+          "section": null,
+          "title": "Structure"
+        },
+        {
+          "track": "NARRATIVE / SCRIPT TRACK",
+          "section": null,
+          "title": "Scene Development + Visual Development"
+        },
+        {
+          "track": "NARRATIVE / SCRIPT TRACK",
+          "section": null,
+          "title": "Draft"
+        },
+        {
+          "track": "NARRATIVE / SCRIPT TRACK",
+          "section": null,
+          "title": "Revision Passes"
+        },
+        {
+          "track": "NARRATIVE / SCRIPT TRACK",
+          "section": null,
+          "title": "Script Lock"
+        },
+        {
+          "track": "MUSIC TRACK",
+          "section": null,
+          "title": "Concept / Emotional Center"
+        },
+        {
+          "track": "MUSIC TRACK",
+          "section": null,
+          "title": "Reference Set"
+        },
+        {
+          "track": "MUSIC TRACK",
+          "section": null,
+          "title": "Arrangement Direction"
+        },
+        {
+          "track": "MUSIC TRACK",
+          "section": null,
+          "title": "Demo / Production Sketch"
+        },
+        {
+          "track": "MUSIC TRACK",
+          "section": null,
+          "title": "Revision Passes"
+        },
+        {
+          "track": "MUSIC TRACK",
+          "section": null,
+          "title": "Demo Lock"
+        },
+        {
+          "track": "VISUAL ART TRACK",
+          "section": null,
+          "title": "Visual Concept"
+        },
+        {
+          "track": "VISUAL ART TRACK",
+          "section": null,
+          "title": "Reference Set"
+        },
+        {
+          "track": "VISUAL ART TRACK",
+          "section": null,
+          "title": "Execution Brief"
+        },
+        {
+          "track": "VISUAL ART TRACK",
+          "section": null,
+          "title": "Draft Visuals"
+        },
+        {
+          "track": "VISUAL ART TRACK",
+          "section": null,
+          "title": "Revision Passes"
+        },
+        {
+          "track": "VISUAL ART TRACK",
+          "section": null,
+          "title": "Direction Lock"
+        },
+        {
+          "track": "PODCAST / SERIES TRACK",
+          "section": null,
+          "title": "Format Design"
+        },
+        {
+          "track": "PODCAST / SERIES TRACK",
+          "section": null,
+          "title": "Episode Architecture"
+        },
+        {
+          "track": "PODCAST / SERIES TRACK",
+          "section": null,
+          "title": "Pilot Outline"
+        },
+        {
+          "track": "PODCAST / SERIES TRACK",
+          "section": null,
+          "title": "Pilot Draft / Episode Development"
+        },
+        {
+          "track": "PODCAST / SERIES TRACK",
+          "section": null,
+          "title": "Revision Passes"
+        },
+        {
+          "track": "PODCAST / SERIES TRACK",
+          "section": null,
+          "title": "Format Lock"
+        },
+        {
+          "track": "BRAND / SOCIAL CONTENT TRACK",
+          "section": null,
+          "title": "Voice / Tone"
+        },
+        {
+          "track": "BRAND / SOCIAL CONTENT TRACK",
+          "section": null,
+          "title": "Content Framework"
+        },
+        {
+          "track": "BRAND / SOCIAL CONTENT TRACK",
+          "section": null,
+          "title": "First Pieces"
+        },
+        {
+          "track": "BRAND / SOCIAL CONTENT TRACK",
+          "section": null,
+          "title": "Content Development"
+        },
+        {
+          "track": "BRAND / SOCIAL CONTENT TRACK",
+          "section": null,
+          "title": "Revision Passes"
+        },
+        {
+          "track": "BRAND / SOCIAL CONTENT TRACK",
+          "section": null,
+          "title": "Framework Lock"
+        }
+      ]
+    }
+  ]
+}

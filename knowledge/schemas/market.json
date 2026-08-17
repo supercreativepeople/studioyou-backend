@@ -1,0 +1,59 @@
+{
+  "building_id": "market",
+  "building_name": "MARKET",
+  "spec_level": "stub",
+  "philosophy": null,
+  "prime_directive": null,
+  "failure_patterns_raw": null,
+  "ignition_sequence_raw": null,
+  "model_success_context_notes": null,
+  "output_format_raw": null,
+  "tracks": [
+    {
+      "track_id": "default",
+      "track_name": null,
+      "sections": [
+        {
+          "section_name": "Campaign",
+          "steps": [
+            {
+              "step_id": "1",
+              "title": "Campaign Strategy",
+              "creator_prompt": "How are we getting people to look at this?",
+              "fy_rationale": "Builds the promotional roadmap. Outlines the timeline for trailers, social posts, and advertising.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "2",
+              "title": "Asset Creation",
+              "creator_prompt": "What promotional materials do we need to share?",
+              "fy_rationale": "Generates the marketing materials \u2014 trailers, clips, and social posts to execute the campaign.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "handoff": {
+    "handoff_to": null,
+    "fy_handoff_line": null,
+    "raw": null
+  }
+}

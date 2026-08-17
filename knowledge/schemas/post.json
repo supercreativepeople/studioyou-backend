@@ -1,0 +1,89 @@
+{
+  "building_id": "post",
+  "building_name": "POST",
+  "spec_level": "stub",
+  "philosophy": null,
+  "prime_directive": null,
+  "failure_patterns_raw": null,
+  "ignition_sequence_raw": null,
+  "model_success_context_notes": null,
+  "output_format_raw": null,
+  "tracks": [
+    {
+      "track_id": "default",
+      "track_name": null,
+      "sections": [
+        {
+          "section_name": "Post Production",
+          "steps": [
+            {
+              "step_id": "1",
+              "title": "Editorial",
+              "creator_prompt": "How do we assemble the footage to tell the story?",
+              "fy_rationale": "Shapes the narrative. Organizes raw files and builds the project timeline from rough cut to locked edit.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "2",
+              "title": "Visual Polish",
+              "creator_prompt": "Does the image look complete and consistent?",
+              "fy_rationale": "Elevates the visual quality. Ensures the final image matches the mood boards from DEVELOP.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "3",
+              "title": "Audio Post",
+              "creator_prompt": "Do the voices, music, and sound effects sound professional?",
+              "fy_rationale": "Finishes the auditory experience. Mixes dialogue, sound effects, and music into a clear soundscape.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "4",
+              "title": "Mastering & Export",
+              "creator_prompt": "Is the final file exported in the right format?",
+              "fy_rationale": "Creates the final product. Packages the project into the technical formats required by platforms.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "handoff": {
+    "handoff_to": null,
+    "fy_handoff_line": null,
+    "raw": null
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "building_id": "distribute",
+  "building_name": "DISTRIBUTE",
+  "spec_level": "stub",
+  "philosophy": null,
+  "prime_directive": null,
+  "failure_patterns_raw": null,
+  "ignition_sequence_raw": null,
+  "model_success_context_notes": null,
+  "output_format_raw": null,
+  "tracks": [
+    {
+      "track_id": "default",
+      "track_name": null,
+      "sections": [
+        {
+          "section_name": "Distribution",
+          "steps": [
+            {
+              "step_id": "1",
+              "title": "Platform Strategy",
+              "creator_prompt": "Where does this project live so people can see it?",
+              "fy_rationale": "Matches the project to its audience. Determines platforms: social, streaming, theaters, private network.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "2",
+              "title": "Asset Delivery",
+              "creator_prompt": "Are we uploading the final files and required metadata?",
+              "fy_rationale": "Executes the launch. Ensures master files, thumbnails, and descriptions meet platform specs.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "handoff": {
+    "handoff_to": null,
+    "fy_handoff_line": null,
+    "raw": null
+  }
+}

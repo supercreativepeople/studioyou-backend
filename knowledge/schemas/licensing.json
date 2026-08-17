@@ -1,0 +1,59 @@
+{
+  "building_id": "licensing",
+  "building_name": "LICENSING",
+  "spec_level": "stub",
+  "philosophy": null,
+  "prime_directive": null,
+  "failure_patterns_raw": null,
+  "ignition_sequence_raw": null,
+  "model_success_context_notes": null,
+  "output_format_raw": null,
+  "tracks": [
+    {
+      "track_id": "default",
+      "track_name": null,
+      "sections": [
+        {
+          "section_name": "Rights & Clearance",
+          "steps": [
+            {
+              "step_id": "1",
+              "title": "Clearances & Rights",
+              "creator_prompt": "Do we have permission to use the music, stock footage, or third-party assets?",
+              "fy_rationale": "Clears the project for public viewing. Secures rights for any external IP used.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "2",
+              "title": "Releases",
+              "creator_prompt": "Did everyone involved sign away their rights to appear in this?",
+              "fy_rationale": "Guarantees legal permission to use the likeness of individuals and locations captured in PRODUCE.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "handoff": {
+    "handoff_to": null,
+    "fy_handoff_line": null,
+    "raw": null
+  }
+}

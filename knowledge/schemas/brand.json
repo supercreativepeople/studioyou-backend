@@ -1,0 +1,59 @@
+{
+  "building_id": "brand",
+  "building_name": "BRAND",
+  "spec_level": "stub",
+  "philosophy": null,
+  "prime_directive": null,
+  "failure_patterns_raw": null,
+  "ignition_sequence_raw": null,
+  "model_success_context_notes": null,
+  "output_format_raw": null,
+  "tracks": [
+    {
+      "track_id": "default",
+      "track_name": null,
+      "sections": [
+        {
+          "section_name": "Identity",
+          "steps": [
+            {
+              "step_id": "1",
+              "title": "Visual Identity",
+              "creator_prompt": "What does the packaging and artwork look like?",
+              "fy_rationale": "Creates the project's outward face. Develops logos, typography, and cover art for public representation.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "2",
+              "title": "Positioning",
+              "creator_prompt": "How do we describe this project to the world?",
+              "fy_rationale": "Crafts the public narrative. Translates internal details into press releases and descriptions that capture attention.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "handoff": {
+    "handoff_to": null,
+    "fy_handoff_line": null,
+    "raw": null
+  }
+}

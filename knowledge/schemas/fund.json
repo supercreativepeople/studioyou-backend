@@ -1,0 +1,74 @@
+{
+  "building_id": "fund",
+  "building_name": "FUND",
+  "spec_level": "stub",
+  "philosophy": null,
+  "prime_directive": null,
+  "failure_patterns_raw": null,
+  "ignition_sequence_raw": null,
+  "model_success_context_notes": null,
+  "output_format_raw": null,
+  "tracks": [
+    {
+      "track_id": "default",
+      "track_name": null,
+      "sections": [
+        {
+          "section_name": "Capital Strategy",
+          "steps": [
+            {
+              "step_id": "1",
+              "title": "Target Budget",
+              "creator_prompt": "How much money do you need to make this?",
+              "fy_rationale": "Sets the financial reality. Triggers FutureYou to surface the most realistic funding paths and trade-offs.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "2",
+              "title": "Funding Strategy",
+              "creator_prompt": "Where is the money coming from? (self-funded, investors, brand sponsorship, crowdfunding, grants)",
+              "fy_rationale": "Identifies financial partners and their requirements \u2014 dictating legal and distribution obligations downstream.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "3",
+              "title": "Outreach & Pitching",
+              "creator_prompt": "Who are you pitching, and how do we track them?",
+              "fy_rationale": "Operationalizes the pitch assets from DEVELOP. FutureYou manages outreach flow and follow-up cadence.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "handoff": {
+    "handoff_to": null,
+    "fy_handoff_line": null,
+    "raw": null
+  }
+}

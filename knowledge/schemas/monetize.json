@@ -1,0 +1,59 @@
+{
+  "building_id": "monetize",
+  "building_name": "MONETIZE",
+  "spec_level": "stub",
+  "philosophy": null,
+  "prime_directive": null,
+  "failure_patterns_raw": null,
+  "ignition_sequence_raw": null,
+  "model_success_context_notes": null,
+  "output_format_raw": null,
+  "tracks": [
+    {
+      "track_id": "default",
+      "track_name": null,
+      "sections": [
+        {
+          "section_name": "Revenue",
+          "steps": [
+            {
+              "step_id": "1",
+              "title": "Revenue Streams",
+              "creator_prompt": "How does this project generate income?",
+              "fy_rationale": "Defines the financial return. Sets up ad revenue, subscription gates, merchandise, or direct sales.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "2",
+              "title": "Tracking & Analytics",
+              "creator_prompt": "Is the project making money and reaching the right people?",
+              "fy_rationale": "Measures success. Monitors performance data and revenue flow with clear creator metrics.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "handoff": {
+    "handoff_to": null,
+    "fy_handoff_line": null,
+    "raw": null
+  }
+}

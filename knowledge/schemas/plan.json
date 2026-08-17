@@ -1,0 +1,89 @@
+{
+  "building_id": "plan",
+  "building_name": "PLAN",
+  "spec_level": "stub",
+  "philosophy": null,
+  "prime_directive": null,
+  "failure_patterns_raw": null,
+  "ignition_sequence_raw": null,
+  "model_success_context_notes": null,
+  "output_format_raw": null,
+  "tracks": [
+    {
+      "track_id": "default",
+      "track_name": null,
+      "sections": [
+        {
+          "section_name": "Pre-Production",
+          "steps": [
+            {
+              "step_id": "1",
+              "title": "Schedule & Timeline",
+              "creator_prompt": "When are we shooting and how long will it take?",
+              "fy_rationale": "Creates the operational calendar. Aligns equipment, locations, and talent on required dates.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "2",
+              "title": "Crew & Staffing",
+              "creator_prompt": "Who is working behind the scenes?",
+              "fy_rationale": "Builds the production team. Scales the workforce based on project format and budget.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "3",
+              "title": "Gear & Equipment",
+              "creator_prompt": "What equipment do we need to capture the project?",
+              "fy_rationale": "Translates visual development into a specific list of cameras, lighting, audio gear, or compute.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            },
+            {
+              "step_id": "4",
+              "title": "Logistics & Permitting",
+              "creator_prompt": "Are the locations legally cleared and the travel mapped out?",
+              "fy_rationale": "Ensures the production operates safely and legally. Covers permits, insurance, crew logistics.",
+              "purpose": null,
+              "success_state": null,
+              "failure_state": null,
+              "fy_approach": null,
+              "tool_routing": null,
+              "model_success_context": null,
+              "left_rail_narration": null,
+              "canvas_output": null,
+              "raw_spec": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "handoff": {
+    "handoff_to": null,
+    "fy_handoff_line": null,
+    "raw": null
+  }
+}

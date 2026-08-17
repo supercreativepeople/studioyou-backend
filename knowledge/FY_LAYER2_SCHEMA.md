@@ -52,6 +52,100 @@ queued for S3.
 
 ---
 
+## Layer 3 sourcing model & v1 scope ceiling (Lee, 2026-08-17)
+
+**Sourcing philosophy.** Layer 3 injections are not limited to Lee's own catalog
+of personal experience. Personal stories (Steve Sabol / NFL Films, the indie-feature
+revision-room story) stay in place wherever Lee has firsthand, hard-won material —
+nobody else can supply that, and it stays load-bearing wherever it exists. But
+limiting Layer 3 to Lee's own experience only sells the platform short — the
+equivalent of teaching a masterclass from one instructor's career instead of the
+full documented history of a craft. Every building's Layer 3 material should draw
+on verified, real, named-practitioner technique and history — the Mitch Leighs,
+the Kusamas, the Blakelys — researched and sourced the same way DEVELOP's existing
+Mitch Leigh injection already was, extended deliberately across every building
+rather than left to happen by accident.
+
+**Sourcing discipline (binding on every research pass).**
+1. Original synthesis only. Researched material must trace to a verifiable primary
+   or well-corroborated source (interview, commentary track, memoir, biography,
+   craft book, the practitioner's own words) and get described in original
+   language. Never lift another outlet's copyrighted analysis or phrasing
+   wholesale, even when the underlying fact is fair to use.
+2. Verification bar. A claim attributed to a real, named person needs to hold up
+   under at least two independent, credible sources before it's used as the
+   authority behind a Success State or an FY approach line. Apocryphal or
+   flattened "X always said Y" material circulating without a real citation
+   doesn't clear the bar — FY is speaking with the platform's voice when it
+   cites someone, not repeating a listicle.
+
+**Two-tier Layer 3 retrieval (the confidence layer).**
+- Fast path: a tagged, pre-vetted corpus (person, domain, theme/emotional-function,
+  sourcing, confidence) that FY checks first. This is what the building-by-building
+  research passes populate — organized as a general library, not bound one-to-one
+  to a single step, so any entry can serve both its default placement and a
+  creator-triggered match later.
+- Slow path / creator-triggered lookup: when FY senses a creator is stuck, before
+  deploying a default pre-built injection, FY can ask the creator directly — "do
+  you have a favorite [whoever/whatever] that inspires you?" — and search for
+  verified material tied to that specific answer if it isn't already in corpus.
+  Slow-path results carry hedged language (confidence-appropriate, not stated as
+  flat settled fact off a single source) and get logged for review; once verified
+  they get promoted into the permanent corpus, so the next creator who names that
+  same figure gets the fast path instead.
+- This mechanism doubles as how FY builds an ongoing model of a specific creator's
+  own reference points over time — not just a per-step lookup tool, an input to
+  the same persistent-user-model philosophy governing session-tier and goal-tier
+  memory (see StudioYou_FY_DecisionTiers_Positioning in the project doc).
+- What the two paths retrieve differs by where the creator is in the journey:
+  early buildings (IDEATE) need instinct-validation and permission-to-proceed
+  material; later buildings (DISTRIBUTE, MARKET) need tactical, competitive
+  case-study material — how a specific named operator actually achieves a
+  specific outcome. Same mechanism, different job.
+
+**Generic fallback track for archetype-branched buildings.** No building's
+category coverage can be exhaustive at launch. IDEATE's Step 8 already has an
+OTHER branch that derives three generic structural questions (what is it
+specifically, who/what is it for, what's the engine underneath) instead of
+forcing a mismatched archetype. Any archetype-branched building — DEVELOP today,
+and any future building that branches by creative type — needs the equivalent as
+a permanent sixth track, not a temporary stopgap: generic by design, built on the
+same three-question skeleton, thinner than the named tracks but never a dead end.
+DEVELOP gets this added alongside its five existing tracks (Narrative, Music,
+Visual Art, Podcast/Series, Brand/Social).
+
+**v1 scope ceiling — two separate numbers, not one.**
+- Archetype/track coverage: ship with the named tracks that can be built with
+  real confidence (DEVELOP: five, plus the generic sixth), not an ever-expanding
+  list chasing full category coverage before launch.
+- Injection corpus depth: one verified injection is the floor for any step
+  carrying a Layer 3 trigger; two or more across different domains where
+  research actually turns something up worth using. Not exhaustive cross-domain
+  saturation before ship.
+- Anything past the ceiling is intentionally thin at launch, covered by the Other
+  track and the slow-path lookup — not a gap to apologize for. It's the designed
+  v1 experience for the long tail, backed by the update program below.
+
+**Post-launch update program — data-driven, not speculative.** The next tier of
+coverage gets prioritized from real usage signals already planned or already
+established elsewhere in this schema, not from guessing what might be missing:
+- Canvas-card creator actions (Lock It / Revise / Not This / Regenerate —
+  Section 8), already planned as a model-selection learning signal (Section 7
+  addendum), double as a read on whether a given injection or a given building's
+  depth actually landed.
+- Other-track usage, logged by what the creator says they're actually making, is
+  the clearest signal of which uncovered archetype has real demand versus which
+  is theoretical.
+- Slow-path lookup frequency, aggregated by who gets asked for and isn't in
+  corpus yet, tells research time where it pays off most.
+- Section 11's generation-result logging already establishes the precedent:
+  consistent patterns across sessions get promoted to a formal spec update, Lee
+  determines what rises from raw data to a permanent change. This section
+  extends that same pattern from tool/model results to archetype coverage and
+  injection-corpus depth.
+
+---
+
 ## Schema Sections (every building sub-agent contains all of these)
 
 ---

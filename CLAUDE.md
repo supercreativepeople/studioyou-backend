@@ -1,8 +1,9 @@
 # StudioYou — CLAUDE.md
 
-> This file is the project bible. Same sections every session, same order. No agenda items, no carry-forwards — those live in the handoff doc. Read this to understand what StudioYou is and how to work on it.
+> This file is the project bible. Same sections every session, same order. No agenda items, no carry-forwards — those live in the handoff doc. Read this to understand what StudioYou is and how to work on it. For strategy, positioning, and current build-status narrative (not code), see the **StudioYou Project HQ** in Notion — https://app.notion.com/p/3bfb963047e5814f9398d9f53aaf0c13 (rebuilt 2026-08-17, now the canonical strategic source of truth, distinct from this file's technical/deploy scope).
 
 **Changelog (most recent 3-5, older entries live in git history):**
+- **2026-08-17:** No code changed this session (Notion/knowledge-base work only). Corrected two long-standing drift points: (1) subscription tier table below was wrong (missing Player tier, stale numbers) — corrected against live `subscribe.html` code; (2) studioyou.studio role fully resolved — confirmed via code grep as the Resend-verified magic-link auth email sending domain only, not a second product surface. Built new **StudioYou Project HQ** in Notion (7 pages: positioning, live architecture/build status, canonical business model, sovereign product portfolio, FutureYou core problem, partnership strategy, decision log) as the project's single source of truth for strategy and current state — this file stays scoped to technical/deploy detail. Confirmed build status: IDEATE ~50% built, DEVELOP ~20% built, remaining 10 buildings unbuilt, FY orchestrator (Sprint S2) unbuilt and confirmed as top build priority. Next session opens with sprint architecture discussion, then likely the orchestrator build.
 - **2026-08-16:** Frontend workflow retired (Lee confirmed manual handoff no longer applies — see Locked Decisions and How to Deploy). Supabase pause resolved (was `INACTIVE`, restored by Lee, confirmed `ACTIVE_HEALTHY`). Netlify confirmed as full read/write interface, no CLI needed. Google Drive documentation split into cloud Google Drive vs. physical G-DRIVE SSD. `lee@frisson.digital` confirmed reachable via the existing Fastmail/Zapier connection (alias on the same account, no new connection needed) — see `dev-session-protocol` skill.
 - **2026-08-15:** Runway topped up (fy-agent), Tavus dead code stripped from `main.py` (commit `5172736`).
 - **2026-08-09:** Full 8-section CLAUDE.md rebuild (session AH). GCP/Cloud Run, Google Drive, Fastmail documented. Partnership tracker integrated.
@@ -11,18 +12,19 @@
 
 ## 1. What This Is
 
-StudioYou (studioyou.app) is a creator studio OS powered by FutureYou (FY), an AI advisor built on Claude. It serves prosumer creators and independent filmmakers through a spatial studio metaphor ("The Lot") with 12 buildings (IDEATE, DEVELOP, FUND, CAST, PLAN, PRODUCE, POST, LEGAL, DISTRIBUTE, BRAND, MARKET, MONETIZE). FY is the platform's core engine — not a feature — positioned as the creator's "future self" advisor guiding them through a structured building → section → step methodology. Currently in alpha development under sprint S1.
+StudioYou (studioyou.app) is a creator studio OS powered by FutureYou (FY), an AI advisor built on Claude. It serves prosumer creators and independent filmmakers through a spatial studio metaphor ("The Lot") with 12 buildings (IDEATE, DEVELOP, FUND, CAST, PLAN, PRODUCE, POST, LEGAL, DISTRIBUTE, BRAND, MARKET, MONETIZE) — this 12-building layer is routing/journey plumbing, not the functional pipeline itself. FY is the platform's core engine — not a feature — positioned as the creator's "future self" advisor guiding them through a structured building → section → step methodology, enforcing the same disciplined creative-production pipeline professional physical production has used for decades (see Project HQ, page 01 and 05, for the full thesis). Currently in alpha development. Confirmed build status (2026-08-17): IDEATE ~50% built, DEVELOP ~20% built, the other 10 buildings unbuilt, and the FY orchestrator/step-state machine (Sprint S2) — the mechanism that makes FY actually follow the pipeline reliably — is unbuilt. That orchestrator is the top build priority.
 
 **Legal entity:** Frisson Digital, Inc. (Delaware C-Corp). StudioYou and SCREENBot IP formally assigned to Frisson Digital. SuperCreativePeople (SCP) is kept entirely separate — not commingled with SY/SB projects. For all funding and partnership applications, Frisson Digital, Inc. is the entity of record. Lee operates as the individual bootstrapper, claiming projects personally, not DBA-ing SCP.
 
-**StudioYou subscription tiers:**
+**StudioYou subscription tiers — corrected 2026-08-17, verified against live `subscribe.html` code (was previously wrong/incomplete in this file):**
 
-| Tier | Monthly | Annual/mo | Annual total | Savings |
-|---|---|---|---|---|
-| Independent | $199/mo | $149/mo | $1,788/yr | 25% |
-| Studio / Heavy Gen-AI | $299/mo | TBD | TBD | — |
-| Operator (BYOK) | $129/mo | $99/mo | $1,188/yr | 23% |
-| Enterprise | White-label | TBD | TBD | — |
+| Tier | Monthly | Annual/mo | Annual total |
+|---|---|---|---|
+| Operator | $129/mo | $99/mo | $1,188/yr |
+| Independent | $199/mo | $149/mo | $1,788/yr |
+| Player | $299/mo | $225/mo | $2,700/yr |
+
+"Player" is the correct, live tier name — not "Studio." All-in subscription, single price per tier, modules unlock by journey necessity not price tier. Ecosystem pays (tool providers, brands, agencies); creator never pays a cut of earnings.
 
 ---
 
@@ -43,7 +45,7 @@ All repos are private. Credentials via macOS Keychain (`osxkeychain`). Push via 
 
 ## 3. Tech Stack & Architecture
 
-**Frontend:** Netlify (`studioyou-app` project, serves studioyou.app) and a second Netlify project (`studioyou`, serves studioyou.studio — the live sign-in path, see SERVICES.md). Deploy via GitHub Actions on push to main, same as backend (corrected 2026-08-16 — retired the old manual-file-handoff workflow, see Locked Decisions). Files: dashboard.html, studio.html, index.html, subscribe.html.
+**Frontend:** Netlify (`studioyou-app` project, serves studioyou.app — the actual product) and a second Netlify project (`studioyou`, serves studioyou.studio). **studioyou.studio resolved 2026-08-17:** verified via code grep of `main.py` — it is solely the Resend-verified sending domain for magic-link auth email (`from: studio@studioyou.studio`), also present in the CORS allow-list. The magic-link URL a user actually clicks points to studioyou.app, and email asset images load from studioyou.app. It is not a second user-facing surface — it's an auth-flow infrastructure dependency. Deploy via GitHub Actions on push to main, same as backend. Files: dashboard.html, studio.html, index.html, subscribe.html.
 
 **Backend:** Flask on Google Cloud Run (`studioyou-api`, project `neat-tangent-474222-m9`, `us-east1`). Endpoint: `studioyou-api-198959034459.us-east1.run.app`. Deploy via GitHub Actions on push to main.
 
@@ -71,7 +73,7 @@ Key dependencies (pointers only — credentials never in this file):
 | Service | Purpose | Credential Location |
 |---|---|---|
 | Supabase | Database | Cloud Run env vars |
-| Resend | Email | Cloud Run env vars |
+| Resend | Email (incl. magic-link auth, sent from studioyou.studio domain) | Cloud Run env vars |
 | Cloudflare | DNS/CDN/Zero Trust | Cloudflare dashboard |
 | LiveKit | Voice rooms | Agent `.env` + Cloud Run env vars |
 | Cartesia | TTS | Agent `.env` |
@@ -80,7 +82,7 @@ Key dependencies (pointers only — credentials never in this file):
 | Anthropic | Claude API | Cloud Run env vars |
 | Fal.ai | Image/video generation | Cloud Run env vars |
 | Adobe Express / PDF Services / Frame.io | Creative tools | Cloud Run env vars |
-| Netlify | Frontend hosting | Netlify dashboard |
+| Netlify | Frontend hosting (two projects — see Tech Stack & Architecture) | Netlify dashboard |
 | GCP Cloud Run | Backend hosting | GCP console (`neat-tangent-474222-m9`, `us-east1`, service `studioyou-api`). Do not touch billing account 019309-BEB782-398472 — Google for Startups application pending. `gcloud` CLI authenticated on Mac — use via Desktop Commander. |
 | Google Drive | Document storage / shared assets | Google Drive MCP (pre-authenticated) |
 | Fastmail | Email (`lee@supercreativepeople.com`, `lee@frisson.digital`, aliases) | Zapier MCP — call `inspect_zapier_actions` before any read/write |
@@ -96,7 +98,7 @@ Code edit → `git commit` on Mac → `git push` → GitHub Actions → Cloud Ru
 **FY Agent (agent.py, prompts.py):**
 Code edit → `git commit && git push` (for record) → `lk agent delete [ID] && lk agent create` from Mac Terminal. Deploy runs off local disk. `lk agent update` does NOT force a Docker rebuild — only `delete && create` produces a fresh image. Update Live State with new agent ID immediately after recreate.
 
-**Frontend (dashboard.html, studio.html, etc.) — corrected 2026-08-16:**
+**Frontend (dashboard.html, studio.html, etc.):**
 Code edit via Desktop Commander → `git commit` → `git push` → Netlify auto-deploys from `studioyou-app`/`studioyou-site` repos, same pipeline as backend. The old manual "Lee provides → Claude modifies → Claude presents → Lee drag-and-drops into Netlify" flow is retired — see Locked Decisions.
 
 **Knowledge base (knowledge/*.md):**
@@ -116,7 +118,8 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 | dashboard.html | Session AE deployed |
 | studio.html | Session AE deployed |
 | Supabase | rubwhfjwqonqhfbkhren — `fy_vault_entries` table live |
-| Sprint | S1 — Canvas/Vault/Details (target Jul 6–12, past date — confirm alpha timeline with Lee) |
+| Build status (confirmed 2026-08-17) | IDEATE ~50%, DEVELOP ~20%, PLAN/PRODUCE/POST/LEGAL/DISTRIBUTE/BRAND/MARKET/MONETIZE/FUND/CAST unbuilt |
+| Sprint | S1 nominally active but stale target dates (Jul 6–12, past). **Next session opens with sprint architecture discussion** — orchestrator (S2, unbuilt) is the presumed top build priority but not yet formally confirmed as the next sprint's scope. |
 
 ---
 
@@ -125,7 +128,7 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 - **Runway and Reactor are independent credit pools.** Never infer one from the other. (P0 confirmed Session AG.)
 - **`lk agent update` does not rebuild.** Only `delete && create` produces a fresh image. Agent ID changes every recreate.
 - **`--update-env-vars`** for manual Cloud Run CLI updates, not `--set-env-vars`.
-- **Frontend file workflow (corrected 2026-08-16):** the manual "Lee provides → Claude modifies → Claude presents" flow is retired. It predates the dev-session-protocol and had a real problem: files only ever lived on Lee's local Mac with no running record of session activity once delivered. `studioyou-app` and `studioyou-site` are live git repos (confirmed 2026-08-16, both clean and in sync with origin/main) — frontend work now goes through the same git workflow as backend/agent: edit via Desktop Commander, commit, push. Never present-and-wait-for-manual-deploy as the default path.
+- **Frontend file workflow:** the manual "Lee provides → Claude modifies → Claude presents" flow is retired. `studioyou-app` and `studioyou-site` are live git repos (confirmed 2026-08-16, both clean and in sync with origin/main) — frontend work goes through the same git workflow as backend/agent: edit via Desktop Commander, commit, push. Never present-and-wait-for-manual-deploy as the default path.
 - **Claude owns the full deployment pipeline.** Lee does not push.
 - **GCP billing account 019309-BEB782-398472:** do not touch while Google for Startups application is pending.
 - **Anthropic program applications** filed under Frisson Digital, Inc. Credits non-transferable between Console orgs.
@@ -133,6 +136,9 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 - **Account rule:** All Notion, Zapier, and connected tool builds go through `supercreativepeople@gmail.com` ONLY. `hiliimag.com` is retired — never use it for new integrations.
 - **Anthropic CPN:** Agreement accepted under Frisson Digital, Inc. (Apr 2026). CCAF Learning Path open — 10-person requirement, Sep 7 deadline. Exception request strategy in partnership tracker.
 - **ImagineArt obligation:** 2 posts per month (X + LinkedIn) using ImagineArt-generated assets, due by the 8th to trigger credit refills. Claude should flag if approaching the 8th with no confirmation.
+- **studioyou.studio is infrastructure, not a decision point (resolved 2026-08-17):** it is the Resend-verified magic-link auth email sending domain only. Do not re-litigate this — see Tech Stack & Architecture.
+- **Business Plan v4 is partially stale:** its 61-tool-stack framing, 2-tier Universal/Pro pricing, and 14-stage (IDEATE...ADMIN) architecture are all superseded by the shipped 3-tier/12-building structure above. Not yet formally archived/rewritten — open item, tracked in Project HQ Decision Log (Notion).
+- **Strategic source of truth split:** this file (CLAUDE.md) stays scoped to technical/deploy state. Positioning, competitive thesis, build-status narrative, and product-portfolio strategy (CLIPClear, OMNIShield, YouScored) live in the StudioYou Project HQ (Notion, see top of this file) — don't duplicate that content here, link to it.
 
 ---
 

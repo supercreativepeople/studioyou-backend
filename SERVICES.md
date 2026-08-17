@@ -130,7 +130,7 @@ These are the accounts a Frisson-owned product cannot operate without, currently
 | Asset | Why it's company-dependent | Named company on account | Action |
 |---|---|---|---|
 | LiveKit Cloud | FY agent runtime | SuperCreativePeople | Remove SCP name. **$50/mo subscription, current, not arrears.** Partnership track pending. |
-| Runway | Avatar rendering | SuperCreativePeople | Remove SCP name. **Credits exhausted.** |
+| Runway | Avatar rendering | SuperCreativePeople | Remove SCP name. **Funded 08/11/2026 ($25, 2,500 credits) — not exhausted as of 2026-08-17, see corrected section below.** |
 | Fal.ai | Live video generation | SuperCreativePeople | Remove SCP name. Verify standing. |
 | Reactor (world models) | Live world generation | SuperCreativePeople | Remove SCP name. 688,987 credits, alpha not blocked. |
 | Deepgram | FY speech-to-text | SuperCreativePeople | Remove SCP name. Verify standing. |
@@ -241,11 +241,13 @@ Also missing until now: `studioyou-site`'s `SERVICES.md` had no hosting row at a
 
 ## Console verification round 2, 2026-08-09
 
-### The alpha blocker has a price: about $20
+### The alpha blocker has a price: about $20 — RESOLVED 2026-08-17, see addendum below
 
 **Runway Dev** (`dev.runwayml.com`, org `4b2afb94-a345-4b8a-a2cd-7376a2a4d2dc`) is at **0 credits**. Payment history: Jun 23 2026 $24.00 bought 3,000 credits, Jul 5 2026 $20.00 bought 2,000 credits. That is roughly **$0.0088 per credit**, so a **~$20 top-up restores ~2,000 credits** and the avatar renders again. Total spent to date: $44 for 5,000 credits, all consumed.
 
 **Root cause of the silent failure:** autobilling is disabled and no card is saved. The balance reached zero with no warning and stays there. Enabling autobilling with a threshold prevents a repeat.
+
+**Addendum, 2026-08-17 — resolved, and the date/amount above were both off.** Live-checked against `dev.runwayml.com/settings/billing`: the actual top-up was **$25.00 on 08/11/2026 for 2,500 credits**, not the $20/08-15 figure this section and the cross-project registry had recorded. Current balance is 2,500 credits with zero generations in the last 7 days — Runway is no longer an alpha blocker. Autobilling is still disabled and no card is saved, so the same silent-zero failure mode remains live; each IDEATE retest calls Runway as part of the avatar pipeline and it's the fastest-draining service in that flow, per Lee. Recommend enabling autobilling with a threshold before the next live test rather than after it runs out again. LiveKit was also re-checked live this session after a conflicting recollection that it might be on a free plan — confirmed still on the paid Ship plan, $50/mo, unchanged from the 2026-08-09 finding below.
 
 ### Runway is two platforms, and only one of them matters here
 

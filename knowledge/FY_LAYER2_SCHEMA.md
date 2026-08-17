@@ -277,6 +277,20 @@ What the failure looks like so the creator can catch it immediately.]
 SOURCE: Lee Brownstein field testing — [date/context when available]
 ```
 
+**Addendum 2026-08-17 — this section is not permanently manual-only.** Every canvas
+card already carries a creator action (Lock It / Revise / Not This / Regenerate with
+___ — Section 8). That action is a real signal FY currently discards. Planned (tracked
+separately from the S2 schema refactor, see Sprint Tracker: "FY model-selection
+learning loop"): log creator action per generation against the model and task type
+that produced it, the same way a reviewer who cannot see the result directly has to
+work entirely from what gets reported back. Over time this becomes a second, living
+input to this section alongside Lee's manual field testing — not a replacement for it,
+since Lee's testing catches failure classes before a creator ever hits them. Positioning
+context: the creator never sees a model picker or token count in this platform, by
+design — FY carries that decision so the creator stays in the creative work. That only
+holds up long-term if FY is actually learning which model earns that trust, not just
+inheriting a snapshot of Lee's testing from whenever this section was last updated.
+
 ---
 
 ### SECTION 8: OUTPUT FORMAT

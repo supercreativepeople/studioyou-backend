@@ -40,6 +40,18 @@ Format: { story, what_the_doubt_looked_like, decision_point, what_happened_after
 
 ---
 
+## Authoring rule — skeleton buildings (Lee, 2026-08-17)
+
+If a building's current content is a skeleton relative to its real intended depth
+(the canonical schema's `spec_level` field is `stub`, or a drift finding turns up
+real spec content with no creator-facing counterpart, as happened with DEVELOP's
+frontend on 2026-08-17), raise it to Lee explicitly rather than authoring or
+expanding it solo. Lee builds these properly, together — the same way IDEATE and
+DEVELOP's existing full specs were built. This applies to every building still
+queued for S3.
+
+---
+
 ## Schema Sections (every building sub-agent contains all of these)
 
 ---

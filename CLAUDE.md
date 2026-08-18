@@ -1,22 +1,22 @@
 # StudioYou — CLAUDE.md
 
-> This file is the project bible. Same sections every session, same order. No agenda items, no carry-forwards — those live in the handoff doc. Read this to understand what StudioYou is and how to work on it. For strategy, positioning, and current build-status narrative (not code), see the **StudioYou Project HQ** in Notion — https://app.notion.com/p/3bfb963047e5814f9398d9f53aaf0c13 (rebuilt 2026-08-17, now the canonical strategic source of truth, distinct from this file's technical/deploy scope).
+> This file is the project bible. Same sections every session, same order. No agenda items, no carry-forwards — those live in the handoff doc. Read this to understand what StudioYou is and how to work on it. For strategy, positioning, and current build-status narrative (not code), see the **StudioYou Project HQ** in Notion — https://app.notion.com/p/3bfb963047e5814f9398d9f53aaf0c13 (rebuilt 2026-08-17, canonical strategic source of truth, distinct from this file's technical/deploy scope).
 
 **Changelog (most recent 3-5, older entries live in git history):**
-- **2026-08-17:** No code changed this session (Notion/knowledge-base work only). Corrected two long-standing drift points: (1) subscription tier table below was wrong (missing Player tier, stale numbers) — corrected against live `subscribe.html` code; (2) studioyou.studio role fully resolved — confirmed via code grep as the Resend-verified magic-link auth email sending domain only, not a second product surface. Built new **StudioYou Project HQ** in Notion (7 pages: positioning, live architecture/build status, canonical business model, sovereign product portfolio, FutureYou core problem, partnership strategy, decision log) as the project's single source of truth for strategy and current state — this file stays scoped to technical/deploy detail. Confirmed build status: IDEATE ~50% built, DEVELOP ~20% built, remaining 10 buildings unbuilt, FY orchestrator (Sprint S2) unbuilt and confirmed as top build priority. Next session opens with sprint architecture discussion, then likely the orchestrator build.
+- **2026-08-18:** Canonical per-building JSON schema built for all 12 buildings (`tools/build_schema.py` → `knowledge/schemas/<id>.json` + `_drift_report.json`) — see Locked Decisions. New research-driven Layer 3 authoring philosophy locked into `FY_LAYER2_SCHEMA.md` (4 additions this session: model-feedback addendum, skeleton-authoring rule, Layer 3 sourcing model + two-tier retrieval + generic sixth-track + v1 ceiling, and THE LOCK CALCULUS universal rule). IDEATE fully integrated (5 of 8 steps now carry a verified, sourced Layer 3 injection). DEVELOP batch 1 integrated (3 track-opening steps + all 5 lock steps reference the new Lock Calculus). 8 commits, all pushed. See `handoffs/2026-08-18-canonical-schema-and-layer3-research.md` for full detail — this was a long session, closed deliberately before running into a second compaction.
+- **2026-08-17:** No code changed this session (Notion/knowledge-base work only). Corrected two long-standing drift points: (1) subscription tier table below was wrong (missing Player tier, stale numbers) — corrected against live `subscribe.html` code; (2) studioyou.studio role fully resolved — confirmed via code grep as the Resend-verified magic-link auth email sending domain only, not a second product surface. Built new **StudioYou Project HQ** in Notion (7 pages) as the project's single source of truth for strategy and current state. Confirmed build status: IDEATE ~50% built, DEVELOP ~20% built (as of that date — see 2026-08-18 entry above for what's changed since), remaining 10 buildings unbuilt, FY orchestrator (Sprint S2) unbuilt and confirmed as top build priority.
 - **2026-08-16:** Frontend workflow retired (Lee confirmed manual handoff no longer applies — see Locked Decisions and How to Deploy). Supabase pause resolved (was `INACTIVE`, restored by Lee, confirmed `ACTIVE_HEALTHY`). Netlify confirmed as full read/write interface, no CLI needed. Google Drive documentation split into cloud Google Drive vs. physical G-DRIVE SSD. `lee@frisson.digital` confirmed reachable via the existing Fastmail/Zapier connection (alias on the same account, no new connection needed) — see `dev-session-protocol` skill.
 - **2026-08-15:** Runway topped up (fy-agent), Tavus dead code stripped from `main.py` (commit `5172736`).
-- **2026-08-09:** Full 8-section CLAUDE.md rebuild (session AH). GCP/Cloud Run, Google Drive, Fastmail documented. Partnership tracker integrated.
 
 ---
 
 ## 1. What This Is
 
-StudioYou (studioyou.app) is a creator studio OS powered by FutureYou (FY), an AI advisor built on Claude. It serves prosumer creators and independent filmmakers through a spatial studio metaphor ("The Lot") with 12 buildings (IDEATE, DEVELOP, FUND, CAST, PLAN, PRODUCE, POST, LEGAL, DISTRIBUTE, BRAND, MARKET, MONETIZE) — this 12-building layer is routing/journey plumbing, not the functional pipeline itself. FY is the platform's core engine — not a feature — positioned as the creator's "future self" advisor guiding them through a structured building → section → step methodology, enforcing the same disciplined creative-production pipeline professional physical production has used for decades (see Project HQ, page 01 and 05, for the full thesis). Currently in alpha development. Confirmed build status (2026-08-17): IDEATE ~50% built, DEVELOP ~20% built, the other 10 buildings unbuilt, and the FY orchestrator/step-state machine (Sprint S2) — the mechanism that makes FY actually follow the pipeline reliably — is unbuilt. That orchestrator is the top build priority.
+StudioYou (studioyou.app) is a creator studio OS powered by FutureYou (FY), an AI advisor built on Claude. It serves prosumer creators and independent filmmakers through a spatial studio metaphor ("The Lot") with 12 buildings (IDEATE, DEVELOP, FUND, CAST, PLAN, PRODUCE, POST, LEGAL, DISTRIBUTE, BRAND, MARKET, MONETIZE) — this 12-building layer is routing/journey plumbing, not the functional pipeline itself. FY is the platform's core engine — not a feature — positioned as the creator's "future self" advisor guiding them through a structured building → section → step methodology, enforcing the same disciplined creative-production pipeline professional physical production has used for decades (see Project HQ, page 01 and 05, for the full thesis). Currently in alpha development. Confirmed build status (2026-08-17): IDEATE ~50% built, DEVELOP ~20% built, the other 10 buildings unbuilt, and the FY orchestrator/step-state machine (Sprint S2) — the mechanism that makes FY actually follow the pipeline reliably — is unbuilt. That orchestrator is the top build priority. (2026-08-18 note: those percentages are Lee's own field-testing estimate and haven't been re-issued since — see Live State for what actually changed this session, which was content depth within IDEATE/DEVELOP, not orchestrator progress.)
 
 **Legal entity:** Frisson Digital, Inc. (Delaware C-Corp). StudioYou and SCREENBot IP formally assigned to Frisson Digital. SuperCreativePeople (SCP) is kept entirely separate — not commingled with SY/SB projects. For all funding and partnership applications, Frisson Digital, Inc. is the entity of record. Lee operates as the individual bootstrapper, claiming projects personally, not DBA-ing SCP.
 
-**StudioYou subscription tiers — corrected 2026-08-17, verified against live `subscribe.html` code (was previously wrong/incomplete in this file):**
+**StudioYou subscription tiers — corrected 2026-08-17, verified against live `subscribe.html` code:**
 
 | Tier | Monthly | Annual/mo | Annual total |
 |---|---|---|---|
@@ -27,7 +27,6 @@ StudioYou (studioyou.app) is a creator studio OS powered by FutureYou (FY), an A
 "Player" is the correct, live tier name — not "Studio." All-in subscription, single price per tier, modules unlock by journey necessity not price tier. Ecosystem pays (tool providers, brands, agencies); creator never pays a cut of earnings.
 
 ---
-
 ## 2. Repos & Access
 
 | Repo | Local Mac Path | GitHub | Purpose |
@@ -53,6 +52,7 @@ All repos are private. Credentials via macOS Keychain (`osxkeychain`). Push via 
 
 **FY Agent:** LiveKit cloud agent. Runs off local disk via `lk agent create` — NOT deployed via GitHub Actions. Agent ID changes on every `lk agent delete && create`. See Live State for current ID.
 
+---
 **AI stack:**
 - Tier 1 (surface): `claude-sonnet-4-6` via env var `FY_SURFACE_MODEL`
 - Tier 2 (orchestration): `claude-fable-5` via env var `FY_ORCHESTRATION_MODEL`
@@ -60,7 +60,7 @@ All repos are private. Credentials via macOS Keychain (`osxkeychain`). Push via 
 - TTS: Cartesia sonic-3
 - Avatar: Runway Characters
 
-**Knowledge base:** `studioyou-backend/knowledge/` — static spec files read by the agent at runtime via raw GitHub URL. They do NOT auto-deploy to Cloud Run.
+**Knowledge base:** `studioyou-backend/knowledge/` — static spec files read by the agent at runtime via raw GitHub URL. They do NOT auto-deploy to Cloud Run. As of 2026-08-18 this also includes a canonical per-building JSON schema layer (`knowledge/schemas/<building_id>.json`) generated from the `.md` specs — see Locked Decisions for what's canonical.
 
 ---
 
@@ -88,7 +88,6 @@ Key dependencies (pointers only — credentials never in this file):
 | Fastmail | Email (`lee@supercreativepeople.com`, `lee@frisson.digital`, aliases) | Zapier MCP — call `inspect_zapier_actions` before any read/write |
 
 ---
-
 ## 5. How to Deploy
 
 **Backend (main.py):**
@@ -101,7 +100,7 @@ Code edit → `git commit && git push` (for record) → `lk agent delete [ID] &&
 **Frontend (dashboard.html, studio.html, etc.):**
 Code edit via Desktop Commander → `git commit` → `git push` → Netlify auto-deploys from `studioyou-app`/`studioyou-site` repos, same pipeline as backend. The old manual "Lee provides → Claude modifies → Claude presents → Lee drag-and-drops into Netlify" flow is retired — see Locked Decisions.
 
-**Knowledge base (knowledge/*.md):**
+**Knowledge base (knowledge/*.md, knowledge/schemas/*.json):**
 Edit file → `git commit && git push` to studioyou-backend. Files are read at agent runtime via raw GitHub URL. No Cloud Run redeploy needed.
 
 ---
@@ -118,11 +117,11 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 | dashboard.html | Session AE deployed |
 | studio.html | Session AE deployed |
 | Supabase | rubwhfjwqonqhfbkhren — `fy_vault_entries` table live |
-| Build status (confirmed 2026-08-17) | IDEATE ~50%, DEVELOP ~20%, PLAN/PRODUCE/POST/LEGAL/DISTRIBUTE/BRAND/MARKET/MONETIZE/FUND/CAST unbuilt |
-| Sprint | S1 nominally active but stale target dates (Jul 6–12, past). **Next session opens with sprint architecture discussion** — orchestrator (S2, unbuilt) is the presumed top build priority but not yet formally confirmed as the next sprint's scope. |
+| Build status (Lee's field-test estimate, 2026-08-17) | IDEATE ~50%, DEVELOP ~20%, PLAN/PRODUCE/POST/LEGAL/DISTRIBUTE/BRAND/MARKET/MONETIZE/FUND/CAST unbuilt. No new estimate issued since. |
+| Content depth (2026-08-18) | Canonical schema exists for all 12 buildings (`knowledge/schemas/*.json`). IDEATE: 5 of 8 steps carry a verified, sourced Layer 3 injection (Steps 1,2,4,7,8; Step 3 has a shorter nuance addition; Steps 5,6 are Lee's own material, untouched). DEVELOP: 3 track-opening steps (N-5, M-1, V-1) carry injections, all 5 lock steps (N-7,M-6,V-6,P-6,B-6) reference the new Lock Calculus rule; P-1 and B-1 researched but not yet cleared for injection; most other DEVELOP steps not yet reviewed. |
+| Sprint | S1 nominally active but stale target dates (Jul 6–12, past). Orchestrator (S2, unbuilt) is the presumed top build priority but not yet formally confirmed as the next sprint's scope. |
 
 ---
-
 ## 7. Locked Decisions
 
 - **Runway and Reactor are independent credit pools.** Never infer one from the other. (P0 confirmed Session AG.)
@@ -139,9 +138,9 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 - **studioyou.studio is infrastructure, not a decision point (resolved 2026-08-17):** it is the Resend-verified magic-link auth email sending domain only. Do not re-litigate this — see Tech Stack & Architecture.
 - **Business Plan v4 is partially stale:** its 61-tool-stack framing, 2-tier Universal/Pro pricing, and 14-stage (IDEATE...ADMIN) architecture are all superseded by the shipped 3-tier/12-building structure above. Not yet formally archived/rewritten — open item, tracked in Project HQ Decision Log (Notion).
 - **Strategic source of truth split:** this file (CLAUDE.md) stays scoped to technical/deploy state. Positioning, competitive thesis, build-status narrative, and product-portfolio strategy (CLIPClear, OMNIShield, YouScored) live in the StudioYou Project HQ (Notion, see top of this file) — don't duplicate that content here, link to it.
+- **Canonical building content schema (2026-08-18):** `knowledge/schemas/<building_id>.json`, generated/regenerated via `tools/build_schema.py`, is the emerging canonical source of truth for per-building step structure (creator_prompt, fy_rationale, fy_approach, canvas_output, raw_spec, etc.), superseding the `.md` specs and frontend `BUILDING_TASKS` as those two drift. `_drift_report.json` in the same folder tracks where they still disagree — DEVELOP's frontend placeholder (13 generic steps) vs. its real spec (31 steps, 5 tracks) is the biggest known gap. `knowledge/FY_LAYER2_SCHEMA.md` is the authoritative source for all building-authoring rules and architecture decisions (skeleton-authoring rule, Layer 3 sourcing model + two-tier retrieval + generic sixth-track + v1 scope ceiling, THE LOCK CALCULUS) — don't duplicate that content here, link to it.
 
 ---
-
 ## 8. Key Contacts
 
 | Person | Role | Relevance |

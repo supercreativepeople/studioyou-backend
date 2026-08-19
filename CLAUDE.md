@@ -3,10 +3,10 @@
 > This file is the project bible. Same sections every session, same order. No agenda items, no carry-forwards — those live in the handoff doc. Read this to understand what StudioYou is and how to work on it. For strategy, positioning, and current build-status narrative (not code), see the **StudioYou Project HQ** in Notion — https://app.notion.com/p/3bfb963047e5814f9398d9f53aaf0c13 (rebuilt 2026-08-17, canonical strategic source of truth, distinct from this file's technical/deploy scope).
 
 **Changelog (most recent 3-5, older entries live in git history):**
-- **2026-08-18:** Canonical per-building JSON schema built for all 12 buildings (`tools/build_schema.py` → `knowledge/schemas/<id>.json` + `_drift_report.json`) — see Locked Decisions. New research-driven Layer 3 authoring philosophy locked into `FY_LAYER2_SCHEMA.md` (4 additions this session: model-feedback addendum, skeleton-authoring rule, Layer 3 sourcing model + two-tier retrieval + generic sixth-track + v1 ceiling, and THE LOCK CALCULUS universal rule). IDEATE fully integrated (5 of 8 steps now carry a verified, sourced Layer 3 injection). DEVELOP batch 1 integrated (3 track-opening steps + all 5 lock steps reference the new Lock Calculus). 8 commits, all pushed. See `handoffs/2026-08-18-canonical-schema-and-layer3-research.md` for full detail — this was a long session, closed deliberately before running into a second compaction.
-- **2026-08-17:** No code changed this session (Notion/knowledge-base work only). Corrected two long-standing drift points: (1) subscription tier table below was wrong (missing Player tier, stale numbers) — corrected against live `subscribe.html` code; (2) studioyou.studio role fully resolved — confirmed via code grep as the Resend-verified magic-link auth email sending domain only, not a second product surface. Built new **StudioYou Project HQ** in Notion (7 pages) as the project's single source of truth for strategy and current state. Confirmed build status: IDEATE ~50% built, DEVELOP ~20% built (as of that date — see 2026-08-18 entry above for what's changed since), remaining 10 buildings unbuilt, FY orchestrator (Sprint S2) unbuilt and confirmed as top build priority.
-- **2026-08-16:** Frontend workflow retired (Lee confirmed manual handoff no longer applies — see Locked Decisions and How to Deploy). Supabase pause resolved (was `INACTIVE`, restored by Lee, confirmed `ACTIVE_HEALTHY`). Netlify confirmed as full read/write interface, no CLI needed. Google Drive documentation split into cloud Google Drive vs. physical G-DRIVE SSD. `lee@frisson.digital` confirmed reachable via the existing Fastmail/Zapier connection (alias on the same account, no new connection needed) — see `dev-session-protocol` skill.
-- **2026-08-15:** Runway topped up (fy-agent), Tavus dead code stripped from `main.py` (commit `5172736`).
+- **2026-08-19:** Security fixes 1-3 applied and deployed. (1) All three `/api/chat` callsites in studio.html now send `context/email/building_id/mode` instead of client-side system prompt — server builds prompt via `build_fy_system_prompt()` pulling creator data from Supabase. (2) `ADMIN_KEY` moved to `os.environ.get("SY_ADMIN_KEY")` — rotated, added to Cloud Run env vars. (3) `SY_DEBUG` env var gates all 6 debug endpoints (return 404 when false/unset). netlify-cli installed globally on Mac. `netlify.toml` added to studioyou-app repo. GitHub auto-deploy connected to `studioyou-app` (id `4a365723`) via Netlify UI — every push to `main` now deploys to `studioyou.app`. Wrong orphan site (`heroic-torrone-abeb92`) unlinked. Backend: `954007a`. Frontend: `2b8ad0b`, `6ab3ac5`.
+- **2026-08-18:** Canonical per-building JSON schema built for all 12 buildings (`tools/build_schema.py` → `knowledge/schemas/<id>.json` + `_drift_report.json`) — see Locked Decisions. New research-driven Layer 3 authoring philosophy locked into `FY_LAYER2_SCHEMA.md` (4 additions this session: model-feedback addendum, skeleton-authoring rule, Layer 3 sourcing model + two-tier retrieval + generic sixth-track + v1 ceiling, and THE LOCK CALCULUS universal rule). IDEATE fully integrated (5 of 8 steps now carry a verified, sourced Layer 3 injection). DEVELOP batch 1 integrated (3 track-opening steps + all 5 lock steps reference the new Lock Calculus). 8 commits, all pushed. See `handoffs/2026-08-18-canonical-schema-and-layer3-research.md` for full detail.
+- **2026-08-17:** No code changed this session (Notion/knowledge-base work only). Corrected two long-standing drift points: (1) subscription tier table below was wrong (missing Player tier, stale numbers) — corrected against live `subscribe.html` code; (2) studioyou.studio role fully resolved — confirmed via code grep as the Resend-verified magic-link auth email sending domain only, not a second product surface. Built new **StudioYou Project HQ** in Notion (7 pages) as the project's single source of truth for strategy and current state. Confirmed build status: IDEATE ~50% built, DEVELOP ~20% built, remaining 10 buildings unbuilt, FY orchestrator (Sprint S2) unbuilt and confirmed as top build priority.
+- **2026-08-16:** Frontend workflow retired (Lee confirmed manual handoff no longer applies). Supabase pause resolved (was `INACTIVE`, restored by Lee, confirmed `ACTIVE_HEALTHY`). Google Drive documentation split into cloud Google Drive vs. physical G-DRIVE SSD. `lee@frisson.digital` confirmed reachable via Fastmail/Zapier connection.
 
 ---
 
@@ -33,18 +33,24 @@ StudioYou (studioyou.app) is a creator studio OS powered by FutureYou (FY), an A
 |---|---|---|---|
 | studioyou-backend | /Users/supercreativepeople/Projects/studioyou-backend | github.com/supercreativepeople/studioyou-backend | Flask backend, CLAUDE.md, SERVICES.md, handoffs/, knowledge/ |
 | studioyou-fy-agent | /Users/supercreativepeople/Projects/studioyou-fy-agent | github.com/supercreativepeople/studioyou-fy-agent | LiveKit agent service |
-| studioyou-app | ~/Downloads/studioyou-app | github.com/supercreativepeople/studioyou-app | Frontend client (dashboard.html, studio.html). Confirmed 2026-08-16: real git repo, clean, in sync — see Locked Decisions, frontend now goes through git like every other repo. |
-| studioyou-site | ~/Downloads/studioyou-site | github.com/supercreativepeople/studioyou-site | Marketing site. Confirmed 2026-08-16: real git repo, clean, in sync. |
+| studioyou-app | ~/Downloads/studioyou-app | github.com/supercreativepeople/studioyou-app | Frontend client (dashboard.html, studio.html). Real git repo, clean, in sync. |
+| studioyou-site | ~/Downloads/studioyou-site | github.com/supercreativepeople/studioyou-site | Marketing site. Real git repo, clean, in sync. |
 
-All repos are private. Credentials via macOS Keychain (`osxkeychain`). Push via Desktop Commander is reliable (corrected 2026-08-16 — a prior finding that push "fails inconsistently from sandboxed sessions" was actually a wrong-tool bug, not a real limitation; see dev-session-protocol skill's "Push works" section).
+All repos are private. Credentials via macOS Keychain (`osxkeychain`). Push via Desktop Commander is reliable. Never use device_bash for git — no network access in that sandbox.
 
-**File access priority:** filesystem MCP → Desktop Commander → git clone (last resort, may fail auth)
+**File access priority:** Desktop Commander (git/CLI/network) → filesystem MCP (plain reads) → never device_bash for anything requiring network
 
 ---
 
 ## 3. Tech Stack & Architecture
 
-**Frontend:** Netlify (`studioyou-app` project, serves studioyou.app — the actual product) and a second Netlify project (`studioyou`, serves studioyou.studio). **studioyou.studio resolved 2026-08-17:** verified via code grep of `main.py` — it is solely the Resend-verified sending domain for magic-link auth email (`from: studio@studioyou.studio`), also present in the CORS allow-list. The magic-link URL a user actually clicks points to studioyou.app, and email asset images load from studioyou.app. It is not a second user-facing surface — it's an auth-flow infrastructure dependency. Deploy via GitHub Actions on push to main, same as backend. Files: dashboard.html, studio.html, index.html, subscribe.html.
+**Frontend:** Netlify — two projects:
+- `studioyou-app` (site id `4a365723-1d16-4fab-a88c-8d71851fe5c8`, serves `studioyou.app`) — the real product. **Deploy method (confirmed 2026-08-19):** GitHub auto-deploy. Push to `main` on `studioyou-app` repo → Netlify deploys to `studioyou.app` automatically. GitHub connection established 2026-08-19 via Netlify UI (Lee linked repo through Netlify project settings). netlify-cli installed globally on Mac as fallback: `cd ~/Downloads/studioyou-app && netlify deploy --prod --dir=.`. Site id `4a365723` confirmed; was previously incorrectly linked to `heroic-torrone-abeb92` (orphan, no domain). Note: `thriving-conkies-31dad5` is a pre-existing orphan Netlify site also connected to this repo — it has no custom domain and can be deleted or repurposed as a staging preview.
+- `studioyou` (site id `9a3000fb-dbf1-4922-b72c-20600a4e2bf4`, serves `studioyou.studio`) — NOT a second product surface. Resend-verified magic-link auth email sending domain only (`from: studio@studioyou.studio`). Also in CORS allow-list.
+
+Cloudflare is the front door to `studioyou.app` — alpha, invited reviewers only, not publicly live.
+
+Files: dashboard.html, studio.html, index.html, subscribe.html.
 
 **Backend:** Flask on Google Cloud Run (`studioyou-api`, project `neat-tangent-474222-m9`, `us-east1`). Endpoint: `studioyou-api-198959034459.us-east1.run.app`. Deploy via GitHub Actions on push to main.
 
@@ -74,7 +80,7 @@ Key dependencies (pointers only — credentials never in this file):
 |---|---|---|
 | Supabase | Database | Cloud Run env vars |
 | Resend | Email (incl. magic-link auth, sent from studioyou.studio domain) | Cloud Run env vars |
-| Cloudflare | DNS/CDN/Zero Trust | Cloudflare dashboard |
+| Cloudflare | DNS/CDN/Zero Trust (front door to studioyou.app — alpha only) | Cloudflare dashboard |
 | LiveKit | Voice rooms | Agent `.env` + Cloud Run env vars |
 | Cartesia | TTS | Agent `.env` |
 | Deepgram | STT | Agent `.env` |
@@ -91,14 +97,20 @@ Key dependencies (pointers only — credentials never in this file):
 ## 5. How to Deploy
 
 **Backend (main.py):**
-Code edit → `git commit` on Mac → `git push` → GitHub Actions → Cloud Run auto-deploy. Claude owns this pipeline. Lee does not push.
+Code edit → `git commit` on Mac via Desktop Commander → `git push` → GitHub Actions → Cloud Run auto-deploy. Claude owns this pipeline. Lee does not push.
 - Use `--update-env-vars` (not `--set-env-vars`) for manual CLI env var updates.
+- SY_ADMIN_KEY and SY_DEBUG are Cloud Run env vars — never hardcode, never echo in chat.
 
 **FY Agent (agent.py, prompts.py):**
 Code edit → `git commit && git push` (for record) → `lk agent delete [ID] && lk agent create` from Mac Terminal. Deploy runs off local disk. `lk agent update` does NOT force a Docker rebuild — only `delete && create` produces a fresh image. Update Live State with new agent ID immediately after recreate.
 
 **Frontend (dashboard.html, studio.html, etc.):**
-Code edit via Desktop Commander → `git commit` → `git push` → Netlify auto-deploys from `studioyou-app`/`studioyou-site` repos, same pipeline as backend. The old manual "Lee provides → Claude modifies → Claude presents → Lee drag-and-drops into Netlify" flow is retired — see Locked Decisions.
+Code edit via Desktop Commander → `git commit` → `git push` → Netlify auto-deploys to `studioyou.app`. GitHub auto-deploy confirmed connected (2026-08-19). Fallback CLI deploy:
+```bash
+cd ~/Downloads/studioyou-app
+netlify deploy --prod --dir=.
+```
+Netlify CLI is installed globally on Mac. Local folder linked to site `4a365723-1d16-4fab-a88c-8d71851fe5c8`.
 
 **Knowledge base (knowledge/*.md, knowledge/schemas/*.json):**
 Edit file → `git commit && git push` to studioyou-backend. Files are read at agent runtime via raw GitHub URL. No Cloud Run redeploy needed.
@@ -109,17 +121,18 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 
 | Component | Current Value |
 |---|---|
-| Backend HEAD | commit `bd6b306` — Phase 10.26 |
+| Backend HEAD | commit `954007a` — security fixes 1-3 |
 | FY Agent ID | **CA_Mnhkjj3mUr7T** (region us-east) |
 | TTS Voice | Corey (`630ed21c-2c5c-41cf-9d82-10a7fd668370`), sonic-3, pronunciation dict wired |
 | Surface model | claude-sonnet-4-6 |
 | Orchestration model | claude-fable-5 |
 | dashboard.html | Session AE deployed |
-| studio.html | Session AE deployed |
+| studio.html | Security fixes deployed. GitHub auto-deploy now connected to `studioyou-app` (id `4a365723`). Current HEAD: `6ab3ac5` (netlify.toml). |
 | Supabase | rubwhfjwqonqhfbkhren — `fy_vault_entries` table live |
 | Build status (Lee's field-test estimate, 2026-08-17) | IDEATE ~50%, DEVELOP ~20%, PLAN/PRODUCE/POST/LEGAL/DISTRIBUTE/BRAND/MARKET/MONETIZE/FUND/CAST unbuilt. No new estimate issued since. |
-| Content depth (2026-08-18) | Canonical schema exists for all 12 buildings (`knowledge/schemas/*.json`). IDEATE: 5 of 8 steps carry a verified, sourced Layer 3 injection (Steps 1,2,4,7,8; Step 3 has a shorter nuance addition; Steps 5,6 are Lee's own material, untouched). DEVELOP: 3 track-opening steps (N-5, M-1, V-1) carry injections, all 5 lock steps (N-7,M-6,V-6,P-6,B-6) reference the new Lock Calculus rule; P-1 and B-1 researched but not yet cleared for injection; most other DEVELOP steps not yet reviewed. |
-| Sprint | S1 nominally active but stale target dates (Jul 6–12, past). Orchestrator (S2, unbuilt) is the presumed top build priority but not yet formally confirmed as the next sprint's scope. |
+| Content depth (2026-08-18) | Canonical schema exists for all 12 buildings (`knowledge/schemas/*.json`). IDEATE: 5 of 8 steps carry a verified, sourced Layer 3 injection (Steps 1,2,4,7,8; Step 3 shorter nuance; Steps 5,6 Lee's own material, untouched). DEVELOP: 3 track-opening steps (N-5, M-1, V-1) carry injections, all 5 lock steps reference new Lock Calculus; P-1 and B-1 researched, not yet cleared; most other DEVELOP steps not yet reviewed. |
+| Sprint | S1 nominally active but stale target dates (Jul 6–12, past). Orchestrator (S2, unbuilt) is the presumed top build priority but not yet formally confirmed. |
+| Pending bugs | `/api/formation/briefing` — `client.messages.create` should be `anthropic_client.messages.create`. FY stuck-dots after sidebar open during chat — not yet investigated. |
 
 ---
 ## 7. Locked Decisions
@@ -127,8 +140,12 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 - **Runway and Reactor are independent credit pools.** Never infer one from the other. (P0 confirmed Session AG.)
 - **`lk agent update` does not rebuild.** Only `delete && create` produces a fresh image. Agent ID changes every recreate.
 - **`--update-env-vars`** for manual Cloud Run CLI updates, not `--set-env-vars`.
-- **Frontend file workflow:** the manual "Lee provides → Claude modifies → Claude presents" flow is retired. `studioyou-app` and `studioyou-site` are live git repos (confirmed 2026-08-16, both clean and in sync with origin/main) — frontend work goes through the same git workflow as backend/agent: edit via Desktop Commander, commit, push. Never present-and-wait-for-manual-deploy as the default path.
+- **Frontend git workflow (confirmed 2026-08-19):** edit via Desktop Commander, `git commit`, `git push` → Netlify auto-deploys to `studioyou.app`. GitHub auto-deploy now connected. Fallback: `netlify deploy --prod --dir=.` from `~/Downloads/studioyou-app`. The manual drag-drop flow is retired.
+- **studioyou-app Netlify site id is `4a365723-1d16-4fab-a88c-8d71851fe5c8` (studioyou.app).** The local folder `~/Downloads/studioyou-app` must be linked to this site, not `heroic-torrone-abeb92` (wrong site, corrected 2026-08-19). Verify with `netlify status` before deploying.
 - **Claude owns the full deployment pipeline.** Lee does not push.
+- **SY_ADMIN_KEY is a Cloud Run env var.** Never hardcode, never echo in chat or docs. Value was rotated 2026-08-19 (old value was compromised — visible in GitHub repo). Pointer only in all docs.
+- **SY_DEBUG gates all debug/admin endpoints.** Not set in prod → endpoints return 404. Do not set SY_DEBUG=true in prod without explicit Lee direction.
+- **Security fixes 1-3 applied (2026-08-19):** client-side system prompt removed from all `/api/chat` callsites, admin key in env var, debug endpoints gated. Fixes 4-6 (session token auth, vault ownership, Supabase RLS) not yet started.
 - **GCP billing account 019309-BEB782-398472:** do not touch while Google for Startups application is pending.
 - **Anthropic program applications** filed under Frisson Digital, Inc. Credits non-transferable between Console orgs.
 - **Tavus is deprecated.** Replaced by Runway Characters. `main.py.tavus` is a backup file in `.gitignore`, not deployed.
@@ -138,7 +155,7 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 - **studioyou.studio is infrastructure, not a decision point (resolved 2026-08-17):** it is the Resend-verified magic-link auth email sending domain only. Do not re-litigate this — see Tech Stack & Architecture.
 - **Business Plan v4 is partially stale:** its 61-tool-stack framing, 2-tier Universal/Pro pricing, and 14-stage (IDEATE...ADMIN) architecture are all superseded by the shipped 3-tier/12-building structure above. Not yet formally archived/rewritten — open item, tracked in Project HQ Decision Log (Notion).
 - **Strategic source of truth split:** this file (CLAUDE.md) stays scoped to technical/deploy state. Positioning, competitive thesis, build-status narrative, and product-portfolio strategy (CLIPClear, OMNIShield, YouScored) live in the StudioYou Project HQ (Notion, see top of this file) — don't duplicate that content here, link to it.
-- **Canonical building content schema (2026-08-18):** `knowledge/schemas/<building_id>.json`, generated/regenerated via `tools/build_schema.py`, is the emerging canonical source of truth for per-building step structure (creator_prompt, fy_rationale, fy_approach, canvas_output, raw_spec, etc.), superseding the `.md` specs and frontend `BUILDING_TASKS` as those two drift. `_drift_report.json` in the same folder tracks where they still disagree — DEVELOP's frontend placeholder (13 generic steps) vs. its real spec (31 steps, 5 tracks) is the biggest known gap. `knowledge/FY_LAYER2_SCHEMA.md` is the authoritative source for all building-authoring rules and architecture decisions (skeleton-authoring rule, Layer 3 sourcing model + two-tier retrieval + generic sixth-track + v1 scope ceiling, THE LOCK CALCULUS) — don't duplicate that content here, link to it.
+- **Canonical building content schema (2026-08-18):** `knowledge/schemas/<building_id>.json`, generated/regenerated via `tools/build_schema.py`, is the emerging canonical source of truth for per-building step structure (creator_prompt, fy_rationale, fy_approach, canvas_output, raw_spec, etc.), superseding the `.md` specs and frontend `BUILDING_TASKS` as those two drift. `_drift_report.json` in the same folder tracks where they still disagree. `knowledge/FY_LAYER2_SCHEMA.md` is the authoritative source for all building-authoring rules and architecture decisions — don't duplicate that content here, link to it.
 
 ---
 ## 8. Key Contacts
@@ -150,7 +167,7 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 | Ben Relles | Make Believe | Partner |
 | Adolfo | FilmPro | Partner |
 | Alex | FilmPro | Technical contact — missed late June call, reschedule pending |
-| Khachatur | FinalBit | Has alpha access. Need: pre-release API docs + enterprise rate structure |
+| Khachatur | FinalBit | Has alpha access. Flagged system prompt visible in Network tab (fix applied 2026-08-19). Need: pre-release API docs + enterprise rate structure |
 | Arlin | Orkes/AgentSpan | Demo offered Jul 7 — unreplied. Orchestration layer evaluation. |
 | Michèle | Seedance | Partnership brief complete. Need: ModelArc console invite + API keys |
 | Stanly | Airbyte | AIEWF contact. Data/action layer evaluation. |

@@ -74,9 +74,10 @@ SUPABASE_KEY      = os.environ.get("SUPABASE_KEY", "")
 RESEND_API_KEY    = os.environ.get("RESEND_API_KEY", "")
 SECRET_KEY        = os.environ.get("SY_SECRET_KEY", "dev-secret-change-in-prod")
 FRONTEND_URL      = os.environ.get("FRONTEND_URL", "https://studioyou.app")
-ADMIN_KEY         = "SY-ADMIN-2026"
+ADMIN_KEY         = os.environ.get("SY_ADMIN_KEY", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 REACTOR_API_KEY   = os.environ.get("REACTOR_API_KEY", "")
+SY_DEBUG          = os.environ.get("SY_DEBUG", "false").lower() == "true"
 ADOBE_EXPRESS_CLIENT_ID  = os.environ.get("ADOBE_EXPRESS_CLIENT_ID", "")
 FRAMEIO_CLIENT_ID        = os.environ.get("FRAMEIO_CLIENT_ID", "")
 FRAMEIO_CLIENT_SECRET    = os.environ.get("FRAMEIO_CLIENT_SECRET", "")
@@ -461,18 +462,137 @@ def formation_validate():
         logger.error(f"[formation_validate] Error: {e}")
         return jsonify({"success": False, "error": "Verification failed"}), 500
 
+# ── SERVER-SIDE FY SYSTEM PROMPT ─────────────────────────────────────────────
+
+PROMPT_SYNTH_SYSTEM = (
+    "You convert creative conversations into generation prompts for image/video models. "
+    "Output ONLY the prompt text — no preamble, no quotes, no commentary."
+)
+
+# Minimal building metadata for server-side prompt construction.
+# fyq (FutureYou quote) omitted here — add per building as needed.
+_BUILDINGS_MAP = {
+    "ideate":     {"title": "IDEATE",     "tag": "ideate",     "desc": "From raw idea to greenlit concept"},
+    "develop":    {"title": "DEVELOP",    "tag": "develop",    "desc": "Story, format, structure, proof of concept"},
+    "fund":       {"title": "FUND",       "tag": "fund",       "desc": "Capital strategy, outreach, pitch materials"},
+    "cast":       {"title": "CAST",       "tag": "cast",       "desc": "Talent roles, auditions, booking"},
+    "plan":       {"title": "PLAN",       "tag": "plan",       "desc": "Pre-production: schedule, crew, gear, logistics"},
+    "produce":    {"title": "PRODUCE",    "tag": "produce",    "desc": "Production execution, call sheets, data"},
+    "post":       {"title": "POST",       "tag": "post",       "desc": "Editorial, visual polish, audio, export"},
+    "licensing":  {"title": "LICENSING",  "tag": "licensing",  "desc": "Clearances, rights, releases"},
+    "distribute": {"title": "DISTRIBUTE", "tag": "distribute", "desc": "Platform strategy, asset delivery"},
+    "brand":      {"title": "BRAND",      "tag": "brand",      "desc": "Visual identity, positioning"},
+    "market":     {"title": "MARKET",     "tag": "market",     "desc": "Campaign strategy, asset creation"},
+    "monetize":   {"title": "MONETIZE",   "tag": "monetize",   "desc": "Revenue streams, analytics"},
+}
+
+
+def build_fy_system_prompt(email, building_id="ideate", mode="peer"):
+    """Build the FutureYou system prompt server-side from Supabase formation data.
+    Replaces the client-side buildSystemPrompt() that was previously transmitted
+    in every /api/chat request body (security issue raised 2026-08-19).
+    """
+    try:
+        rows = sb_get("formations", {"email": f"eq.{email}"})
+        r = rows[0] if rows else {}
+    except Exception as e:
+        logger.warning(f"[build_fy_system_prompt] Supabase lookup failed for {email}: {e}")
+        r = {}
+
+    first_name  = r.get("first_name")  or ""
+    studio_name = r.get("studio_name") or ""
+    archetype   = r.get("archetype")   or ""
+    phase       = r.get("phase")       or ""
+    rec         = r.get("recommended_building") or ""
+
+    # formation_data is json.dumps(formation) — may be array (12 answers) or dict
+    raw_fd = r.get("formation_data") or []
+    if isinstance(raw_fd, str):
+        try:
+            raw_fd = json.loads(raw_fd)
+        except Exception:
+            raw_fd = []
+
+    brand_story = ""
+    if isinstance(raw_fd, dict):
+        brand_story = raw_fd.get("brand_story", "")
+        formation_answers = raw_fd.get("answers", [])
+    elif isinstance(raw_fd, list):
+        formation_answers = raw_fd
+    else:
+        formation_answers = []
+
+    # Formation Q&A context (up to 12 answers)
+    ctx = "\n".join(
+        f"Q{i+1}: {a or '(skipped)'}"
+        for i, a in enumerate(formation_answers[:12])
+    ) if formation_answers else ""
+
+    mode_note = (
+        "DIRECTIVE MODE: You initiate. Always propose the next concrete action. Lead — do not wait to be asked."
+        if mode == "independent"
+        else "PEER MODE: The creator drives. You are available, sharp, never preachy. Respond when called upon."
+    )
+
+    bldg = _BUILDINGS_MAP.get(building_id, {"title": building_id, "tag": building_id, "desc": ""})
+
+    parts = [
+        f"You are FutureYou — {first_name or 'this creator'}'s future self, back to guide the build. "
+        "You already built the studio, made the mistakes, and know exactly what needs to happen next.",
+        "",
+        f"Studio: {studio_name or '(unnamed)'} | Archetype: {archetype} | Phase: {phase}",
+        f"Active building: {bldg['title']} ({bldg['tag']}) — {bldg['desc']}",
+    ]
+    if rec:
+        parts.append(f"Recommended building: {rec}")
+    if brand_story:
+        parts.append(f"Brand story: {brand_story}")
+    if ctx:
+        parts.append(f"Formation Q&A:\n{ctx}")
+    parts.extend([
+        "",
+        mode_note,
+        "",
+        "VOICE: Sovereign. Anti-gatekeeper. You do not hedge. You are not a therapist — you are a strategist who already won. Speak in short sentences, directly. No bullet points. No lists.",
+        "",
+        "RULES:",
+        "- Never start a response with \"I\". Start with the insight.",
+        "- Under 40 words unless the creator explicitly asks for depth.",
+        "- End with a question or a directive — never a summary.",
+        "- Never say \"great question\", \"absolutely\", \"certainly\", \"amazing\", \"that's solid\".",
+        "- Never evaluate their creative output. Use additive language only: \"let's build on this\" / \"let this breathe\".",
+        "- Never perform enthusiasm. Act. \"Got it. Here's the move.\"",
+        "- The creator wandering into another building is not a tangent — it is a piece of the active project. Connect it, do not redirect.",
+        "- If three exchanges pass with no clear direction, synthesize once: state the move, get a yes/no, then proceed.",
+        "- The only thing that breaks the active thread is the creator saying they want something else.",
+    ])
+    return "\n".join(filter(None, parts))
+
+
 @app.route("/api/chat", methods=["POST"])
 def chat():
-    """General Claude chat. Auth optional for analytics."""
+    """FY chat endpoint. Context is built server-side — client never sends system prompt."""
     data = request.get_json()
     messages = data.get("messages", [])
-    system = data.get("system", "")
+    context  = data.get("context", "fy_chat")  # "fy_chat" | "prompt_synth"
+
+    if context == "prompt_synth":
+        system = PROMPT_SYNTH_SYSTEM
+    else:
+        email       = (data.get("email", "") or "").strip().lower()
+        building_id = data.get("building_id", "ideate")
+        mode        = data.get("mode", "peer")
+        try:
+            system = build_fy_system_prompt(email, building_id, mode)
+        except Exception as e:
+            logger.error(f"[chat] build_fy_system_prompt failed: {e}")
+            system = "You are FutureYou — a strategic guide for this creator. Be direct, specific, under 40 words."
 
     try:
         response = anthropic_client.messages.create(
             model=SURFACE_MODEL,
             max_tokens=1000,
-            system=system if system else None,
+            system=system,
             messages=messages,
         )
         text = claude_text(response)
@@ -675,10 +795,12 @@ def subscribe():
 @cross_origin()
 def debug_reset_formation():
     """Dev only: wipe formation record for an email so user can start fresh."""
+    if not SY_DEBUG:
+        return jsonify({"error": "Not found"}), 404
     data = request.get_json()
     email = (data.get("email","") or "").strip().lower()
     secret = data.get("secret","")
-    if secret != SECRET_KEY and secret != "sy-dev-reset-2026":
+    if secret != SECRET_KEY:
         return jsonify({"error": "Unauthorized"}), 403
     if not email:
         return jsonify({"error": "email required"}), 400
@@ -702,6 +824,8 @@ def debug_reset_formation():
 @cross_origin()
 def debug_formation():
     """Temp: return formation record for an email to debug data issues."""
+    if not SY_DEBUG:
+        return jsonify({"error": "Not found"}), 404
     data = request.get_json()
     email = (data.get("email","") or "").strip().lower()
     if not email:
@@ -775,6 +899,8 @@ def health():
 @app.route("/api/debug/anthropic", methods=["GET"])
 def debug_anthropic():
     """Check if Anthropic client is initialized."""
+    if not SY_DEBUG:
+        return jsonify({"error": "Not found"}), 404
     try:
         api_key = os.getenv('ANTHROPIC_API_KEY')
         return jsonify({
@@ -789,6 +915,8 @@ def debug_anthropic():
 @app.route("/api/debug/claude-test", methods=["POST"])
 def debug_claude_test():
     """Simple test: call Claude and return the raw response."""
+    if not SY_DEBUG:
+        return jsonify({"error": "Not found"}), 404
     try:
         message = anthropic_client.messages.create(
             model=ORCHESTRATION_MODEL,
@@ -1033,6 +1161,8 @@ def determine_phase(q7, q8, q9):
 @app.route("/api/debug/echo-payload", methods=["POST", "OPTIONS"])
 def debug_echo_payload():
     """Echo back the request payload for debugging."""
+    if not SY_DEBUG:
+        return jsonify({"error": "Not found"}), 404
     if request.method == 'OPTIONS':
         return '', 204
     
@@ -1052,6 +1182,8 @@ def debug_echo_payload():
 @app.route('/api/debug/env', methods=['GET'])
 def debug_env():
     """Debug: Print env vars (for development only)"""
+    if not SY_DEBUG:
+        return jsonify({"error": "Not found"}), 404
     return jsonify({
         "SUPABASE_URL": SUPABASE_URL[:20] + "..." if SUPABASE_URL else "MISSING",
         "SUPABASE_KEY": SUPABASE_KEY[:20] + "..." if SUPABASE_KEY else "MISSING",

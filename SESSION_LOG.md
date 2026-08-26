@@ -36,3 +36,22 @@ Tasks in scope: TBD — session open protocol complete, awaiting Lee's direction
 [PENDING] — FY stuck-dots bug (spinner hangs when tasks sidebar opens during chat)
 [PENDING] — security fixes 4-6 (session token auth, vault ownership, RLS)
 [PENDING] — formation_initialize non-existent column patches (archetype/phase/first_words/initialized_at/recommended_building)
+
+---
+## Session: 2026-08-26 (continued after compaction)
+
+EDIT | studio.html Edit 1 (prior session) — sendViaRest sends project_id, dispatches sy:orchestratorAdvance on step advance — COMPLETE
+
+EDIT | studio.html Edit 2 — siTiToFlatStep() helper + CanvasCol signature updated (activeProject prop) + completedSteps + stepFlash state + seed useEffect + advance listener useEffect — COMPLETE
+
+EDIT | studio.html Edit 3 — step-drawer-item applies .step-done class + renders ✓ checkmark for completed steps — COMPLETE
+
+EDIT | studio.html Edit 4 — CSS: .step-drawer-item.step-done { opacity:0.7; }, .step-done .step-drawer-num { color:var(--sy-green) } — COMPLETE
+
+EDIT | studio.html Edit 5 — activeProject={activeProject} prop added to CanvasCol in App render — COMPLETE
+
+COMMIT | studioyou-app 6152c84 — S2 frontend: wire orchestrator{} response — step completion indicators in CanvasCol
+
+PUSH | studioyou-app main → Netlify auto-deploy triggered
+
+STATUS | S2 orchestrator fully wired end-to-end: backend evaluates steps, frontend shows completion. Next: FY stuck-dots bug (spinner hangs when tasks sidebar opens during chat). Then security fixes 4-6.

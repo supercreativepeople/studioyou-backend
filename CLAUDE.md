@@ -131,7 +131,7 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 | Supabase | rubwhfjwqonqhfbkhren — `fy_vault_entries` table live |
 | Build status (Lee's field-test estimate, 2026-08-17) | IDEATE ~50%, DEVELOP ~20%, PLAN/PRODUCE/POST/LEGAL/DISTRIBUTE/BRAND/MARKET/MONETIZE/FUND/CAST unbuilt. No new estimate issued since. |
 | Content depth (2026-08-18) | Canonical schema exists for all 12 buildings (`knowledge/schemas/*.json`). IDEATE: 5 of 8 steps carry a verified, sourced Layer 3 injection (Steps 1,2,4,7,8; Step 3 shorter nuance; Steps 5,6 Lee's own material, untouched). DEVELOP: 3 track-opening steps (N-5, M-1, V-1) carry injections, all 5 lock steps reference new Lock Calculus; P-1 and B-1 researched, not yet cleared; most other DEVELOP steps not yet reviewed. |
-| Sprint | S2 orchestrator shipped (2026-08-26). Next: wire frontend to consume orchestrator{} response, then FY stuck-dots bug, then security fixes 4-6. |
+| Sprint | S2 fully wired (2026-08-26): backend orchestrator + frontend step indicators shipped. Next: FY stuck-dots bug (spinner hangs when tasks sidebar opens during chat), then security fixes 4-6. |
 | Pending bugs | FY stuck-dots: spinner hangs when tasks sidebar opens during chat — not yet investigated. Frontend not yet consuming orchestrator{} response. formation_initialize patches non-existent columns (archetype/phase/first_words/initialized_at/recommended_building) — silent failures, needs migration. |
 
 ---

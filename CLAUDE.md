@@ -121,7 +121,7 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 
 | Component | Current Value |
 |---|---|
-| Backend HEAD | commit `954007a` — security fixes 1-3 |
+| Backend HEAD | commit `2c7efd4` — S2 orchestrator (step-state machine) |
 | FY Agent ID | **CA_Mnhkjj3mUr7T** (region us-east) |
 | TTS Voice | Corey (`630ed21c-2c5c-41cf-9d82-10a7fd668370`), sonic-3, pronunciation dict wired |
 | Surface model | claude-sonnet-4-6 |
@@ -131,8 +131,8 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 | Supabase | rubwhfjwqonqhfbkhren — `fy_vault_entries` table live |
 | Build status (Lee's field-test estimate, 2026-08-17) | IDEATE ~50%, DEVELOP ~20%, PLAN/PRODUCE/POST/LEGAL/DISTRIBUTE/BRAND/MARKET/MONETIZE/FUND/CAST unbuilt. No new estimate issued since. |
 | Content depth (2026-08-18) | Canonical schema exists for all 12 buildings (`knowledge/schemas/*.json`). IDEATE: 5 of 8 steps carry a verified, sourced Layer 3 injection (Steps 1,2,4,7,8; Step 3 shorter nuance; Steps 5,6 Lee's own material, untouched). DEVELOP: 3 track-opening steps (N-5, M-1, V-1) carry injections, all 5 lock steps reference new Lock Calculus; P-1 and B-1 researched, not yet cleared; most other DEVELOP steps not yet reviewed. |
-| Sprint | S1 nominally active but stale target dates (Jul 6–12, past). Orchestrator (S2, unbuilt) is the presumed top build priority but not yet formally confirmed. |
-| Pending bugs | `/api/formation/briefing` — `client.messages.create` should be `anthropic_client.messages.create`. FY stuck-dots after sidebar open during chat — not yet investigated. |
+| Sprint | S2 orchestrator shipped (2026-08-26). Next: wire frontend to consume orchestrator{} response, then FY stuck-dots bug, then security fixes 4-6. |
+| Pending bugs | FY stuck-dots: spinner hangs when tasks sidebar opens during chat — not yet investigated. Frontend not yet consuming orchestrator{} response. formation_initialize patches non-existent columns (archetype/phase/first_words/initialized_at/recommended_building) — silent failures, needs migration. |
 
 ---
 ## 7. Locked Decisions

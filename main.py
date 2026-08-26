@@ -1060,7 +1060,7 @@ Generate a response that:
 CRITICAL: Do not use mothering language. Do not be soft. Be the CSO who sees the roadblock and cuts straight to the solution."""
 
         # Call Claude
-        message = client.messages.create(
+        message = anthropic_client.messages.create(
             model=ORCHESTRATION_MODEL,
             max_tokens=300,
             system=cso_system_prompt,

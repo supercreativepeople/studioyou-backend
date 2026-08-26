@@ -479,6 +479,7 @@ def formation_validate():
 
         return jsonify({
             "success": True,
+            "session_token": session_token_new,
             "user": {
                 "email":                formation.get("email"),
                 "first_name":           formation.get("first_name") or "",

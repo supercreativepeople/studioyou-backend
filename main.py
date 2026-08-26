@@ -595,23 +595,103 @@ def build_fy_system_prompt(email, building_id="ideate", mode="peer"):
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
-    """FY chat endpoint. Context is built server-side — client never sends system prompt."""
+    """FY chat endpoint. Context is built server-side — client never sends system prompt.
+
+    Optional orchestrator fields (enable Tier 2 step tracking):
+      project_id  — fy_projects.id for the active project
+      email       — required for system prompt + project ownership check
+      building_id — active building slug (default: "ideate")
+    Response always includes `orchestrator` object with step state.
+    """
     data = request.get_json()
-    messages = data.get("messages", [])
-    context  = data.get("context", "fy_chat")  # "fy_chat" | "prompt_synth"
+    messages   = data.get("messages", [])
+    context    = data.get("context", "fy_chat")   # "fy_chat" | "prompt_synth"
+    project_id = (data.get("project_id") or "").strip()
+
+    # Orchestrator state — populated below when project_id is present
+    orchestrator = {
+        "step_advanced":    False,
+        "prev_step":        None,
+        "current_step":     None,
+        "current_section":  None,
+        "current_title":    None,
+        "next_step":        None,
+        "building_complete": False,
+        "eval_reason":      None,
+    }
 
     if context == "prompt_synth":
         system = PROMPT_SYNTH_SYSTEM
     else:
         email       = (data.get("email", "") or "").strip().lower()
-        building_id = data.get("building_id", "ideate")
+        building_id = (data.get("building_id", "ideate") or "ideate").lower()
         mode        = data.get("mode", "peer")
+
+        # ── Tier 2: step-state evaluation ────────────────────────────────
+        if project_id and building_id in STEP_MAP and messages:
+            try:
+                proj_rows = sb_get("fy_projects", {
+                    "id":         f"eq.{project_id}",
+                    "user_email": f"eq.{email}",
+                    "select":     "id,buildings,journey_progress",
+                    "limit":      "1",
+                })
+                if proj_rows:
+                    proj     = proj_rows[0]
+                    buildings = dict(proj.get("buildings") or {})
+                    b         = dict(buildings.get(building_id) or {})
+
+                    # Seed active_step_num on first entry to an active building
+                    if b.get("state") == "active" and not b.get("active_step_num"):
+                        b["active_step_num"] = 1
+                        buildings[building_id] = b
+                        try:
+                            sb_patch("fy_projects", {"id": f"eq.{project_id}"}, {"buildings": buildings})
+                        except Exception:
+                            pass
+
+                    step_num  = int(b.get("active_step_num") or 1)
+                    total     = _total_steps(building_id)
+                    step_info = _get_step_info(building_id, step_num)
+
+                    if step_info and step_num <= total:
+                        orchestrator["current_step"]    = step_num
+                        orchestrator["current_section"] = step_info["section"]
+                        orchestrator["current_title"]   = step_info["title"]
+                        orchestrator["next_step"]       = min(step_num + 1, total)
+
+                        eval_result = evaluate_success_state(step_info["condition"], messages)
+                        orchestrator["eval_reason"] = eval_result.get("reason")
+
+                        if eval_result.get("satisfied"):
+                            buildings = advance_building_step(
+                                project_id, building_id, step_num, buildings
+                            )
+                            new_b    = buildings.get(building_id) or {}
+                            new_step = int(new_b.get("active_step_num") or step_num)
+                            completed_count = len(new_b.get("steps_completed") or {})
+
+                            orchestrator["step_advanced"]     = True
+                            orchestrator["prev_step"]         = step_num
+                            orchestrator["current_step"]      = new_step
+                            orchestrator["building_complete"] = completed_count >= total
+                            orchestrator["next_step"]         = min(new_step + 1, total)
+                            next_info = _get_step_info(building_id, new_step)
+                            if next_info:
+                                orchestrator["current_section"] = next_info["section"]
+                                orchestrator["current_title"]   = next_info["title"]
+
+            except Exception as e:
+                logger.error(f"[chat/orchestrator] {e}")
+
+        # ── Tier 1: build FY surface system prompt ────────────────────────
         try:
             system = build_fy_system_prompt(email, building_id, mode)
         except Exception as e:
             logger.error(f"[chat] build_fy_system_prompt failed: {e}")
             system = "You are FutureYou — a strategic guide for this creator. Be direct, specific, under 40 words."
 
+    # ── Tier 1: generate FY response ─────────────────────────────────────
     try:
         response = anthropic_client.messages.create(
             model=SURFACE_MODEL,
@@ -620,7 +700,12 @@ def chat():
             messages=messages,
         )
         text = claude_text(response)
-        return jsonify({"success": True, "message": text, "content": [{"type": "text", "text": text}]})
+        return jsonify({
+            "success":      True,
+            "message":      text,
+            "content":      [{"type": "text", "text": text}],
+            "orchestrator": orchestrator,
+        })
     except Exception as e:
         error_msg = str(e)
         logger.error(f"Chat error: {error_msg}")
@@ -2489,6 +2574,142 @@ def compute_journey_progress(buildings_state, fy_path):
         b = buildings_state.get(slug, {})
         totals.append(float(b.get("completion_pct", 0.0)))
     return round(sum(totals) / len(totals), 4) if totals else 0.0
+
+
+# ── FY Orchestrator (S2): Step maps + evaluation helpers ──────────────────
+# Each entry: {num, section, title, condition}
+# condition = exact SUCCESS STATE string from the building spec.
+# Tier 2 evaluates this deterministically per chat turn.
+
+STEP_MAP = {
+    "ideate": [
+        {"num": 1, "section": "RAW IDEA",        "title": "What's the Feeling?",
+         "condition": "Creator has responded with a description of what they're feeling or drawn to — any length, any form."},
+        {"num": 2, "section": "RAW IDEA",        "title": "First Visual Instinct",
+         "condition": "Creator has named 3-5 anchors — images, sounds, or references."},
+        {"num": 3, "section": "RAW IDEA",        "title": "One Sentence",
+         "condition": "Creator has stated one sentence and confirmed it captures the idea when FY reflects it back."},
+        {"num": 4, "section": "GUT CHECK",       "title": "Does This Have Legs?",
+         "condition": "Creator articulates one specific thing that makes this theirs."},
+        {"num": 5, "section": "GUT CHECK",       "title": "Is Now the Right Time?",
+         "condition": "Creator states a clear decision — advance now, or not yet."},
+        {"num": 6, "section": "HAND-OFF",        "title": "Let's Build on This",
+         "condition": "Creator has a Concept Line they can build from. Supporting elements locked."},
+        {"num": 7, "section": "HAND-OFF",        "title": "Let This Breathe",
+         "condition": "Creator has named which wall it is. Practical: a specific next action is stated. Internal: creator confirms they're pausing here and will return."},
+        {"num": 8, "section": "SEED DEVELOPMENT","title": "Give It a Skeleton",
+         "condition": "Seed document exists with all three structural answers filled in — any length, any form."},
+    ],
+    "develop": [
+        {"num": 1, "section": "NARRATIVE",       "title": "Logline",
+         "condition": "One sentence containing a named character, a stated want, and a stated obstacle. Doesn't need to be polished."},
+        {"num": 2, "section": "NARRATIVE",       "title": "Outline",
+         "condition": "Three-act shape visible. Inciting incident, midpoint shift, climax, resolution named — even loosely. Creator can walk through it without notes."},
+        {"num": 3, "section": "NARRATIVE",       "title": "Structure",
+         "condition": "Sequence map exists. Each major movement has a name. Act breaks are pinned. Scene count estimated. Creator can walk through it beat by beat."},
+        {"num": 4, "section": "NARRATIVE",       "title": "Scene Development",
+         "condition": "3-5 key scenes drafted in full. Creator can point to at least one line each major character would say that another character wouldn't."},
+        {"num": 5, "section": "NARRATIVE",       "title": "Draft",
+         "condition": "Full draft exists. Beginning, middle, end. Creator has read it once."},
+        {"num": 6, "section": "NARRATIVE",       "title": "Revision Passes",
+         "condition": "Each revision pass has a stated target. Creator can name what changed between the two most recent versions and why."},
+        {"num": 7, "section": "NARRATIVE",       "title": "Script Lock",
+         "condition": "Creator gives explicit lock confirmation. Lock Card created. FinalBit handoff generated."},
+    ],
+}
+
+
+def _get_step_info(building_id: str, step_num: int):
+    """Return step dict for building + step_num, or None if out of range."""
+    steps = STEP_MAP.get(building_id, [])
+    if not steps:
+        return None
+    idx = step_num - 1
+    return steps[idx] if 0 <= idx < len(steps) else None
+
+
+def _total_steps(building_id: str) -> int:
+    return len(STEP_MAP.get(building_id, []))
+
+
+def evaluate_success_state(condition: str, messages: list) -> dict:
+    """Tier 2 call: evaluate whether the message thread satisfies the step condition.
+    Returns {"satisfied": bool, "reason": str}.
+    Uses ORCHESTRATION_MODEL (claude-fable-5 / opus-4-8 fallback)."""
+    thread_text = "\n".join(
+        f"{m.get('role', '').upper()}: {str(m.get('content', '') or '')[:400]}"
+        for m in messages[-10:]
+        if isinstance(m, dict)
+    )
+    prompt = (
+        f"SUCCESS CONDITION: {condition}\n\n"
+        f"CONVERSATION THREAD (most recent exchanges):\n{thread_text}\n\n"
+        "Has this success condition been met by the creator's responses?\n"
+        'Return ONLY valid JSON — {"satisfied": true, "reason": "one sentence"} or '
+        '{"satisfied": false, "reason": "one sentence"}.\n'
+        "Do not interpret liberally. The condition must be present in the creator's actual words. "
+        "When uncertain, return false."
+    )
+    try:
+        resp = anthropic_client.messages.create(
+            model=ORCHESTRATION_MODEL,
+            max_tokens=120,
+            system=(
+                "You are a precise step-completion evaluator. "
+                "Your only job: determine whether a stated success condition has been met "
+                "in the conversation thread. Return only the JSON requested. No other text."
+            ),
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw = claude_text(resp).strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        result = json.loads(raw.strip())
+        return {"satisfied": bool(result.get("satisfied")), "reason": result.get("reason", "")}
+    except Exception as e:
+        logger.warning(f"[evaluate_success_state] failed: {e}")
+        return {"satisfied": False, "reason": f"eval error: {e}"}
+
+
+def advance_building_step(project_id: str, building_id: str, step_num: int, buildings: dict) -> dict:
+    """Mark step_num complete, advance active_step_num, write to fy_projects.
+    Returns updated buildings dict."""
+    b = dict(buildings.get(building_id) or {})
+    steps_completed = dict(b.get("steps_completed") or {})
+    steps_completed[str(step_num)] = True
+
+    total    = _total_steps(building_id)
+    next_num = step_num + 1 if step_num < total else step_num
+    pct      = round(len(steps_completed) / total, 4) if total else 0.0
+    state    = "complete" if len(steps_completed) >= total else "active"
+
+    sections_visited = list(b.get("sections_visited") or [])
+    next_info = _get_step_info(building_id, next_num)
+    if next_info and next_info["section"] not in sections_visited:
+        sections_visited.append(next_info["section"])
+
+    b.update({
+        "steps_completed":  steps_completed,
+        "active_step_num":  next_num,
+        "completion_pct":   pct,
+        "state":            state,
+        "sections_visited": sections_visited,
+    })
+    buildings[building_id] = b
+
+    try:
+        journey = compute_journey_progress(buildings, list(STEP_MAP.keys()))
+        sb_patch("fy_projects", {"id": f"eq.{project_id}"}, {
+            "buildings":        buildings,
+            "journey_progress": journey,
+        })
+        logger.info(f"[orchestrator] {building_id} step {step_num}→{next_num} (project={project_id})")
+    except Exception as e:
+        logger.error(f"[orchestrator] DB write failed: {e}")
+
+    return buildings
 
 
 @app.route("/api/projects/list", methods=["GET", "OPTIONS"])

@@ -163,6 +163,36 @@ def validate_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
 
+def validate_session(req):
+    """
+    Validate X-Session-Token header (or body session_token field) against formations.
+    Returns (email: str, row: dict) on success, or (None, None) if invalid/missing/expired.
+    """
+    token = (req.headers.get("X-Session-Token") or "").strip()
+    if not token:
+        try:
+            body = req.get_json(force=True, silent=True) or {}
+            token = (body.get("session_token") or "").strip()
+        except Exception:
+            pass
+    if not token:
+        return None, None
+    try:
+        rows = sb_get("formations", {"session_token": f"eq.{token}"})
+        if not rows:
+            return None, None
+        row = rows[0]
+        expires = row.get("session_expires_at")
+        if expires:
+            exp_dt = datetime.fromisoformat(expires.replace('Z', '+00:00'))
+            if datetime.now(timezone.utc) > exp_dt:
+                logger.warning(f"[validate_session] expired token for {row.get('email')}")
+                return None, None
+        return (row.get("email") or "").lower(), row
+    except Exception as e:
+        logger.warning(f"[validate_session] error: {e}")
+        return None, None
+
 def send_magic_link_email(email, token, first_name="Creator", studio_name="Your Studio", is_new_user=True):
     """Send magic link email via Resend."""
     link = f"{FRONTEND_URL}/verify?token={token}"
@@ -430,10 +460,14 @@ def formation_validate():
                 return jsonify({"success": False, "error": "Link has expired"}), 401
 
         # Clear the token (one-time use)
+        session_token_new = secrets.token_urlsafe(32)
+        session_expires_at_new = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
         sb_patch("formations", {"magic_token": f"eq.{token}"}, {
             "magic_token": None,
             "token_expires_at": None,
-            "verified_at": datetime.now(timezone.utc).isoformat()
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+            "session_token": session_token_new,
+            "session_expires_at": session_expires_at_new,
         })
 
         # Return full user profile — everything needed to hydrate localStorage on any device
@@ -603,6 +637,11 @@ def chat():
       building_id — active building slug (default: "ideate")
     Response always includes `orchestrator` object with step state.
     """
+    session_email, _ = validate_session(request)
+    if not session_email:
+        logger.warning("[chat] request missing valid session token — rejecting")
+        return jsonify({"success": False, "error": "authentication required"}), 401
+
     data = request.get_json()
     messages   = data.get("messages", [])
     context    = data.get("context", "fy_chat")   # "fy_chat" | "prompt_synth"
@@ -1879,6 +1918,9 @@ def vault_capture():
     Body: { project_id, building_slug, section_name, step_title,
             captured_answer, raw_thread (optional list of {role, content}) }
     """
+    session_email, _ = validate_session(request)
+    if not session_email:
+        return jsonify({"success": False, "error": "Authentication required"}), 401
     try:
         body = request.get_json(force=True) or {}
         project_id = (body.get("project_id") or "").strip()
@@ -1893,6 +1935,12 @@ def vault_capture():
                 "success": False,
                 "error": "project_id, building_slug, section_name, step_title, and captured_answer are required"
             }), 400
+
+        # Ownership check — project must belong to the authenticated user
+        proj_own = sb_get("fy_projects", {"id": f"eq.{project_id}", "user_email": f"eq.{session_email}"})
+        if not proj_own:
+            logger.warning(f"[vault_capture] ownership denied: {session_email} → {project_id}")
+            return jsonify({"success": False, "error": "Unauthorized"}), 403
 
         row = _write_vault_entry(project_id, building_slug, section_name, step_title, captured_answer, raw_thread)
         return jsonify({"success": True, "entry": row}), 200
@@ -1912,6 +1960,9 @@ def vault_list():
 
     Query params: project_id (required), building_slug (optional)
     """
+    session_email, _ = validate_session(request)
+    if not session_email:
+        return jsonify({"success": False, "error": "Authentication required"}), 401
     try:
         project_id = (request.args.get("project_id") or "").strip()
         building_slug = (request.args.get("building_slug") or "").strip()
@@ -2723,9 +2774,11 @@ def projects_list():
     if request.method == "OPTIONS":
         return jsonify({}), 200
 
-    email = request.args.get("email", "").strip().lower()
-    if not email:
-        return jsonify({"success": False, "error": "email required"}), 400
+    session_email, _ = validate_session(request)
+    if not session_email:
+        return jsonify({"success": False, "error": "authentication required"}), 401
+
+    email = session_email  # authoritative from session token
 
     try:
         rows = sb_get("fy_projects", {
@@ -2780,13 +2833,14 @@ def projects_create():
     if request.method == "OPTIONS":
         return jsonify({}), 200
 
+    session_email, _ = validate_session(request)
+    if not session_email:
+        return jsonify({"success": False, "error": "authentication required"}), 401
+
     body = request.get_json(force=True) or {}
-    email = (body.get("email") or "").strip().lower()
+    email = session_email  # authoritative from session token
     tier = (body.get("tier") or "operator").strip().lower()
     name = (body.get("name") or "").strip()
-
-    if not email:
-        return jsonify({"success": False, "error": "email required"}), 400
 
     limits = TIER_LIMITS.get(tier, TIER_LIMITS["operator"])
     active_count = count_projects(email, "active")
@@ -2834,6 +2888,10 @@ def projects_update():
     if request.method == "OPTIONS":
         return jsonify({}), 200
 
+    session_email, _ = validate_session(request)
+    if not session_email:
+        return jsonify({"success": False, "error": "authentication required"}), 401
+
     body = request.get_json(force=True) or {}
     project_id = (body.get("project_id") or "").strip()
     building_slug = (body.get("building_slug") or "").strip()
@@ -2847,6 +2905,8 @@ def projects_update():
         if not rows:
             return jsonify({"success": False, "error": "project not found"}), 404
         project = rows[0]
+        if project.get("user_email") != session_email:
+            return jsonify({"success": False, "error": "forbidden"}), 403
 
         buildings = project.get("buildings") or dict(EMPTY_BUILDINGS_STATE)
         fy_path = project.get("fy_path") or []
@@ -2906,12 +2966,16 @@ def projects_archive():
     if request.method == "OPTIONS":
         return jsonify({}), 200
 
+    session_email, _ = validate_session(request)
+    if not session_email:
+        return jsonify({"success": False, "error": "authentication required"}), 401
+
     body = request.get_json(force=True) or {}
     project_id = (body.get("project_id") or "").strip()
-    email = (body.get("email") or "").strip().lower()
+    email = session_email  # authoritative from session token
     tier = (body.get("tier") or "operator").strip().lower()
 
-    if not project_id or not email:
+    if not project_id:
         return jsonify({"success": False, "error": "project_id and email required"}), 400
 
     limits = TIER_LIMITS.get(tier, TIER_LIMITS["operator"])
@@ -2946,12 +3010,16 @@ def projects_delete():
     if request.method == "OPTIONS":
         return jsonify({}), 200
 
+    session_email, _ = validate_session(request)
+    if not session_email:
+        return jsonify({"success": False, "error": "authentication required"}), 401
+
     body = request.get_json(force=True) or {}
     project_id = (body.get("project_id") or "").strip()
-    email = (body.get("email") or "").strip().lower()
+    email = session_email  # authoritative from session token
 
-    if not project_id or not email:
-        return jsonify({"success": False, "error": "project_id and email required"}), 400
+    if not project_id:
+        return jsonify({"success": False, "error": "project_id required"}), 400
 
     try:
         logger.info(f"[projects_delete] attempting — project_id={project_id} email={email}")
@@ -2977,12 +3045,15 @@ def projects_set_active():
     if request.method == "OPTIONS":
         return jsonify({}), 200
 
+    session_email, _ = validate_session(request)
+    if not session_email:
+        return jsonify({"success": False, "error": "authentication required"}), 401
+
     body = request.get_json(force=True) or {}
     project_id = (body.get("project_id") or "").strip()
-    email = (body.get("email") or "").strip().lower()
 
-    if not project_id or not email:
-        return jsonify({"success": False, "error": "project_id and email required"}), 400
+    if not project_id:
+        return jsonify({"success": False, "error": "project_id required"}), 400
 
     try:
         sb_patch("fy_projects", {"id": f"eq.{project_id}"}, {

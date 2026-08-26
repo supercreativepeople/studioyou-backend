@@ -499,32 +499,51 @@ def build_fy_system_prompt(email, building_id="ideate", mode="peer"):
         logger.warning(f"[build_fy_system_prompt] Supabase lookup failed for {email}: {e}")
         r = {}
 
-    first_name  = r.get("first_name")  or ""
-    studio_name = r.get("studio_name") or ""
-    archetype   = r.get("archetype")   or ""
-    phase       = r.get("phase")       or ""
-    rec         = r.get("recommended_building") or ""
+    first_name   = r.get("first_name")   or ""
+    studio_name  = r.get("studio_name")  or ""
+    creator_type = r.get("creator_type") or ""
 
-    # formation_data is json.dumps(formation) — may be array (12 answers) or dict
-    raw_fd = r.get("formation_data") or []
+    # formation_data structure: {"briefing": {"arsenal": [...], "roadblock": [...], "horizon": [...]}, "answers": [...12]}
+    raw_fd = r.get("formation_data") or {}
     if isinstance(raw_fd, str):
         try:
             raw_fd = json.loads(raw_fd)
         except Exception:
-            raw_fd = []
+            raw_fd = {}
 
-    brand_story = ""
+    briefing          = {}
+    formation_answers = []
     if isinstance(raw_fd, dict):
-        brand_story = raw_fd.get("brand_story", "")
-        formation_answers = raw_fd.get("answers", [])
+        briefing          = raw_fd.get("briefing") or {}
+        formation_answers = raw_fd.get("answers")  or []
     elif isinstance(raw_fd, list):
         formation_answers = raw_fd
-    else:
-        formation_answers = []
 
-    # Formation Q&A context (up to 12 answers)
+    arsenal   = briefing.get("arsenal",   [])
+    roadblock = briefing.get("roadblock", [])
+    horizon   = briefing.get("horizon",   [])
+    # creator_type flat column takes priority; fall back to briefing dict
+    if not creator_type:
+        ct = briefing.get("creator_type", [])
+        creator_type = (ct[0] if isinstance(ct, list) and ct else ct) or ""
+
+    # Semantic labels for the 12 formation questions
+    _Q_LABELS = [
+        "Creative focus",             # Q1
+        "Platform / audience",        # Q2
+        "Experience level",           # Q3
+        "Biggest win so far",         # Q4
+        "What they'd do differently", # Q5
+        "Influences / inspiration",   # Q6
+        "1-year vision",              # Q7
+        "5-year vision",              # Q8
+        "10-year vision",             # Q9
+        "Working style",              # Q10
+        "Breakthrough moment",        # Q11
+        "Core motivation",            # Q12
+    ]
     ctx = "\n".join(
-        f"Q{i+1}: {a or '(skipped)'}"
+        f"{_Q_LABELS[i] if i < len(_Q_LABELS) else f'Q{i+1}'}: {a or '(skipped)'}"
         for i, a in enumerate(formation_answers[:12])
     ) if formation_answers else ""
 
@@ -540,15 +559,20 @@ def build_fy_system_prompt(email, building_id="ideate", mode="peer"):
         f"You are FutureYou — {first_name or 'this creator'}'s future self, back to guide the build. "
         "You already built the studio, made the mistakes, and know exactly what needs to happen next.",
         "",
-        f"Studio: {studio_name or '(unnamed)'} | Archetype: {archetype} | Phase: {phase}",
+        f"Studio: {studio_name or '(unnamed)'}" + (f" | Creator type: {creator_type}" if creator_type else ""),
         f"Active building: {bldg['title']} ({bldg['tag']}) — {bldg['desc']}",
     ]
-    if rec:
-        parts.append(f"Recommended building: {rec}")
-    if brand_story:
-        parts.append(f"Brand story: {brand_story}")
+    if arsenal:
+        _a = ', '.join(arsenal) if isinstance(arsenal, list) else arsenal
+        parts.append(f"Arsenal (what they're weaponizing): {_a}")
+    if roadblock:
+        _r = ', '.join(roadblock) if isinstance(roadblock, list) else roadblock
+        parts.append(f"Roadblock (biggest obstacle): {_r}")
+    if horizon:
+        _h = ', '.join(horizon) if isinstance(horizon, list) else horizon
+        parts.append(f"Horizon (ultimate vision): {_h}")
     if ctx:
-        parts.append(f"Formation Q&A:\n{ctx}")
+        parts.append(f"Formation context:\n{ctx}")
     parts.extend([
         "",
         mode_note,

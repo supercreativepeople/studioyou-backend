@@ -55,3 +55,65 @@ COMMIT | studioyou-app 6152c84 — S2 frontend: wire orchestrator{} response —
 PUSH | studioyou-app main → Netlify auto-deploy triggered
 
 STATUS | S2 orchestrator fully wired end-to-end: backend evaluates steps, frontend shows completion. Next: FY stuck-dots bug (spinner hangs when tasks sidebar opens during chat). Then security fixes 4-6.
+
+FIX | studio.html — stuck-dots bug: loadingSafetyRef watchdog (18s) added to sendMsg; all setLoading(false) paths clear ref — COMPLETE
+COMMIT | studioyou-app 9327426 — fix: FY stuck-dots spinner watchdog (18s loadingSafetyRef)
+PUSH | studioyou-app main → Netlify auto-deploy triggered
+
+---
+## Security Fix 4-5: Session Token Auth + Ownership Gates
+
+SCHEMA | Supabase formations table: added session_token TEXT + session_expires_at TIMESTAMPTZ + index formations_session_token_idx
+
+IMPL | main.py validate_session(): reads X-Session-Token header (body fallback), looks up in formations, checks 30-day expiry — returns (email, row) or (None, None)
+
+IMPL | main.py formation_validate: on magic link consume → generates session_token_new = secrets.token_urlsafe(32), stores with 30-day expiry, returns in response as "session_token"
+
+GATE | main.py vault_capture: validate_session() + fy_projects.user_email ownership check
+GATE | main.py vault_list: validate_session()
+GATE | main.py projects_list: validate_session(), email authoritative from session (no client email param)
+GATE | main.py projects_create: validate_session(), email from session
+GATE | main.py projects_update: validate_session() + ownership check after project fetch (403 if mismatch)
+GATE | main.py projects_archive: validate_session(), email from session
+GATE | main.py projects_delete: validate_session(), email from session (sb_delete uses session_email in filter)
+GATE | main.py projects_set_active: validate_session()
+GATE | main.py /api/chat: hard validate_session() gate, 401 if missing
+
+FRONTEND | verify.html: stores data.session_token to localStorage as sy_session_token on validate success
+FRONTEND | studio.html: syHeaders() helper injected — all 12 fetch call sites updated (incl. vault/list GET, projects/list GET)
+FRONTEND | dashboard.html: syHeaders() helper injected — all 18 fetch call sites updated
+
+COMMIT | studioyou-backend 946304d — Security fix 4-5: session token auth + project/vault ownership gates
+PUSH | studioyou-backend main → cf24d4d..946304d
+
+COMMIT | studioyou-app 97e290c — Security fix 4: session token header on all API calls
+PUSH | studioyou-app main → 9327426..97e290c → Netlify auto-deploy triggered
+
+PENDING | auth_magic_link endpoint (returning-user sign-in path) — also needs session_token generation on success
+PENDING | security fix 6 (Supabase RLS) — deferred, service key bypasses RLS; only relevant when user JWT path implemented
+PENDING | formation_initialize non-existent column patches (archetype/phase/first_words/initialized_at/recommended_building)
+
+FIX | main.py formation_validate — session_token was generated + stored but NOT returned in response; verify.html data.session_token was always falsy → sy_session_token never written to localStorage. Added "session_token": session_token_new to return jsonify()
+COMMIT | studioyou-backend 45e1da1 — fix: return session_token in formation_validate response
+PUSH | studioyou-backend main → 946304d..45e1da1
+
+---
+## Security Fix 6: Supabase RLS
+
+MIGRATION | enable_rls_all_tables — ALTER TABLE ENABLE + FORCE ROW LEVEL SECURITY on: formations, fy_projects, fy_sessions, fy_session_plans, fy_session_actions, fy_vault_entries
+RESULT | All 8 public tables now rowsecurity=true (magic_tokens + users were already enabled)
+NOTE | No permissive policies added — default deny for anon/authenticated roles. Service role key bypasses RLS (backend unaffected). Add email-scoped policies when user JWT path is implemented.
+STATUS | Security fixes 1-6 complete. Platform is alpha-hardened.
+
+---
+## formation_initialize Column Migration
+
+MIGRATION | add_formation_initialize_columns — ALTER TABLE formations ADD COLUMN: first_words TEXT, recommended_building TEXT, archetype TEXT, phase TEXT, initialized_at TIMESTAMPTZ + INDEX formations_archetype_idx
+RESULT | All 5 columns confirmed present. formation_initialize sb_patch calls now land correctly.
+NOTE | formation_validate already reads these columns and returns them to frontend — those reads will now return real data instead of null.
+STATUS | formation_initialize silent failure bug resolved.
+
+FIX | .github/workflows/deploy-cloudrun.yml — SY_ADMIN_KEY was missing from --set-env-vars; every GitHub Actions deploy silently wiped it from Cloud Run. Added SY_ADMIN_KEY=${{ secrets.SY_ADMIN_KEY }}
+ACTION REQUIRED | Lee must add SY_ADMIN_KEY to GitHub repo Settings > Secrets (not a credential value — pointer only in docs)
+COMMIT | studioyou-backend e8e3625 — fix(ci): add SY_ADMIN_KEY to Cloud Run deploy workflow
+PUSH | studioyou-backend main → 45e1da1..e8e3625

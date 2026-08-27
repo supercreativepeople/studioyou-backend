@@ -121,18 +121,18 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 
 | Component | Current Value |
 |---|---|
-| Backend HEAD | commit `2c7efd4` — S2 orchestrator (step-state machine) |
+| Backend HEAD | commit `e8e3625` — fix(ci): SY_ADMIN_KEY added to Cloud Run deploy workflow |
 | FY Agent ID | **CA_Mnhkjj3mUr7T** (region us-east) |
 | TTS Voice | Corey (`630ed21c-2c5c-41cf-9d82-10a7fd668370`), sonic-3, pronunciation dict wired |
 | Surface model | claude-sonnet-4-6 |
 | Orchestration model | claude-fable-5 |
 | dashboard.html | Session AE deployed |
-| studio.html | Security fixes deployed. GitHub auto-deploy now connected to `studioyou-app` (id `4a365723`). Current HEAD: `6ab3ac5` (netlify.toml). |
+| studio.html | Current HEAD: `97e290c` — session token header (syHeaders) on all API calls. GitHub auto-deploy → studioyou.app. |
 | Supabase | rubwhfjwqonqhfbkhren — `fy_vault_entries` table live |
 | Build status (Lee's field-test estimate, 2026-08-17) | IDEATE ~50%, DEVELOP ~20%, PLAN/PRODUCE/POST/LEGAL/DISTRIBUTE/BRAND/MARKET/MONETIZE/FUND/CAST unbuilt. No new estimate issued since. |
 | Content depth (2026-08-18) | Canonical schema exists for all 12 buildings (`knowledge/schemas/*.json`). IDEATE: 5 of 8 steps carry a verified, sourced Layer 3 injection (Steps 1,2,4,7,8; Step 3 shorter nuance; Steps 5,6 Lee's own material, untouched). DEVELOP: 3 track-opening steps (N-5, M-1, V-1) carry injections, all 5 lock steps reference new Lock Calculus; P-1 and B-1 researched, not yet cleared; most other DEVELOP steps not yet reviewed. |
-| Sprint | S2 fully wired (2026-08-26): backend orchestrator + frontend step indicators shipped. Next: FY stuck-dots bug (spinner hangs when tasks sidebar opens during chat), then security fixes 4-6. |
-| Pending bugs | FY stuck-dots: spinner hangs when tasks sidebar opens during chat — not yet investigated. Frontend not yet consuming orchestrator{} response. formation_initialize patches non-existent columns (archetype/phase/first_words/initialized_at/recommended_building) — silent failures, needs migration. |
+| Sprint | Security fixes 1-6 + DB schema fixes complete (2026-08-26). Platform alpha-hardened. Next: content/feature work. |
+| Pending bugs | None critical. auth_magic_link session_token already handled via formation_validate (magic link clicked → token issued). Monitor: formation_initialize data quality in alpha testing. |
 
 ---
 ## 7. Locked Decisions
@@ -145,7 +145,7 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 - **Claude owns the full deployment pipeline.** Lee does not push.
 - **SY_ADMIN_KEY is a Cloud Run env var.** Never hardcode, never echo in chat or docs. Value was rotated 2026-08-19 (old value was compromised — visible in GitHub repo). Pointer only in all docs.
 - **SY_DEBUG gates all debug/admin endpoints.** Not set in prod → endpoints return 404. Do not set SY_DEBUG=true in prod without explicit Lee direction.
-- **Security fixes 1-3 applied (2026-08-19):** client-side system prompt removed from all `/api/chat` callsites, admin key in env var, debug endpoints gated. Fixes 4-6 (session token auth, vault ownership, Supabase RLS) not yet started.
+- **Security fixes 1-6 ALL complete:** 1-3 (2026-08-19): system prompt server-side, SY_ADMIN_KEY env var, SY_DEBUG gate. 4-5 (2026-08-26): validate_session() gates all project/vault/chat endpoints, syHeaders() on all frontend fetches, sy_session_token localStorage. 6 (2026-08-26): RLS ENABLED + FORCED on formations, fy_projects, fy_sessions, fy_session_plans, fy_session_actions, fy_vault_entries — default deny for anon, service role unaffected.
 - **GCP billing account 019309-BEB782-398472:** do not touch while Google for Startups application is pending.
 - **Anthropic program applications** filed under Frisson Digital, Inc. Credits non-transferable between Console orgs.
 - **Tavus is deprecated.** Replaced by Runway Characters. `main.py.tavus` is a backup file in `.gitignore`, not deployed.

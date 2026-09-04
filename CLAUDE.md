@@ -139,7 +139,7 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 | Pending activations | DASHSCOPE_API_KEY: pending Alibaba enterprise verification. LTX_API_KEY: ACTIVE (revision 00425-t2b). |
 | Test mode | `nyclaabq@gmail.com` is the E2E test account. Sessions for it skip the Runway avatar entirely (zero credit spend) via `test_mode` in `formation_context`. Manual avatar disabling is retired. |
 | Custom avatars | Groundwork shipped, pipeline unbuilt. `creator_avatars` table + agent resolution + backend injection + `future_you_brief.py` are live. Upload/generate/provision endpoints and frontend are not. |
-| **Runway credits** | **0 as of 2026-09-04 (live-verified).** Blocks all live avatar work until Lee tops up. Does NOT block E2E testing: the `test_mode` path skips the avatar entirely. Autobilling is still off with no card saved, which is how it silently hit zero for the second time. |
+| Runway credits (Dev) | **3,000 as of 2026-09-04 (live-verified via API).** Topped up $30.00 after silently hitting 0 earlier the same day. **Autobilling now ENABLED** (recharges below 500, Visa saved), closing the silent-zero risk open since July. Live avatar work unblocked. |
 | Pending bugs | None critical. |
 
 
@@ -147,6 +147,7 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 ## 7. Locked Decisions
 
 - **Runway and Reactor are independent credit pools.** Never infer one from the other. (P0 confirmed Session AG.)
+- **Runway is TWO separate accounts with separate wallets (re-confirmed the hard way 2026-09-04).** Runway **Dev** (`dev.runwayml.com`, org `4b2afb94-a345-4b8a-a2cd-7376a2a4d2dc`, org name SuperCreativePeople) is the product runtime: `RUNWAYML_API_SECRET` in the agent `.env` authenticates here and this is the balance the avatar actually spends. Runway **Platform** (`runway.com`, "SuperCreative, Personal / Free") is Lee's creative workstation with its own separate balance. A healthy Platform balance does NOT unblock the avatar, and the two were briefly conflated on 2026-09-04 when Platform showed 684 credits while Dev was at 0. **Always verify Dev via `GET https://api.dev.runwayml.com/v1/organization`, never by reading the Platform UI.**
 - **Runway bills on ACTIVE avatar-session time, not per utterance (2 credits up front + 2 per 6s).** Muting playback client-side does nothing. The only way to stop the charge mid-session is to close the AvatarSession. Never start an avatar speculatively.
 - **`test_mode` skips the Runway avatar entirely.** Set via `formation_context["test_mode"]`, activated by `TEST_EMAILS` in main.py or an explicit `{"test_mode": true}` POST body. Falls through to Cartesia audio only, so conversation is fully testable at zero Runway cost. `TEST_EMAILS` must never contain a production creator's address.
 - **Runway avatar `personality` and `startScript` are INERT in this architecture (confirmed 2026-09-04).** Per LiveKit's Runway docs, "LiveKit TTS settings will supersede selected voices and personalities configured for the Runway character." Cartesia generates the speech; Runway only renders lip-synced video. Claude's system prompt (`prompts.py`) is the actual brain. Editing The DUDE's personality in the Runway dashboard changes nothing. A Runway-cloned voice would likewise be ignored, which is why custom-avatar voice cloning routes to Cartesia.

@@ -167,3 +167,13 @@ exists to prevent and it is recorded here rather than silently backfilled.
 [VERIFIED] — Cloud Run latest ready revision studioyou-api-00449-7m9 (CLAUDE.md had
   00434-lpn; today's pushes deployed). Supabase ACTIVE_HEALTHY. Agent CA_Mnhkjj3mUr7T
   version Fqxg6JLvSBb8 confirmed live.
+
+[RESOLVED] — Runway Dev topped up by Lee: $30.00, 09/04/2026 11:25 AM, 3,000 credits.
+  Autobilling ENABLED (auto-recharge below 500) with Visa saved to the project.
+  Live-verified via GET /v1/organization: creditBalance = 3000. Silent-zero risk,
+  open since July, is now CLOSED. Live avatar work unblocked.
+[CORRECTION] — Runway Platform (684 credits) was briefly read as evidence the balance
+  was fine. Dev and Platform are separate accounts with separate wallets; SERVICES.md
+  had already documented this split and the 684 figure. Recorded as a Locked Decision
+  in both CLAUDE.md files so the conflation does not recur.
+[CLOSE] — session ended. All repos committed, pushed, clean.

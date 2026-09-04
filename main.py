@@ -1711,6 +1711,30 @@ def avatar_livekit_session():
         if test_mode:
             formation_context["test_mode"] = True
 
+        # ── Custom FutureYou avatar ────────────────────────────────────────
+        # A creator who has generated their own FutureYou avatar gets it injected
+        # here; the agent falls back to the shared default ("The DUDE") whenever
+        # this key is absent. Skipped under test_mode — the agent starts no avatar
+        # at all in that path, so the lookup would be wasted work.
+        # Lookup failure is never fatal: a creator always gets a working session,
+        # just with the default face.
+        if not test_mode:
+            try:
+                av_rows = sb_get("creator_avatars", {
+                    "email": f"eq.{email}",
+                    "is_active": "is.true",
+                    "status": "eq.ready",
+                    "select": "runway_avatar_id,runway_voice_id",
+                    "limit": "1",
+                })
+                if av_rows and av_rows[0].get("runway_avatar_id"):
+                    formation_context["runway_avatar_id"] = av_rows[0]["runway_avatar_id"]
+                    if av_rows[0].get("runway_voice_id"):
+                        formation_context["runway_voice_id"] = av_rows[0]["runway_voice_id"]
+                    logger.info(f"[avatar_livekit_session] Custom FutureYou avatar for {email}")
+            except Exception as e:
+                logger.warning(f"[avatar_livekit_session] Custom avatar lookup failed: {e}")
+
         # Surface tells the agent which UI it is serving (dashboard vs studio)
         surface = data.get("surface", "dashboard")
         formation_context["surface"] = surface

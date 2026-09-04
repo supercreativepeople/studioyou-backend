@@ -123,17 +123,17 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 
 | Component | Current Value |
 |---|---|
-| Backend HEAD | commit `c8cc2d1` — feat: LTX Studio + Alibaba DashScope tool endpoints (7 new) |
+| Backend HEAD | commit `434ff75` — docs: CLAUDE.md + handoff 2026-09-04 |
 | FY Agent ID | **CA_Mnhkjj3mUr7T** (region us-east) |
 | TTS Voice | Corey (`630ed21c-2c5c-41cf-9d82-10a7fd668370`), sonic-3, pronunciation dict wired |
 | Surface model | claude-sonnet-4-6 |
-| Orchestration model | claude-fable-5 |
+| Orchestration model | claude-fable-5-1 (updated 2026-09-04 — 75% token reduction vs fable-5) |
 | dashboard.html | Session AE deployed |
 | studio.html | Current HEAD: `97e290c` — session token header (syHeaders) on all API calls. GitHub auto-deploy → studioyou.app. |
 | Supabase | rubwhfjwqonqhfbkhren — `fy_vault_entries` table live |
 | Build status (Lee's field-test estimate, 2026-08-17) | IDEATE ~50%, DEVELOP ~20%, PLAN/PRODUCE/POST/LEGAL/DISTRIBUTE/BRAND/MARKET/MONETIZE/FUND/CAST unbuilt. No new estimate issued since. |
 | Content depth (2026-08-18) | Canonical schema exists for all 12 buildings (`knowledge/schemas/*.json`). IDEATE: 5 of 8 steps carry a verified, sourced Layer 3 injection. DEVELOP: 3 track-opening steps + all 5 lock steps reference new Lock Calculus. |
-| Sprint | Security fixes 1-6 + DB schema fixes complete (2026-08-26). Platform alpha-hardened. Tool wiring sprint started 2026-09-04. Next: activate LTX + Alibaba (keys), S2 orchestrator build. |
+| Sprint | Security fixes 1-6 + DB schema fixes complete. Tool wiring sprint 2026-09-04: 7 new endpoints deployed, FY_ORCHESTRATION_MODEL → claude-fable-5-1 (live, revision 00414-t4r). Next: LTX key activation (Lee runs Terminal cmd), Alibaba verification, S2 orchestrator. |
 | Pending activations | LTX_API_KEY: key in hand, add to Cloud Run. DASHSCOPE_API_KEY: pending Alibaba enterprise verification. |
 | Pending bugs | None critical. formation_briefing `anthropic_client.messages.create` confirmed fixed (2026-09-04 audit — prior handoff was stale). |
 

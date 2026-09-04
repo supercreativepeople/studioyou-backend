@@ -1478,14 +1478,30 @@ Q12 (Always remember): {briefing_answers.get('q12', '')}"""
         # Store in Supabase
         if email:
             try:
+                # Build formation_data so build_fy_system_prompt() can read
+                # arsenal / roadblock / creator_type / answers on every chat call.
+                _ct_str = (
+                    ', '.join(creator_type) if isinstance(creator_type, list)
+                    else (creator_type or '')
+                )
+                _answers = [briefing_answers.get(f'q{i}', '') for i in range(1, 13)]
                 sb_patch('formations', {'email': f"eq.{email}"}, {
                     'first_words': first_words,
                     'recommended_building': recommended_building,
                     'archetype': archetype,
                     'phase': phase,
-                    'initialized_at': datetime.now(timezone.utc).isoformat()
+                    'initialized_at': datetime.now(timezone.utc).isoformat(),
+                    'creator_type': _ct_str,
+                    'formation_data': {
+                        'briefing': {
+                            'arsenal':      arsenal,
+                            'roadblock':    roadblock,
+                            'creator_type': creator_type,
+                        },
+                        'answers': _answers,
+                    },
                 })
-                print(f"[INIT STEP 7] Stored in Supabase", flush=True)
+                print(f"[INIT STEP 7] Stored in Supabase (incl. arsenal/roadblock/formation_data)", flush=True)
             except Exception as e:
                 print(f"[INIT SUPABASE WARN] {e}", flush=True)
 

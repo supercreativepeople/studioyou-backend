@@ -3,11 +3,11 @@
 > This file is the project bible. Same sections every session, same order. No agenda items, no carry-forwards — those live in the handoff doc. Read this to understand what StudioYou is and how to work on it. For strategy, positioning, and current build-status narrative (not code), see the **StudioYou Project HQ** in Notion — https://app.notion.com/p/3bfb963047e5814f9398d9f53aaf0c13 (rebuilt 2026-08-17, canonical strategic source of truth, distinct from this file's technical/deploy scope).
 
 **Changelog (most recent 3-5, older entries live in git history):**
+- **2026-09-04 (session 4):** Runway credit drain fixed via `test_mode`. Eager avatar start was spending credits on every job before any user interaction (Runway bills 2 credits up front + 2 per 6s of ACTIVE session). `test_mode` in `formation_context` skips `start_avatar()` and falls through to Cartesia audio only. Dual activation: backend `TEST_EMAILS` auto-detect plus explicit frontend flag. `nyclaabq@gmail.com` is the confirmed E2E test account; manual avatar disabling is retired. Agent docstring drift corrected (claimed a sonic-3.5/Jameson switch that was never made; Corey on sonic-3 confirmed and kept). Custom FutureYou avatar groundwork shipped: `public.creator_avatars` table, per-creator avatar resolution in the agent, backend injection, and `future_you_brief.py`. **Two CLAUDE.md errors corrected this session: RLS was documented as disabled when it is enabled and forced, and the `lk agent delete && create` requirement is obsolete.** Backend HEAD: `c96422f`. Agent: `CA_Mnhkjj3mUr7T` version `Fqxg6JLvSBb8`.
 - **2026-09-04 (session 3):** Two bug fixes committed and auto-deployed. (1) `formation_initialize()` fix (`ac24113`): added `creator_type` and `formation_data` (jsonb with briefing/answers) to Supabase patch — `build_fy_system_prompt()` was always getting empty values because these fields were never written. (2) S2 orchestrator three-bug fix (`2a8ccde`): primary bug was `FY_ORCHESTRATION_MODEL=claude-fable-5` is an invalid Anthropic API model name — `evaluate_success_state()` was silently throwing on every call and always returning `satisfied: False`, so steps never advanced. Fixed with model fallback to `SURFACE_MODEL` + robust JSON parsing (regex fallback). Secondary fix: seed condition now fires for both `"untouched"` and `"active"` building states. `FY_ORCHESTRATION_MODEL` env var updated to `claude-haiku-4-5-20251001` (revision 00434-lpn). Backend HEAD: `2a8ccde`.
 - **2026-09-04 (session 2):** Cloud Build GitHub trigger created (`studioyou-backend-main`, us-east1, push to main → cloudbuild.yaml → Cloud Run auto-deploy). Manual `gcloud builds submit` retired — Claude pushes, Cloud Build handles the rest. STEP_MAP completed for all 12 buildings (10 new entries, 34 total steps). Backend HEAD: `6f22873`.
 - **2026-09-04:** Tool wiring sprint — LTX Studio (ltx-2-5-pro) + Alibaba DashScope (Qwen LLM + WAN 3.0) integration code written and deployed. 7 new endpoints: `/api/tools/ltx/text-to-video`, `/api/tools/ltx/image-to-video`, `/api/tools/ltx/job-status`, `/api/tools/qwen/chat`, `/api/tools/wan/text-to-video`, `/api/tools/wan/task-status`. All session-gated; return 503 when key absent — activate automatically when env vars added to Cloud Run. formation_briefing `anthropic_client.messages.create` bug confirmed already fixed (prior handoff was stale). Backend HEAD: `c8cc2d1`.
 - **2026-08-19:** Security fixes 1-3 applied and deployed. (1) All three `/api/chat` callsites in studio.html now send `context/email/building_id/mode` instead of client-side system prompt — server builds prompt via `build_fy_system_prompt()` pulling creator data from Supabase. (2) `ADMIN_KEY` moved to `os.environ.get("SY_ADMIN_KEY")` — rotated, added to Cloud Run env vars. (3) `SY_DEBUG` env var gates all 6 debug endpoints (return 404 when false/unset). netlify-cli installed globally on Mac. `netlify.toml` added to studioyou-app repo. GitHub auto-deploy connected to `studioyou-app` (id `4a365723`) via Netlify UI — every push to `main` now deploys to `studioyou.app`. Wrong orphan site (`heroic-torrone-abeb92`) unlinked. Backend: `954007a`. Frontend: `2b8ad0b`, `6ab3ac5`.
-- **2026-08-18:** Canonical per-building JSON schema built for all 12 buildings (`tools/build_schema.py` → `knowledge/schemas/<id>.json` + `_drift_report.json`) — see Locked Decisions. New research-driven Layer 3 authoring philosophy locked into `FY_LAYER2_SCHEMA.md` (4 additions this session: model-feedback addendum, skeleton-authoring rule, Layer 3 sourcing model + two-tier retrieval + generic sixth-track + v1 ceiling, and THE LOCK CALCULUS universal rule). IDEATE fully integrated (5 of 8 steps now carry a verified, sourced Layer 3 injection). DEVELOP batch 1 integrated (3 track-opening steps + all 5 lock steps reference the new Lock Calculus). 8 commits, all pushed. See `handoffs/2026-08-18-canonical-schema-and-layer3-research.md` for full detail.
 
 ---
 
@@ -55,9 +55,9 @@ Files: dashboard.html, studio.html, index.html, subscribe.html.
 
 **Backend:** Flask on Google Cloud Run (`studioyou-api`, project `neat-tangent-474222-m9`, `us-east1`). Endpoint: `studioyou-api-198959034459.us-east1.run.app`. Deploy via Cloud Build trigger (`studioyou-backend-main`, us-east1). Push to `main` → Cloud Build → Cloud Run auto-deploy.
 
-**Database:** Supabase (`rubwhfjwqonqhfbkhren`). RLS disabled.
+**Database:** Supabase (`rubwhfjwqonqhfbkhren`). **RLS ENABLED and FORCED** on all public tables (security fix 6, 2026-08-26; re-confirmed live 2026-09-04). Default deny for anon; service role unaffected. Any doc or memory claiming RLS is disabled is stale.
 
-**FY Agent:** LiveKit cloud agent. Runs off local disk via `lk agent create` — NOT deployed via GitHub Actions. Agent ID changes on every `lk agent delete && create`. See Live State for current ID.
+**FY Agent:** LiveKit cloud agent. Deployed with `lk agent deploy` from the repo root, NOT via GitHub Actions. `lk agent deploy` rebuilds the image and **preserves the agent ID**, issuing a new version string each deploy (verified twice on 2026-09-04). The old `delete && create` procedure is retired. See Live State for current ID and version.
 
 ---
 **AI stack:**
@@ -105,7 +105,7 @@ Code edit → `git commit` on Mac via Desktop Commander → `git push origin mai
 - SY_ADMIN_KEY and SY_DEBUG are Cloud Run env vars — never hardcode, never echo in chat.
 
 **FY Agent (agent.py, prompts.py):**
-Code edit → `git commit && git push` (for record) → `lk agent delete [ID] && lk agent create` from Mac Terminal. Deploy runs off local disk. `lk agent update` does NOT force a Docker rebuild — only `delete && create` produces a fresh image. Update Live State with new agent ID immediately after recreate.
+Code edit → `git commit && git push` (for record) → `lk agent deploy` from the repo root. Deploy runs off local disk and takes a few minutes (Docker build); run it detached and poll rather than blocking on a 60s tool timeout. The agent ID is preserved across deploys; only the version string changes. Confirm with `lk agent list`. Update the version in Live State after deploying.
 
 **Frontend (dashboard.html, studio.html, etc.):**
 Code edit via Desktop Commander → `git commit` → `git push` → Netlify auto-deploys to `studioyou.app`. GitHub auto-deploy confirmed connected (2026-08-19). Fallback CLI deploy:
@@ -124,19 +124,22 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 
 | Component | Current Value |
 |---|---|
-| Backend HEAD | commit `2a8ccde` — fix: S2 orchestrator — model fallback, robust JSON parse, seed untouched buildings |
+| Backend HEAD | commit `c96422f` — feat: FutureYou brief generation (`future_you_brief.py`) |
 | Cloud Run revision | 00434-lpn (FY_ORCHESTRATION_MODEL updated, no code change) |
-| FY Agent ID | **CA_Mnhkjj3mUr7T** (region us-east) |
-| TTS Voice | Corey (`630ed21c-2c5c-41cf-9d82-10a7fd668370`), sonic-3, pronunciation dict wired |
+| FY Agent ID | **CA_Mnhkjj3mUr7T** (region us-east), version `Fqxg6JLvSBb8`, deployed 2026-09-04T17:43:21Z. ID is stable across deploys. |
+| TTS Voice | Corey (`630ed21c-2c5c-41cf-9d82-10a7fd668370`), sonic-3, pronunciation dict wired. Confirmed against code 2026-09-04; a docstring claiming sonic-3.5/Jameson was drift and has been removed. |
 | Surface model | claude-sonnet-4-6 |
 | Orchestration model | claude-haiku-4-5-20251001 (updated 2026-09-04 — was claude-fable-5, invalid) |
 | dashboard.html | Session AE deployed |
 | studio.html | Current HEAD: `97e290c` — session token header (syHeaders) on all API calls. GitHub auto-deploy → studioyou.app. |
-| Supabase | rubwhfjwqonqhfbkhren — `fy_vault_entries` table live |
+| Supabase | rubwhfjwqonqhfbkhren — `fy_vault_entries` live; `creator_avatars` added 2026-09-04 (custom FutureYou avatars, empty, RLS enabled) |
 | Build status (Lee's field-test estimate, 2026-08-17) | IDEATE ~50%, DEVELOP ~20%, PLAN/PRODUCE/POST/LEGAL/DISTRIBUTE/BRAND/MARKET/MONETIZE/FUND/CAST unbuilt. No new estimate issued since. |
 | Content depth (2026-08-18) | Canonical schema exists for all 12 buildings (`knowledge/schemas/*.json`). IDEATE: 5 of 8 steps carry a verified, sourced Layer 3 injection. DEVELOP: 3 track-opening steps + all 5 lock steps reference new Lock Calculus. |
 | Sprint | S2 orchestrator fully unblocked (2026-09-04 session 3). formation_initialize() writes creator_type + formation_data. evaluate_success_state() uses haiku for step eval with sonnet fallback. Next: S2 end-to-end test. |
 | Pending activations | DASHSCOPE_API_KEY: pending Alibaba enterprise verification. LTX_API_KEY: ACTIVE (revision 00425-t2b). |
+| Test mode | `nyclaabq@gmail.com` is the E2E test account. Sessions for it skip the Runway avatar entirely (zero credit spend) via `test_mode` in `formation_context`. Manual avatar disabling is retired. |
+| Custom avatars | Groundwork shipped, pipeline unbuilt. `creator_avatars` table + agent resolution + backend injection + `future_you_brief.py` are live. Upload/generate/provision endpoints and frontend are not. |
+| **Runway credits** | **0 as of 2026-09-04 (live-verified).** Blocks all live avatar work until Lee tops up. Does NOT block E2E testing: the `test_mode` path skips the avatar entirely. Autobilling is still off with no card saved, which is how it silently hit zero for the second time. |
 | Pending bugs | None critical. |
 
 
@@ -144,7 +147,15 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 ## 7. Locked Decisions
 
 - **Runway and Reactor are independent credit pools.** Never infer one from the other. (P0 confirmed Session AG.)
-- **`lk agent update` does not rebuild.** Only `delete && create` produces a fresh image. Agent ID changes every recreate.
+- **Runway bills on ACTIVE avatar-session time, not per utterance (2 credits up front + 2 per 6s).** Muting playback client-side does nothing. The only way to stop the charge mid-session is to close the AvatarSession. Never start an avatar speculatively.
+- **`test_mode` skips the Runway avatar entirely.** Set via `formation_context["test_mode"]`, activated by `TEST_EMAILS` in main.py or an explicit `{"test_mode": true}` POST body. Falls through to Cartesia audio only, so conversation is fully testable at zero Runway cost. `TEST_EMAILS` must never contain a production creator's address.
+- **Runway avatar `personality` and `startScript` are INERT in this architecture (confirmed 2026-09-04).** Per LiveKit's Runway docs, "LiveKit TTS settings will supersede selected voices and personalities configured for the Runway character." Cartesia generates the speech; Runway only renders lip-synced video. Claude's system prompt (`prompts.py`) is the actual brain. Editing The DUDE's personality in the Runway dashboard changes nothing. A Runway-cloned voice would likewise be ignored, which is why custom-avatar voice cloning routes to Cartesia.
+- **Custom FutureYou avatars are per-creator via `formation_context["runway_avatar_id"]`**, falling back to the shared default ("The DUDE", `d44bf1d0-c297-4e26-839a-93099a485ca5`). Backend reads the creator's active `ready` row in `public.creator_avatars`. Runway avatar creation is programmatic (`POST /v1/avatars`: name, referenceImage, personality, voice) with **no training step** (returns `READY` immediately), and `referenceImage` is fetched server-side from a URL, so a public Supabase Storage URL suffices.
+- **Portrait generation uses Runway Gen-4 Image with References, chosen on technical merit.** The binding constraint is identity preservation from a reference photo, a specific capability that does not correlate with general image quality. Same-stack also means the portrait's output matches what Runway's avatar renderer expects, since that portrait IS the avatar's input.
+- **Bundle freely across independent tools; consolidate hard within a chain.** Wherever one feature's output is the next feature's input, seams cost quality. StudioYou's economics are best-of-breed assembly, which is right for discrete tools and wrong inside a chain. Avatar generation is one such chain; script → voice → video is another.
+- **Partnership value stays strictly downstream of the technical call.** Tool selection is precisely where the "constitutionally incapable of competing interests with the creator" claim gets tested. If deal flow ever influences which tool is recommended, that principle becomes marketing. Runway's partnership upside is a side benefit of decisions made on merit, never the reason for them.
+- **The FutureYou brief must never idealize a creator physically.** Aspiration lives in context and evidence (the room, the work visible around them, their bearing), never appearance. Physical characteristics are left entirely to the reference image. Image models idealize by default, and a feature that quietly tells a creator they should look different inverts the platform's purpose. These constraints live in the prompt in `future_you_brief.py`, not in review.
+- **`lk agent deploy` is the deploy command (corrected 2026-09-04).** It rebuilds the image and preserves the agent ID, issuing a new version string. Verified twice on 2026-09-04 (16:36Z and 17:43:21Z), agent ID `CA_Mnhkjj3mUr7T` unchanged across both. The prior guidance that only `delete && create` rebuilds, and that the agent ID changes every deploy, is obsolete: do not delete the agent to ship a change.
 - **`--update-env-vars`** for manual Cloud Run CLI updates, not `--set-env-vars`.
 - **Frontend git workflow (confirmed 2026-08-19):** edit via Desktop Commander, `git commit`, `git push` → Netlify auto-deploys to `studioyou.app`. GitHub auto-deploy now connected. Fallback: `netlify deploy --prod --dir=.` from `~/Downloads/studioyou-app`. The manual drag-drop flow is retired.
 - **studioyou-app Netlify site id is `4a365723-1d16-4fab-a88c-8d71851fe5c8` (studioyou.app).** The local folder `~/Downloads/studioyou-app` must be linked to this site, not `heroic-torrone-abeb92` (wrong site, corrected 2026-08-19). Verify with `netlify status` before deploying.

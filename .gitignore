@@ -2,3 +2,6 @@
 main.py.good
 main.py.new
 main.py.tavus
+
+__pycache__/
+*.pyc

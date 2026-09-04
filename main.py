@@ -83,6 +83,10 @@ FRAMEIO_CLIENT_ID        = os.environ.get("FRAMEIO_CLIENT_ID", "")
 FRAMEIO_CLIENT_SECRET    = os.environ.get("FRAMEIO_CLIENT_SECRET", "")
 ADOBE_PDF_CLIENT_ID      = os.environ.get("ADOBE_PDF_CLIENT_ID", "")
 ADOBE_PDF_CLIENT_SECRET  = os.environ.get("ADOBE_PDF_CLIENT_SECRET", "")
+# ── External video + LLM model APIs (activated when keys present) ─────────────
+LTX_API_KEY        = os.environ.get("LTX_API_KEY", "")        # LTX Studio — ltx-2-5-pro video gen
+DASHSCOPE_API_KEY  = os.environ.get("DASHSCOPE_API_KEY", "")  # Alibaba DashScope — Qwen LLM + WAN video gen
+DASHSCOPE_BASE_URL = os.environ.get("DASHSCOPE_BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1")
 
 # Initialize Anthropic SDK client
 anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
@@ -3066,3 +3070,395 @@ def projects_set_active():
         logger.error(f"[projects_set_active] {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ── LTX STUDIO — Video Generation (ltx-2-5-pro) ─────────────────────────────
+# API docs: https://api.ltx.io/v1/
+# Auth: Authorization: Bearer {LTX_API_KEY}
+# Key location: Cloud Run env var LTX_API_KEY (add via deploy-cloudrun.yml)
+# Keys blocked until Lee generates from console.ltx.io
+# ═══════════════════════════════════════════════════════════════════════════════
+
+LTX_API_BASE = "https://api.ltx.io/v1"
+
+def _ltx_headers():
+    """Return LTX auth headers. Raises 503 if key not configured."""
+    if not LTX_API_KEY:
+        raise RuntimeError("LTX_API_KEY not configured")
+    return {
+        "Authorization": f"Bearer {LTX_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+@app.route("/api/tools/ltx/text-to-video", methods=["POST", "OPTIONS"])
+@cross_origin()
+def ltx_text_to_video():
+    """
+    Generate a video from a text prompt using LTX ltx-2-5-pro.
+
+    Body: {
+      "prompt": "...",           # required
+      "negative_prompt": "...", # optional
+      "width": 1280,            # optional, default 1280
+      "height": 720,            # optional, default 720
+      "num_frames": 97,         # optional, default 97 (~4s at 24fps)
+      "seed": null              # optional
+    }
+
+    Response: { "success": true, "video_url": "...", "job_id": "..." }
+    """
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    session_email, _ = validate_session(request)
+    if not session_email:
+        return jsonify({"success": False, "error": "authentication required"}), 401
+
+    if not LTX_API_KEY:
+        return jsonify({"success": False, "error": "LTX video generation not yet activated"}), 503
+
+    data = request.get_json(force=True) or {}
+    prompt = (data.get("prompt") or "").strip()
+    if not prompt:
+        return jsonify({"success": False, "error": "prompt is required"}), 400
+
+    payload = {
+        "model": "ltx-2-5-pro",
+        "prompt": prompt,
+        "width": int(data.get("width", 1280)),
+        "height": int(data.get("height", 720)),
+        "num_frames": int(data.get("num_frames", 97)),
+    }
+    if data.get("negative_prompt"):
+        payload["negative_prompt"] = data["negative_prompt"]
+    if data.get("seed") is not None:
+        payload["seed"] = int(data["seed"])
+
+    try:
+        r = requests.post(
+            f"{LTX_API_BASE}/text-to-video",
+            headers=_ltx_headers(),
+            json=payload,
+            timeout=60,
+        )
+        r.raise_for_status()
+        result = r.json()
+        logger.info(f"[ltx_text_to_video] success for {session_email} — job_id={result.get('id')}")
+        return jsonify({
+            "success": True,
+            "job_id": result.get("id"),
+            "video_url": result.get("video_url") or result.get("url"),
+            "status": result.get("status"),
+            "raw": result,
+        })
+    except requests.HTTPError as e:
+        logger.error(f"[ltx_text_to_video] HTTP {e.response.status_code}: {e.response.text[:300]}")
+        return jsonify({"success": False, "error": f"LTX API error: {e.response.status_code}"}), 502
+    except Exception as e:
+        logger.error(f"[ltx_text_to_video] {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/tools/ltx/image-to-video", methods=["POST", "OPTIONS"])
+@cross_origin()
+def ltx_image_to_video():
+    """
+    Animate a static image using LTX ltx-2-5-pro.
+
+    Body: {
+      "image_url": "https://...", # required — publicly reachable URL
+      "prompt": "...",            # optional motion description
+      "num_frames": 97,           # optional
+      "seed": null                # optional
+    }
+
+    Response: { "success": true, "video_url": "...", "job_id": "..." }
+    """
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    session_email, _ = validate_session(request)
+    if not session_email:
+        return jsonify({"success": False, "error": "authentication required"}), 401
+
+    if not LTX_API_KEY:
+        return jsonify({"success": False, "error": "LTX video generation not yet activated"}), 503
+
+    data = request.get_json(force=True) or {}
+    image_url = (data.get("image_url") or "").strip()
+    if not image_url:
+        return jsonify({"success": False, "error": "image_url is required"}), 400
+
+    payload = {
+        "model": "ltx-2-5-pro",
+        "image_url": image_url,
+        "num_frames": int(data.get("num_frames", 97)),
+    }
+    if data.get("prompt"):
+        payload["prompt"] = data["prompt"]
+    if data.get("seed") is not None:
+        payload["seed"] = int(data["seed"])
+
+    try:
+        r = requests.post(
+            f"{LTX_API_BASE}/image-to-video",
+            headers=_ltx_headers(),
+            json=payload,
+            timeout=60,
+        )
+        r.raise_for_status()
+        result = r.json()
+        logger.info(f"[ltx_image_to_video] success for {session_email} — job_id={result.get('id')}")
+        return jsonify({
+            "success": True,
+            "job_id": result.get("id"),
+            "video_url": result.get("video_url") or result.get("url"),
+            "status": result.get("status"),
+            "raw": result,
+        })
+    except requests.HTTPError as e:
+        logger.error(f"[ltx_image_to_video] HTTP {e.response.status_code}: {e.response.text[:300]}")
+        return jsonify({"success": False, "error": f"LTX API error: {e.response.status_code}"}), 502
+    except Exception as e:
+        logger.error(f"[ltx_image_to_video] {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/tools/ltx/job-status", methods=["GET"])
+@cross_origin()
+def ltx_job_status():
+    """
+    Poll LTX job status by job_id.
+    Query param: ?job_id=xxx
+    Response: { "success": true, "status": "...", "video_url": "..." }
+    """
+    session_email, _ = validate_session(request)
+    if not session_email:
+        return jsonify({"success": False, "error": "authentication required"}), 401
+
+    if not LTX_API_KEY:
+        return jsonify({"success": False, "error": "LTX not activated"}), 503
+
+    job_id = (request.args.get("job_id") or "").strip()
+    if not job_id:
+        return jsonify({"success": False, "error": "job_id required"}), 400
+
+    try:
+        r = requests.get(
+            f"{LTX_API_BASE}/jobs/{job_id}",
+            headers=_ltx_headers(),
+            timeout=15,
+        )
+        r.raise_for_status()
+        result = r.json()
+        return jsonify({
+            "success": True,
+            "job_id": job_id,
+            "status": result.get("status"),
+            "video_url": result.get("video_url") or result.get("url"),
+            "raw": result,
+        })
+    except requests.HTTPError as e:
+        return jsonify({"success": False, "error": f"LTX API error: {e.response.status_code}"}), 502
+    except Exception as e:
+        logger.error(f"[ltx_job_status] {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ── ALIBABA DASHSCOPE — Qwen LLM + WAN Video Generation ─────────────────────
+# Auth: Authorization: Bearer {DASHSCOPE_API_KEY}
+# Base: DASHSCOPE_BASE_URL (OpenAI-compatible)
+# Key location: Cloud Run env var DASHSCOPE_API_KEY (add via deploy-cloudrun.yml)
+# Account: Frisson Digital — enterprise identity verification pending (Sep 2026)
+# Region: Singapore (ap-southeast-1) / international endpoint
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _dashscope_headers():
+    """Return DashScope auth headers. Raises 503 if key not configured."""
+    if not DASHSCOPE_API_KEY:
+        raise RuntimeError("DASHSCOPE_API_KEY not configured")
+    return {
+        "Authorization": f"Bearer {DASHSCOPE_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+@app.route("/api/tools/qwen/chat", methods=["POST", "OPTIONS"])
+@cross_origin()
+def qwen_chat():
+    """
+    Qwen LLM chat via Alibaba DashScope OpenAI-compatible endpoint.
+    Use for bulk text tasks, translation, multilingual content where Qwen
+    outperforms Claude or provides cost diversity.
+
+    Body: {
+      "messages": [{"role": "user", "content": "..."}],
+      "model": "qwen-max",          # optional, default qwen-max
+      "max_tokens": 1000,            # optional
+      "temperature": 0.7             # optional
+    }
+
+    Response: { "success": true, "message": "...", "model": "...", "usage": {...} }
+    """
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    session_email, _ = validate_session(request)
+    if not session_email:
+        return jsonify({"success": False, "error": "authentication required"}), 401
+
+    if not DASHSCOPE_API_KEY:
+        return jsonify({"success": False, "error": "Alibaba Qwen not yet activated"}), 503
+
+    data = request.get_json(force=True) or {}
+    messages = data.get("messages", [])
+    if not messages:
+        return jsonify({"success": False, "error": "messages required"}), 400
+
+    model = data.get("model", "qwen-max")
+    payload = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": int(data.get("max_tokens", 1000)),
+        "temperature": float(data.get("temperature", 0.7)),
+    }
+
+    try:
+        r = requests.post(
+            f"{DASHSCOPE_BASE_URL}/chat/completions",
+            headers=_dashscope_headers(),
+            json=payload,
+            timeout=60,
+        )
+        r.raise_for_status()
+        result = r.json()
+        choice = (result.get("choices") or [{}])[0]
+        text = (choice.get("message") or {}).get("content", "")
+        logger.info(f"[qwen_chat] success for {session_email} — model={model}")
+        return jsonify({
+            "success": True,
+            "message": text,
+            "model": result.get("model", model),
+            "usage": result.get("usage", {}),
+        })
+    except requests.HTTPError as e:
+        logger.error(f"[qwen_chat] HTTP {e.response.status_code}: {e.response.text[:300]}")
+        return jsonify({"success": False, "error": f"DashScope API error: {e.response.status_code}"}), 502
+    except Exception as e:
+        logger.error(f"[qwen_chat] {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/tools/wan/text-to-video", methods=["POST", "OPTIONS"])
+@cross_origin()
+def wan_text_to_video():
+    """
+    WAN 3.0 video generation via Alibaba DashScope.
+    Model: wan2.1-t2v-turbo (text-to-video, fastest tier)
+    Async task — returns task_id. Poll /api/tools/wan/task-status.
+
+    Body: {
+      "prompt": "...",           # required
+      "model": "wan2.1-t2v-turbo", # optional, default wan2.1-t2v-turbo
+      "size": "1280*720",         # optional
+      "duration": 5               # optional, seconds (3 or 5)
+    }
+
+    Response: { "success": true, "task_id": "...", "request_id": "..." }
+    """
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    session_email, _ = validate_session(request)
+    if not session_email:
+        return jsonify({"success": False, "error": "authentication required"}), 401
+
+    if not DASHSCOPE_API_KEY:
+        return jsonify({"success": False, "error": "Alibaba WAN not yet activated"}), 503
+
+    data = request.get_json(force=True) or {}
+    prompt = (data.get("prompt") or "").strip()
+    if not prompt:
+        return jsonify({"success": False, "error": "prompt is required"}), 400
+
+    model = data.get("model", "wan2.1-t2v-turbo")
+    # DashScope WAN uses a task-submission pattern (not direct response)
+    wan_base = "https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis"
+    payload = {
+        "model": model,
+        "input": {
+            "prompt": prompt,
+        },
+        "parameters": {
+            "size": data.get("size", "1280*720"),
+            "duration": int(data.get("duration", 5)),
+        }
+    }
+
+    headers = _dashscope_headers()
+    headers["X-DashScope-Async"] = "enable"  # required for async task submission
+
+    try:
+        r = requests.post(wan_base, headers=headers, json=payload, timeout=30)
+        r.raise_for_status()
+        result = r.json()
+        output = result.get("output", {})
+        task_id = output.get("task_id") or result.get("task_id")
+        logger.info(f"[wan_text_to_video] task submitted for {session_email} — task_id={task_id}")
+        return jsonify({
+            "success": True,
+            "task_id": task_id,
+            "request_id": result.get("request_id"),
+            "status": output.get("task_status"),
+        })
+    except requests.HTTPError as e:
+        logger.error(f"[wan_text_to_video] HTTP {e.response.status_code}: {e.response.text[:300]}")
+        return jsonify({"success": False, "error": f"DashScope API error: {e.response.status_code}"}), 502
+    except Exception as e:
+        logger.error(f"[wan_text_to_video] {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/tools/wan/task-status", methods=["GET"])
+@cross_origin()
+def wan_task_status():
+    """
+    Poll WAN video generation task status.
+    Query param: ?task_id=xxx
+    Response: { "success": true, "status": "...", "video_url": "..." }
+    Status values: PENDING | RUNNING | SUCCEEDED | FAILED
+    """
+    session_email, _ = validate_session(request)
+    if not session_email:
+        return jsonify({"success": False, "error": "authentication required"}), 401
+
+    if not DASHSCOPE_API_KEY:
+        return jsonify({"success": False, "error": "Alibaba WAN not activated"}), 503
+
+    task_id = (request.args.get("task_id") or "").strip()
+    if not task_id:
+        return jsonify({"success": False, "error": "task_id required"}), 400
+
+    status_url = f"https://dashscope-intl.aliyuncs.com/api/v1/tasks/{task_id}"
+    try:
+        r = requests.get(status_url, headers=_dashscope_headers(), timeout=15)
+        r.raise_for_status()
+        result = r.json()
+        output = result.get("output", {})
+        video_url = None
+        if output.get("task_status") == "SUCCEEDED":
+            video_url = (output.get("video_url")
+                         or (output.get("results") or [{}])[0].get("url"))
+        return jsonify({
+            "success": True,
+            "task_id": task_id,
+            "status": output.get("task_status"),
+            "video_url": video_url,
+            "raw": output,
+        })
+    except requests.HTTPError as e:
+        return jsonify({"success": False, "error": f"DashScope API error: {e.response.status_code}"}), 502
+    except Exception as e:
+        logger.error(f"[wan_task_status] {e}")
+        return jsonify({"success": False, "error": str(e)}), 500

@@ -89,7 +89,7 @@ Key dependencies (pointers only — credentials never in this file):
 | Anthropic | Claude API | Cloud Run env vars |
 | Fal.ai | Image/video generation | Cloud Run env vars |
 | Adobe Express / PDF Services / Frame.io | Creative tools | Cloud Run env vars |
-| LTX Studio | Text-to-video + image-to-video (ltx-2-5-pro). 7 endpoints wired 2026-09-04. | Cloud Run env var `LTX_API_KEY` — key obtained from console.ltx.io. Key in hand; pending add to Cloud Run env vars. Endpoints return 503 until key present. |
+| LTX Studio | Text-to-video + image-to-video (ltx-2-5-pro). 7 endpoints wired 2026-09-04. | Cloud Run env var `LTX_API_KEY` — **ACTIVE** as of 2026-09-04, revision 00425-t2b. |
 | Alibaba DashScope | Qwen LLM + WAN 3.0 video gen. Endpoints wired 2026-09-04. | Cloud Run env var `DASHSCOPE_API_KEY` — enterprise verification pending at myaccount.console.alibabacloud.com; key from modelstudio.console.alibabacloud.com/ap-southeast-1 when approved. Endpoints return 503 until key present. |
 | Netlify | Frontend hosting (two projects — see Tech Stack & Architecture) | Netlify dashboard |
 | GCP Cloud Run | Backend hosting | GCP console (`neat-tangent-474222-m9`, `us-east1`, service `studioyou-api`). Do not touch billing account 019309-BEB782-398472 — Google for Startups application pending. `gcloud` CLI authenticated on Mac — use via Desktop Commander. |
@@ -135,7 +135,7 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 | Build status (Lee's field-test estimate, 2026-08-17) | IDEATE ~50%, DEVELOP ~20%, PLAN/PRODUCE/POST/LEGAL/DISTRIBUTE/BRAND/MARKET/MONETIZE/FUND/CAST unbuilt. No new estimate issued since. |
 | Content depth (2026-08-18) | Canonical schema exists for all 12 buildings (`knowledge/schemas/*.json`). IDEATE: 5 of 8 steps carry a verified, sourced Layer 3 injection. DEVELOP: 3 track-opening steps + all 5 lock steps reference new Lock Calculus. |
 | Sprint | Security fixes 1-6 + DB schema fixes complete. Tool wiring sprint 2026-09-04: 7 new endpoints deployed, FY_ORCHESTRATION_MODEL → claude-fable-5-1 (live, revision 00414-t4r). Next: LTX key activation (Lee runs Terminal cmd), Alibaba verification, S2 orchestrator. |
-| Pending activations | LTX_API_KEY: key in hand, add to Cloud Run. DASHSCOPE_API_KEY: pending Alibaba enterprise verification. |
+| Pending activations | DASHSCOPE_API_KEY: pending Alibaba enterprise verification. LTX_API_KEY: ACTIVE (revision 00425-t2b). |
 | Pending bugs | None critical. formation_briefing `anthropic_client.messages.create` confirmed fixed (2026-09-04 audit — prior handoff was stale). |
 
 

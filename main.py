@@ -686,7 +686,7 @@ def chat():
                     b         = dict(buildings.get(building_id) or {})
 
                     # Seed active_step_num on first entry to an active building
-                    if b.get("state") == "active" and not b.get("active_step_num"):
+                    if b.get("state") in ("active", "untouched") and not b.get("active_step_num"):
                         b["active_step_num"] = 1
                         buildings[building_id] = b
                         try:
@@ -2781,7 +2781,7 @@ def _total_steps(building_id: str) -> int:
 def evaluate_success_state(condition: str, messages: list) -> dict:
     """Tier 2 call: evaluate whether the message thread satisfies the step condition.
     Returns {"satisfied": bool, "reason": str}.
-    Uses ORCHESTRATION_MODEL (claude-fable-5 / opus-4-8 fallback)."""
+    Uses ORCHESTRATION_MODEL; falls back to SURFACE_MODEL if the primary model is unavailable."""
     thread_text = "\n".join(
         f"{m.get('role', '').upper()}: {str(m.get('content', '') or '')[:400]}"
         for m in messages[-10:]
@@ -2796,27 +2796,61 @@ def evaluate_success_state(condition: str, messages: list) -> dict:
         "Do not interpret liberally. The condition must be present in the creator's actual words. "
         "When uncertain, return false."
     )
-    try:
-        resp = anthropic_client.messages.create(
-            model=ORCHESTRATION_MODEL,
+    eval_system = (
+        "You are a precise step-completion evaluator. "
+        "Your only job: determine whether a stated success condition has been met "
+        "in the conversation thread. Return only the JSON requested. No other text."
+    )
+    eval_messages = [{"role": "user", "content": prompt}]
+
+    def _call_model(model_id):
+        return anthropic_client.messages.create(
+            model=model_id,
             max_tokens=120,
-            system=(
-                "You are a precise step-completion evaluator. "
-                "Your only job: determine whether a stated success condition has been met "
-                "in the conversation thread. Return only the JSON requested. No other text."
-            ),
-            messages=[{"role": "user", "content": prompt}]
+            system=eval_system,
+            messages=eval_messages,
         )
-        raw = claude_text(resp).strip()
+
+    def _parse_raw(raw: str) -> dict:
+        raw = raw.strip()
+        # Strip code fences
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):
                 raw = raw[4:]
-        result = json.loads(raw.strip())
+        raw = raw.strip()
+        # Try direct parse first
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            pass
+        # Regex fallback — extract first JSON object containing "satisfied"
+        m = re.search(r'\{[^{}]*"satisfied"[^{}]*\}', raw)
+        if m:
+            return json.loads(m.group(0))
+        raise ValueError(f"No JSON object found in: {raw[:120]}")
+
+    try:
+        resp = _call_model(ORCHESTRATION_MODEL)
+    except Exception as model_err:
+        # Primary model unavailable — fall back to surface model
+        logger.warning(
+            f"[evaluate_success_state] orchestration model '{ORCHESTRATION_MODEL}' failed "
+            f"({type(model_err).__name__}: {model_err}), falling back to {SURFACE_MODEL}"
+        )
+        try:
+            resp = _call_model(SURFACE_MODEL)
+        except Exception as e:
+            logger.warning(f"[evaluate_success_state] surface model also failed: {e}")
+            return {"satisfied": False, "reason": f"eval error: {e}"}
+
+    try:
+        raw = claude_text(resp)
+        result = _parse_raw(raw)
         return {"satisfied": bool(result.get("satisfied")), "reason": result.get("reason", "")}
     except Exception as e:
-        logger.warning(f"[evaluate_success_state] failed: {e}")
-        return {"satisfied": False, "reason": f"eval error: {e}"}
+        logger.warning(f"[evaluate_success_state] parse failed: {e}")
+        return {"satisfied": False, "reason": f"parse error: {e}"}
 
 
 def advance_building_step(project_id: str, building_id: str, step_num: int, buildings: dict) -> dict:

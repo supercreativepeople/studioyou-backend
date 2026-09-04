@@ -1703,10 +1703,11 @@ def avatar_livekit_session():
             formation_context["conversation_thread"] = conversation_thread[-10:]
 
         # test_mode=True skips Runway avatar start in the agent — no credits used.
-        # Pass {"test_mode": true} in the POST body to activate. Full conversation
-        # still works (Cartesia TTS audio-only mode). Never set this in production
-        # calls initiated by real users.
-        test_mode = bool(data.get("test_mode", False))
+        # Activated by passing {"test_mode": true} in the POST body, OR automatically
+        # when the session email is in TEST_EMAILS. Full conversation still works
+        # (Cartesia TTS audio-only mode). TEST_EMAILS never reaches production users.
+        TEST_EMAILS = {"nyclaabq@gmail.com"}
+        test_mode = bool(data.get("test_mode", False)) or email in TEST_EMAILS
         if test_mode:
             formation_context["test_mode"] = True
 

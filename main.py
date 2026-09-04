@@ -57,6 +57,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
 from anthropic import Anthropic
 from livekit.api import LiveKitAPI, AccessToken, VideoGrants
+from routes_avatars import avatars_bp, startup_log_runway_configs
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -68,6 +69,9 @@ CORS(app, origins=[
     "http://localhost:3000",
     "null",
 ])
+
+app.register_blueprint(avatars_bp)
+startup_log_runway_configs()
 
 SUPABASE_URL      = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY      = os.environ.get("SUPABASE_KEY", "")

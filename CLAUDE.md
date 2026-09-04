@@ -3,6 +3,7 @@
 > This file is the project bible. Same sections every session, same order. No agenda items, no carry-forwards — those live in the handoff doc. Read this to understand what StudioYou is and how to work on it. For strategy, positioning, and current build-status narrative (not code), see the **StudioYou Project HQ** in Notion — https://app.notion.com/p/3bfb963047e5814f9398d9f53aaf0c13 (rebuilt 2026-08-17, canonical strategic source of truth, distinct from this file's technical/deploy scope).
 
 **Changelog (most recent 3-5, older entries live in git history):**
+- **2026-09-04 (session 2):** Cloud Build GitHub trigger created (`studioyou-backend-main`, us-east1, push to main → cloudbuild.yaml → Cloud Run auto-deploy). Manual `gcloud builds submit` retired — Claude pushes, Cloud Build handles the rest. STEP_MAP completed for all 12 buildings (10 new entries, 34 total steps). Backend HEAD: `6f22873`.
 - **2026-09-04:** Tool wiring sprint — LTX Studio (ltx-2-5-pro) + Alibaba DashScope (Qwen LLM + WAN 3.0) integration code written and deployed. 7 new endpoints: `/api/tools/ltx/text-to-video`, `/api/tools/ltx/image-to-video`, `/api/tools/ltx/job-status`, `/api/tools/qwen/chat`, `/api/tools/wan/text-to-video`, `/api/tools/wan/task-status`. All session-gated; return 503 when key absent — activate automatically when env vars added to Cloud Run. formation_briefing `anthropic_client.messages.create` bug confirmed already fixed (prior handoff was stale). Backend HEAD: `c8cc2d1`.
 - **2026-08-19:** Security fixes 1-3 applied and deployed. (1) All three `/api/chat` callsites in studio.html now send `context/email/building_id/mode` instead of client-side system prompt — server builds prompt via `build_fy_system_prompt()` pulling creator data from Supabase. (2) `ADMIN_KEY` moved to `os.environ.get("SY_ADMIN_KEY")` — rotated, added to Cloud Run env vars. (3) `SY_DEBUG` env var gates all 6 debug endpoints (return 404 when false/unset). netlify-cli installed globally on Mac. `netlify.toml` added to studioyou-app repo. GitHub auto-deploy connected to `studioyou-app` (id `4a365723`) via Netlify UI — every push to `main` now deploys to `studioyou.app`. Wrong orphan site (`heroic-torrone-abeb92`) unlinked. Backend: `954007a`. Frontend: `2b8ad0b`, `6ab3ac5`.
 - **2026-08-18:** Canonical per-building JSON schema built for all 12 buildings (`tools/build_schema.py` → `knowledge/schemas/<id>.json` + `_drift_report.json`) — see Locked Decisions. New research-driven Layer 3 authoring philosophy locked into `FY_LAYER2_SCHEMA.md` (4 additions this session: model-feedback addendum, skeleton-authoring rule, Layer 3 sourcing model + two-tier retrieval + generic sixth-track + v1 ceiling, and THE LOCK CALCULUS universal rule). IDEATE fully integrated (5 of 8 steps now carry a verified, sourced Layer 3 injection). DEVELOP batch 1 integrated (3 track-opening steps + all 5 lock steps reference the new Lock Calculus). 8 commits, all pushed. See `handoffs/2026-08-18-canonical-schema-and-layer3-research.md` for full detail.
@@ -52,7 +53,7 @@ Cloudflare is the front door to `studioyou.app` — alpha, invited reviewers onl
 
 Files: dashboard.html, studio.html, index.html, subscribe.html.
 
-**Backend:** Flask on Google Cloud Run (`studioyou-api`, project `neat-tangent-474222-m9`, `us-east1`). Endpoint: `studioyou-api-198959034459.us-east1.run.app`. Deploy via GitHub Actions on push to main.
+**Backend:** Flask on Google Cloud Run (`studioyou-api`, project `neat-tangent-474222-m9`, `us-east1`). Endpoint: `studioyou-api-198959034459.us-east1.run.app`. Deploy via Cloud Build trigger (`studioyou-backend-main`, us-east1). Push to `main` → Cloud Build → Cloud Run auto-deploy.
 
 **Database:** Supabase (`rubwhfjwqonqhfbkhren`). RLS disabled.
 
@@ -99,7 +100,7 @@ Key dependencies (pointers only — credentials never in this file):
 ## 5. How to Deploy
 
 **Backend (main.py):**
-Code edit → `git commit` on Mac via Desktop Commander → `git push` → GitHub Actions → Cloud Run auto-deploy. Claude owns this pipeline. Lee does not push.
+Code edit → `git commit` on Mac via Desktop Commander → `git push origin main` → Cloud Build trigger fires → Cloud Run auto-deploy. Claude owns this pipeline. Lee does not push. No manual `gcloud builds submit` needed.
 - Use `--update-env-vars` (not `--set-env-vars`) for manual CLI env var updates.
 - SY_ADMIN_KEY and SY_DEBUG are Cloud Run env vars — never hardcode, never echo in chat.
 
@@ -123,7 +124,7 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 
 | Component | Current Value |
 |---|---|
-| Backend HEAD | commit `434ff75` — docs: CLAUDE.md + handoff 2026-09-04 |
+| Backend HEAD | commit `6f22873` — feat: complete STEP_MAP for all 12 buildings |
 | FY Agent ID | **CA_Mnhkjj3mUr7T** (region us-east) |
 | TTS Voice | Corey (`630ed21c-2c5c-41cf-9d82-10a7fd668370`), sonic-3, pronunciation dict wired |
 | Surface model | claude-sonnet-4-6 |

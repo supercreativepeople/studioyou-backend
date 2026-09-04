@@ -3,11 +3,11 @@
 > This file is the project bible. Same sections every session, same order. No agenda items, no carry-forwards — those live in the handoff doc. Read this to understand what StudioYou is and how to work on it. For strategy, positioning, and current build-status narrative (not code), see the **StudioYou Project HQ** in Notion — https://app.notion.com/p/3bfb963047e5814f9398d9f53aaf0c13 (rebuilt 2026-08-17, canonical strategic source of truth, distinct from this file's technical/deploy scope).
 
 **Changelog (most recent 3-5, older entries live in git history):**
+- **2026-09-04 (session 3):** Two bug fixes committed and auto-deployed. (1) `formation_initialize()` fix (`ac24113`): added `creator_type` and `formation_data` (jsonb with briefing/answers) to Supabase patch — `build_fy_system_prompt()` was always getting empty values because these fields were never written. (2) S2 orchestrator three-bug fix (`2a8ccde`): primary bug was `FY_ORCHESTRATION_MODEL=claude-fable-5` is an invalid Anthropic API model name — `evaluate_success_state()` was silently throwing on every call and always returning `satisfied: False`, so steps never advanced. Fixed with model fallback to `SURFACE_MODEL` + robust JSON parsing (regex fallback). Secondary fix: seed condition now fires for both `"untouched"` and `"active"` building states. Backend HEAD: `2a8ccde`.
 - **2026-09-04 (session 2):** Cloud Build GitHub trigger created (`studioyou-backend-main`, us-east1, push to main → cloudbuild.yaml → Cloud Run auto-deploy). Manual `gcloud builds submit` retired — Claude pushes, Cloud Build handles the rest. STEP_MAP completed for all 12 buildings (10 new entries, 34 total steps). Backend HEAD: `6f22873`.
 - **2026-09-04:** Tool wiring sprint — LTX Studio (ltx-2-5-pro) + Alibaba DashScope (Qwen LLM + WAN 3.0) integration code written and deployed. 7 new endpoints: `/api/tools/ltx/text-to-video`, `/api/tools/ltx/image-to-video`, `/api/tools/ltx/job-status`, `/api/tools/qwen/chat`, `/api/tools/wan/text-to-video`, `/api/tools/wan/task-status`. All session-gated; return 503 when key absent — activate automatically when env vars added to Cloud Run. formation_briefing `anthropic_client.messages.create` bug confirmed already fixed (prior handoff was stale). Backend HEAD: `c8cc2d1`.
 - **2026-08-19:** Security fixes 1-3 applied and deployed. (1) All three `/api/chat` callsites in studio.html now send `context/email/building_id/mode` instead of client-side system prompt — server builds prompt via `build_fy_system_prompt()` pulling creator data from Supabase. (2) `ADMIN_KEY` moved to `os.environ.get("SY_ADMIN_KEY")` — rotated, added to Cloud Run env vars. (3) `SY_DEBUG` env var gates all 6 debug endpoints (return 404 when false/unset). netlify-cli installed globally on Mac. `netlify.toml` added to studioyou-app repo. GitHub auto-deploy connected to `studioyou-app` (id `4a365723`) via Netlify UI — every push to `main` now deploys to `studioyou.app`. Wrong orphan site (`heroic-torrone-abeb92`) unlinked. Backend: `954007a`. Frontend: `2b8ad0b`, `6ab3ac5`.
 - **2026-08-18:** Canonical per-building JSON schema built for all 12 buildings (`tools/build_schema.py` → `knowledge/schemas/<id>.json` + `_drift_report.json`) — see Locked Decisions. New research-driven Layer 3 authoring philosophy locked into `FY_LAYER2_SCHEMA.md` (4 additions this session: model-feedback addendum, skeleton-authoring rule, Layer 3 sourcing model + two-tier retrieval + generic sixth-track + v1 ceiling, and THE LOCK CALCULUS universal rule). IDEATE fully integrated (5 of 8 steps now carry a verified, sourced Layer 3 injection). DEVELOP batch 1 integrated (3 track-opening steps + all 5 lock steps reference the new Lock Calculus). 8 commits, all pushed. See `handoffs/2026-08-18-canonical-schema-and-layer3-research.md` for full detail.
-- **2026-08-17:** No code changed this session (Notion/knowledge-base work only). Corrected two long-standing drift points: (1) subscription tier table below was wrong (missing Player tier, stale numbers) — corrected against live `subscribe.html` code; (2) studioyou.studio role fully resolved — confirmed via code grep as the Resend-verified magic-link auth email sending domain only, not a second product surface. Built new **StudioYou Project HQ** in Notion (7 pages) as the project's single source of truth for strategy and current state. Confirmed build status: IDEATE ~50% built, DEVELOP ~20% built, remaining 10 buildings unbuilt, FY orchestrator (Sprint S2) unbuilt and confirmed as top build priority.
 
 ---
 
@@ -62,7 +62,7 @@ Files: dashboard.html, studio.html, index.html, subscribe.html.
 ---
 **AI stack:**
 - Tier 1 (surface): `claude-sonnet-4-6` via env var `FY_SURFACE_MODEL`
-- Tier 2 (orchestration): `claude-fable-5` via env var `FY_ORCHESTRATION_MODEL`
+- Tier 2 (orchestration): `claude-fable-5` via env var `FY_ORCHESTRATION_MODEL` — **NOTE:** this model name appears to be invalid (no such Anthropic API model as of 2026-09-04). `evaluate_success_state()` now falls back to `SURFACE_MODEL` when the orchestration model throws. Update this env var when a valid fable/haiku-class model ID is confirmed.
 - STT: Deepgram nova-2
 - TTS: Cartesia sonic-3
 - Avatar: Runway Characters
@@ -124,19 +124,19 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 
 | Component | Current Value |
 |---|---|
-| Backend HEAD | commit `6f22873` — feat: complete STEP_MAP for all 12 buildings |
+| Backend HEAD | commit `2a8ccde` — fix: S2 orchestrator — model fallback, robust JSON parse, seed untouched buildings |
 | FY Agent ID | **CA_Mnhkjj3mUr7T** (region us-east) |
 | TTS Voice | Corey (`630ed21c-2c5c-41cf-9d82-10a7fd668370`), sonic-3, pronunciation dict wired |
 | Surface model | claude-sonnet-4-6 |
-| Orchestration model | claude-fable-5-1 (updated 2026-09-04 — 75% token reduction vs fable-5) |
+| Orchestration model | claude-fable-5 (env var — model name appears invalid; evaluate_success_state now falls back to surface model on API error) |
 | dashboard.html | Session AE deployed |
 | studio.html | Current HEAD: `97e290c` — session token header (syHeaders) on all API calls. GitHub auto-deploy → studioyou.app. |
 | Supabase | rubwhfjwqonqhfbkhren — `fy_vault_entries` table live |
 | Build status (Lee's field-test estimate, 2026-08-17) | IDEATE ~50%, DEVELOP ~20%, PLAN/PRODUCE/POST/LEGAL/DISTRIBUTE/BRAND/MARKET/MONETIZE/FUND/CAST unbuilt. No new estimate issued since. |
 | Content depth (2026-08-18) | Canonical schema exists for all 12 buildings (`knowledge/schemas/*.json`). IDEATE: 5 of 8 steps carry a verified, sourced Layer 3 injection. DEVELOP: 3 track-opening steps + all 5 lock steps reference new Lock Calculus. |
-| Sprint | Security fixes 1-6 + DB schema fixes complete. Tool wiring sprint 2026-09-04: 7 new endpoints deployed, FY_ORCHESTRATION_MODEL → claude-fable-5-1 (live, revision 00414-t4r). Next: LTX key activation (Lee runs Terminal cmd), Alibaba verification, S2 orchestrator. |
+| Sprint | S2 orchestrator bugs found and fixed (2026-09-04 session 3). Primary bug: FY_ORCHESTRATION_MODEL env var holds an invalid model name — evaluate_success_state now falls back to SURFACE_MODEL. formation_initialize() now writes creator_type + formation_data to Supabase so build_fy_system_prompt() gets populated data. Next: S2 end-to-end test (step advancement through a real building conversation). |
 | Pending activations | DASHSCOPE_API_KEY: pending Alibaba enterprise verification. LTX_API_KEY: ACTIVE (revision 00425-t2b). |
-| Pending bugs | None critical. formation_briefing `anthropic_client.messages.create` confirmed fixed (2026-09-04 audit — prior handoff was stale). |
+| Pending bugs | FY_ORCHESTRATION_MODEL env var: confirm valid Anthropic model ID and update Cloud Run env var. Current code falls back to surface model as workaround. |
 
 
 ---
@@ -162,6 +162,7 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 - **Strategic source of truth split:** this file (CLAUDE.md) stays scoped to technical/deploy state. Positioning, competitive thesis, build-status narrative, and product-portfolio strategy (CLIPClear, OMNIShield, YouScored) live in the StudioYou Project HQ (Notion, see top of this file) — don't duplicate that content here, link to it.
 - **Canonical building content schema (2026-08-18):** `knowledge/schemas/<building_id>.json`, generated/regenerated via `tools/build_schema.py`, is the emerging canonical source of truth for per-building step structure (creator_prompt, fy_rationale, fy_approach, canvas_output, raw_spec, etc.), superseding the `.md` specs and frontend `BUILDING_TASKS` as those two drift. `_drift_report.json` in the same folder tracks where they still disagree. `knowledge/FY_LAYER2_SCHEMA.md` is the authoritative source for all building-authoring rules and architecture decisions — don't duplicate that content here, link to it.
 - **LTX + DashScope endpoints (2026-09-04):** All 7 new tool endpoints return 503 (not 500) when their env var key is absent. This is intentional — allows deploy-first, key-add-later workflow. Activate LTX by adding `LTX_API_KEY` to Cloud Run env vars. Activate DashScope by adding `DASHSCOPE_API_KEY`. Use `--update-env-vars` only.
+- **S2 orchestrator model fallback (2026-09-04):** `evaluate_success_state()` tries `ORCHESTRATION_MODEL` first, falls back to `SURFACE_MODEL` on any API exception. This is the correct behavior — it means a misconfigured or invalid orchestration model doesn't silently break step advancement. Update `FY_ORCHESTRATION_MODEL` env var to a valid Anthropic model ID to activate the intended two-tier eval architecture.
 
 ---
 ## 8. Key Contacts

@@ -1702,6 +1702,14 @@ def avatar_livekit_session():
         if conversation_thread:
             formation_context["conversation_thread"] = conversation_thread[-10:]
 
+        # test_mode=True skips Runway avatar start in the agent — no credits used.
+        # Pass {"test_mode": true} in the POST body to activate. Full conversation
+        # still works (Cartesia TTS audio-only mode). Never set this in production
+        # calls initiated by real users.
+        test_mode = bool(data.get("test_mode", False))
+        if test_mode:
+            formation_context["test_mode"] = True
+
         # Surface tells the agent which UI it is serving (dashboard vs studio)
         surface = data.get("surface", "dashboard")
         formation_context["surface"] = surface

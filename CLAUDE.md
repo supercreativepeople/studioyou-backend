@@ -3,6 +3,7 @@
 > This file is the project bible. Same sections every session, same order. No agenda items, no carry-forwards — those live in the handoff doc. Read this to understand what StudioYou is and how to work on it. For strategy, positioning, and current build-status narrative (not code), see the **StudioYou Project HQ** in Notion — https://app.notion.com/p/3bfb963047e5814f9398d9f53aaf0c13 (rebuilt 2026-08-17, canonical strategic source of truth, distinct from this file's technical/deploy scope).
 
 **Changelog (most recent 3-5, older entries live in git history):**
+- **2026-09-05:** CLAUDE.md corrections only — no code changes. (1) Live State updated: HEAD now `d4e2f19`, Cloud Run revision now `00460-jdg`. (2) Subscription tier pricing corrected against Revenue & Pricing Model v2 (authoritative): Independent is $199/mo monthly / $129/mo annual + $149 onboarding; Operator is $149/mo monthly / $99/mo annual; Founding tier added (first 500, annual only); "Player" tier removed (never existed in the revenue model). Prior CLAUDE.md had wrong prices and a phantom tier.
 - **2026-09-04 (session 4):** Runway credit drain fixed via `test_mode`. Eager avatar start was spending credits on every job before any user interaction (Runway bills 2 credits up front + 2 per 6s of ACTIVE session). `test_mode` in `formation_context` skips `start_avatar()` and falls through to Cartesia audio only. Dual activation: backend `TEST_EMAILS` auto-detect plus explicit frontend flag. `nyclaabq@gmail.com` is the confirmed E2E test account; manual avatar disabling is retired. Agent docstring drift corrected (claimed a sonic-3.5/Jameson switch that was never made; Corey on sonic-3 confirmed and kept). Custom FutureYou avatar groundwork shipped: `public.creator_avatars` table, per-creator avatar resolution in the agent, backend injection, and `future_you_brief.py`. **Two CLAUDE.md errors corrected this session: RLS was documented as disabled when it is enabled and forced, and the `lk agent delete && create` requirement is obsolete.** Backend HEAD: `c96422f`. Agent: `CA_Mnhkjj3mUr7T` version `Fqxg6JLvSBb8`.
 - **2026-09-04 (session 3):** Two bug fixes committed and auto-deployed. (1) `formation_initialize()` fix (`ac24113`): added `creator_type` and `formation_data` (jsonb with briefing/answers) to Supabase patch — `build_fy_system_prompt()` was always getting empty values because these fields were never written. (2) S2 orchestrator three-bug fix (`2a8ccde`): primary bug was `FY_ORCHESTRATION_MODEL=claude-fable-5` is an invalid Anthropic API model name — `evaluate_success_state()` was silently throwing on every call and always returning `satisfied: False`, so steps never advanced. Fixed with model fallback to `SURFACE_MODEL` + robust JSON parsing (regex fallback). Secondary fix: seed condition now fires for both `"untouched"` and `"active"` building states. `FY_ORCHESTRATION_MODEL` env var updated to `claude-haiku-4-5-20251001` (revision 00434-lpn). Backend HEAD: `2a8ccde`.
 - **2026-09-04 (session 2):** Cloud Build GitHub trigger created (`studioyou-backend-main`, us-east1, push to main → cloudbuild.yaml → Cloud Run auto-deploy). Manual `gcloud builds submit` retired — Claude pushes, Cloud Build handles the rest. STEP_MAP completed for all 12 buildings (10 new entries, 34 total steps). Backend HEAD: `6f22873`.
@@ -17,15 +18,16 @@ StudioYou (studioyou.app) is a creator studio OS powered by FutureYou (FY), an A
 
 **Legal entity:** Frisson Digital, Inc. (Delaware C-Corp). StudioYou and SCREENBot IP formally assigned to Frisson Digital. SuperCreativePeople (SCP) is kept entirely separate — not commingled with SY/SB projects. For all funding and partnership applications, Frisson Digital, Inc. is the entity of record. Lee operates as the individual bootstrapper, claiming projects personally, not DBA-ing SCP.
 
-**StudioYou subscription tiers — corrected 2026-08-17, verified against live `subscribe.html` code:**
+**StudioYou subscription tiers — corrected 2026-09-05 against Revenue & Pricing Model v2 (authoritative). CLAUDE.md had stale prices and a "Player" tier that does not exist.**
 
-| Tier | Monthly | Annual/mo | Annual total |
-|---|---|---|---|
-| Operator | $129/mo | $99/mo | $1,188/yr |
-| Independent | $199/mo | $149/mo | $1,788/yr |
-| Player | $299/mo | $225/mo | $2,700/yr |
+| Tier | Monthly | Quarterly/mo | Annual/mo | Annual total | Notes |
+|---|---|---|---|---|---|
+| Independent | $199/mo | $159/mo | $129/mo | $1,548/yr | + $149 one-time onboarding fee |
+| Operator | $149/mo | $119/mo | $99/mo | $1,188/yr | No onboarding fee |
+| Founding | — | — | $149/mo (Ind) / $99/mo (Op) | — | First 500 creators, annual only |
+| Scholarship | $0 | — | — | — | Phase 2, 25/yr |
 
-"Player" is the correct, live tier name — not "Studio." All-in subscription, single price per tier, modules unlock by journey necessity not price tier. Ecosystem pays (tool providers, brands, agencies); creator never pays a cut of earnings.
+All-in subscription, single price per tier, modules unlock by journey necessity not price tier. Ecosystem pays (tool providers, brands, agencies); creator never pays a cut of earnings. No "Player" tier exists — that name was stale from a prior naming iteration.
 
 ---
 ## 2. Repos & Access
@@ -124,8 +126,8 @@ Edit file → `git commit && git push` to studioyou-backend. Files are read at a
 
 | Component | Current Value |
 |---|---|
-| Backend HEAD | commit `c96422f` — feat: FutureYou brief generation (`future_you_brief.py`) |
-| Cloud Run revision | 00434-lpn (FY_ORCHESTRATION_MODEL updated, no code change) |
+| Backend HEAD | commit `d4e2f19` — chore: session open protocol only (SESSION_LOG.md) |
+| Cloud Run revision | 00460-jdg (deployed 2026-09-05T03:43:25Z) |
 | FY Agent ID | **CA_Mnhkjj3mUr7T** (region us-east), version `Fqxg6JLvSBb8`, deployed 2026-09-04T17:43:21Z. ID is stable across deploys. |
 | TTS Voice | Corey (`630ed21c-2c5c-41cf-9d82-10a7fd668370`), sonic-3, pronunciation dict wired. Confirmed against code 2026-09-04; a docstring claiming sonic-3.5/Jameson was drift and has been removed. |
 | Surface model | claude-sonnet-4-6 |

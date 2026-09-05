@@ -152,14 +152,11 @@ def startup_log_runway_configs():
     if config_id:
         logger.info(f"[avatar] RUNWAY_IMAGE_CONFIG_ID = {config_id!r} ✓")
         return
-    logger.warning("[avatar] RUNWAY_IMAGE_CONFIG_ID not set — fetching available configs...")
-    try:
-        r = req_lib.get(f"{RUNWAY_API_BASE}/model_router/configs",
-                        headers={"Authorization": f"Bearer {api_key}"}, timeout=10)
-        r.raise_for_status()
-        logger.warning("[avatar] Available Runway configs: %s", r.json())
-    except Exception as e:
-        logger.error(f"[avatar] Could not fetch Runway configs: {e}")
+    logger.warning(
+        "[avatar] RUNWAY_IMAGE_CONFIG_ID not set — portrait generation will fail. "
+        "Create a config at app.dev.runwayml.com > Model Routers, then set "
+        "RUNWAY_IMAGE_CONFIG_ID=<your-config-slug> in Cloud Run env vars."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -313,13 +310,13 @@ def generate_portrait():
         return jsonify({"error": "RUNWAYML_API_SECRET not configured."}), 503
 
     payload = {
-        "config_id": config_id,
+        "configId": config_id,
         "input": {
-            "prompt_text": row["image_prompt"],
-            "aspect_ratio": "3:4",
+            "promptText": row["image_prompt"],
+            "aspectRatio": "3:4",
             "resolution": "1k",
-            "output_count": 1,
-            "reference_images": [{"uri": row["source_image_url"]}],
+            "outputCount": 1,
+            "referenceImages": [{"uri": row["source_image_url"]}],
         },
     }
 

@@ -2464,6 +2464,110 @@ def model_invoke():
         }), 500
 
 
+@app.route("/api/quality_judge", methods=["POST", "OPTIONS"])
+@cross_origin()
+def quality_judge():
+    """
+    Vision-model-as-judge for FY generation output.
+
+    POST {
+      "output_url":     "https://...",
+      "prompt":         "original generation prompt",
+      "criteria":       ["criterion 1", ...],
+      "card_type":      "image" | "video",
+      "email":          "user@example.com",
+      "creative_brief": { ...vault answers... }
+    }
+
+    Returns { "pass": bool, "reason": str, "criterion": str }
+
+    Fails open on any error — creator is never blocked by judge failure.
+    Video outputs pass through until frame extraction is implemented.
+    """
+    if request.method == "OPTIONS":
+        return jsonify({"ok": True}), 200
+
+    data           = request.get_json() or {}
+    output_url     = (data.get("output_url") or "").strip()
+    prompt         = (data.get("prompt") or "").strip()
+    criteria       = data.get("criteria") or []
+    card_type      = (data.get("card_type") or "image").strip()
+    email          = (data.get("email") or "").strip().lower()
+    creative_brief = data.get("creative_brief") or {}
+
+    if not output_url:
+        return jsonify({"pass": True, "reason": "no output to evaluate", "criterion": ""}), 200
+
+    logger.info(f"[quality_judge] card_type={card_type} email={email} url={output_url[:80]}")
+
+    # Video: pass through until frame extraction is built
+    is_video = card_type == "video" or any(
+        output_url.lower().endswith(ext) for ext in (".mp4", ".webm", ".mov")
+    )
+    if is_video:
+        logger.info("[quality_judge] video — pass-through (frame extraction pending)")
+        return jsonify({"pass": True, "reason": "video evaluation pending", "criterion": ""}), 200
+
+    if not criteria:
+        return jsonify({"pass": True, "reason": "no criteria specified", "criterion": ""}), 200
+
+    criteria_list = "\n".join(f"{i+1}. {c}" for i, c in enumerate(criteria))
+    brief_context = ""
+    if creative_brief:
+        brief_context = f"\n\nCreative brief:\n{json.dumps(creative_brief, indent=2)}"
+
+    system_prompt = (
+        "You are a visual quality judge for AI-generated creative content. "
+        "Evaluate whether the image meets the stated criteria. "
+        "Be precise and honest. Flag real failures clearly. "
+        "Respond ONLY with valid JSON."
+    )
+    user_prompt = (
+        f"Evaluate this image against the criteria below.\n\n"
+        f"Generation prompt: {prompt}{brief_context}\n\n"
+        f"Criteria:\n{criteria_list}\n\n"
+        f'Respond with JSON only: {{"pass": true or false, '
+        f'"reason": "failure description or empty string if passed", '
+        f'"criterion": "failed criterion (copy exactly) or primary criterion if passed"}}\n\n'
+        f"ALL criteria met: pass=true, empty reason. "
+        f"ANY failure: pass=false, name criterion, describe what is wrong."
+    )
+
+    raw = ""
+    try:
+        response = anthropic_client.messages.create(
+            model=SURFACE_MODEL,
+            max_tokens=512,
+            system=system_prompt,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "image", "source": {"type": "url", "url": output_url}},
+                    {"type": "text", "text": user_prompt},
+                ],
+            }],
+        )
+        raw = claude_text(response).strip()
+        if raw.startswith("```"):
+            parts = raw.split("```")
+            raw = parts[1].lstrip("json").strip() if len(parts) > 1 else raw
+        result = json.loads(raw)
+        verdict = bool(result.get("pass", True))
+        logger.info(f"[quality_judge] pass={verdict} criterion={str(result.get('criterion',''))[:60]}")
+        return jsonify({
+            "pass":      verdict,
+            "reason":    str(result.get("reason", "")),
+            "criterion": str(result.get("criterion", criteria[0] if criteria else "")),
+        }), 200
+
+    except json.JSONDecodeError as e:
+        logger.warning(f"[quality_judge] JSON parse failed: {e} raw={raw[:200]}")
+        return jsonify({"pass": True, "reason": "parse error — delivering as-is", "criterion": ""}), 200
+    except Exception as e:
+        logger.error(f"[quality_judge] ERROR: {e}")
+        return jsonify({"pass": True, "reason": "judge unavailable — delivering as-is", "criterion": ""}), 200
+
+
 @app.route("/api/model/tasks", methods=["GET"])
 @cross_origin()
 def model_tasks():
